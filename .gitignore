@@ -6,6 +6,10 @@
 *.dll
 *.so
 *.dylib
+ezbookkeeping
+
+# generated package
+package/
 
 # Test binary, build with `go test -c`
 *.test
