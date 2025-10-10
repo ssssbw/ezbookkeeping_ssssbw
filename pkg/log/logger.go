@@ -22,23 +22,23 @@ var requestLogger = logrus.New()
 var sqlQueryLogger = logrus.New()
 
 func init() {
-	bootLogger.SetFormatter(&LogFormatter{})
+	bootLogger.SetFormatter(&LogFormatter{ForceColors: true})
 	bootLogger.SetOutput(os.Stdout)
 	bootLogger.SetLevel(logrus.InfoLevel)
 
-	cliLogger.SetFormatter(&LogFormatter{})
+	cliLogger.SetFormatter(&LogFormatter{ForceColors: true})
 	cliLogger.SetOutput(os.Stdout)
 	cliLogger.SetLevel(logrus.InfoLevel)
 
-	defaultLogger.SetFormatter(&LogFormatter{})
+	defaultLogger.SetFormatter(&LogFormatter{ForceColors: true})
 	defaultLogger.SetOutput(os.Stdout)
 	defaultLogger.SetLevel(logrus.InfoLevel)
 
-	requestLogger.SetFormatter(&LogFormatter{Prefix: "[REQUEST]", DisableLevel: true})
+	requestLogger.SetFormatter(&LogFormatter{Prefix: "[REQUEST]", DisableLevel: true, ForceColors: true})
 	requestLogger.SetOutput(os.Stdout)
 	requestLogger.SetLevel(logrus.InfoLevel)
 
-	sqlQueryLogger.SetFormatter(&LogFormatter{Prefix: "[SQLQUERY]", DisableLevel: true})
+	sqlQueryLogger.SetFormatter(&LogFormatter{Prefix: "[SQLQUERY]", DisableLevel: true, ForceColors: true})
 	sqlQueryLogger.SetOutput(os.Stdout)
 	sqlQueryLogger.SetLevel(logrus.InfoLevel)
 }
@@ -55,6 +55,16 @@ func SetLoggerConfiguration(config *settings.Config, isDisableBootLog bool) erro
 	}
 
 	if config.EnableConsoleLog {
+		// 为所有日志器启用颜色
+		colorFormatter := &LogFormatter{ForceColors: true}
+		bootLogger.SetFormatter(colorFormatter)
+		cliLogger.SetFormatter(colorFormatter)
+		defaultLogger.SetFormatter(colorFormatter)
+
+		// 为特殊日志器保持原有前缀
+    	requestLogger.SetFormatter(&LogFormatter{Prefix: "[REQUEST]", DisableLevel: true, ForceColors: true})
+    	sqlQueryLogger.SetFormatter(&LogFormatter{Prefix: "[SQLQUERY]", DisableLevel: true, ForceColors: true})
+
 		defaultWriters = append(defaultWriters, os.Stdout)
 		requestWriters = append(requestWriters, os.Stdout)
 		queryWriters = append(queryWriters, os.Stdout)
