@@ -24,19 +24,19 @@
                     <v-card variant="flat" class="w-100 mt-0 px-4 pt-12" max-width="500">
                         <v-card-text>
                             <h4 class="text-h4 mb-2">{{ tt('Welcome to ezBookkeeping') }}</h4>
-                            <p class="mb-0">{{ tt('Please log in with your ezBookkeeping account') }}</p>
+                            <p class="mb-0" v-if="isInternalAuthEnabled()">{{ tt('Please log in with your ezBookkeeping account') }}</p>
                             <p class="mt-1 mb-0" v-if="tips">{{ tips }}</p>
                         </v-card-text>
 
                         <v-card-text class="pb-0 mb-6">
                             <v-form>
                                 <v-row>
-                                    <v-col cols="12">
+                                    <v-col cols="12" v-if="isInternalAuthEnabled()">
                                         <v-text-field
                                             type="text"
                                             autocomplete="username"
                                             :autofocus="true"
-                                            :disabled="show2faInput || logining || verifying"
+                                            :disabled="show2faInput || loggingInByPassword || loggingInByOAuth2 || verifying"
                                             :label="tt('Username')"
                                             :placeholder="tt('Your username or email')"
                                             v-model="username"
@@ -45,12 +45,12 @@
                                         />
                                     </v-col>
 
-                                    <v-col cols="12">
+                                    <v-col cols="12" v-if="isInternalAuthEnabled()">
                                         <v-text-field
                                             autocomplete="current-password"
                                             ref="passwordInput"
                                             type="password"
-                                            :disabled="show2faInput || logining || verifying"
+                                            :disabled="show2faInput || loggingInByPassword || loggingInByOAuth2 || verifying"
                                             :label="tt('Password')"
                                             :placeholder="tt('Your password')"
                                             v-model="password"
@@ -64,7 +64,7 @@
                                             type="number"
                                             autocomplete="one-time-code"
                                             ref="passcodeInput"
-                                            :disabled="logining || verifying"
+                                            :disabled="loggingInByPassword || loggingInByOAuth2 || verifying"
                                             :label="tt('Passcode')"
                                             :placeholder="tt('Passcode')"
                                             :append-inner-icon="mdiHelpCircleOutline"
@@ -75,7 +75,7 @@
                                         />
                                         <v-text-field
                                             type="text"
-                                            :disabled="logining || verifying"
+                                            :disabled="loggingInByPassword || loggingInByOAuth2 || verifying"
                                             :label="tt('Backup Code')"
                                             :placeholder="tt('Backup Code')"
                                             :append-inner-icon="mdiOnepassword"
@@ -100,19 +100,31 @@
                                     </v-col>
 
                                     <v-col cols="12">
-                                        <v-btn block :disabled="inputIsEmpty || logining || verifying"
-                                               @click="login" v-if="!show2faInput">
+                                        <v-btn block :disabled="inputIsEmpty || loggingInByPassword || loggingInByOAuth2 || verifying"
+                                               @click="login" v-if="isInternalAuthEnabled() && !show2faInput">
                                             {{ tt('Log In') }}
-                                            <v-progress-circular indeterminate size="22" class="ms-2" v-if="logining"></v-progress-circular>
+                                            <v-progress-circular indeterminate size="22" class="ms-2" v-if="loggingInByPassword"></v-progress-circular>
                                         </v-btn>
-                                        <v-btn block :disabled="twoFAInputIsEmpty || logining || verifying"
+
+                                        <v-col cols="12" class="d-flex align-center px-0" v-if="isInternalAuthEnabled() && isOAuth2Enabled()">
+                                            <v-divider class="me-3" />
+                                            {{ tt('or') }}
+                                            <v-divider class="ms-3" />
+                                        </v-col>
+
+                                        <v-btn block :disabled="loggingInByPassword || loggingInByOAuth2 || verifying" :href="oauth2LoginUrl"
+                                               @click="loggingInByOAuth2 = true" v-if="isOAuth2Enabled()">
+                                            {{ oauth2LoginDisplayName }}
+                                            <v-progress-circular indeterminate size="22" class="ms-2" v-if="loggingInByOAuth2"></v-progress-circular>
+                                        </v-btn>
+                                        <v-btn block :disabled="twoFAInputIsEmpty || loggingInByPassword || loggingInByOAuth2 || verifying"
                                                @click="verify" v-else-if="show2faInput">
                                             {{ tt('Continue') }}
                                             <v-progress-circular indeterminate size="22" class="ms-2" v-if="verifying"></v-progress-circular>
                                         </v-btn>
                                     </v-col>
 
-                                    <v-col cols="12" class="text-center text-base">
+                                    <v-col cols="12" class="text-center text-base" v-if="isInternalAuthEnabled()">
                                         <span class="me-1">{{ tt('Don\'t have an account?') }}</span>
                                         <router-link class="text-primary" to="/signup"
                                                      :class="{'disabled': !isUserRegistrationEnabled()}">
@@ -130,7 +142,7 @@
                         <v-card-text class="pt-0">
                             <v-row>
                                 <v-col cols="12" class="text-center">
-                                    <language-select-button :disabled="logining || verifying" />
+                                    <language-select-button :disabled="loggingInByPassword || loggingInByOAuth2 || verifying" />
                                 </v-col>
 
                                 <v-col cols="12" class="d-flex align-center pt-0">
@@ -170,7 +182,14 @@ import { ThemeType } from '@/core/theme.ts';
 import { APPLICATION_LOGO_PATH } from '@/consts/asset.ts';
 import { KnownErrorCode } from '@/consts/api.ts';
 
-import { isUserRegistrationEnabled, isUserForgetPasswordEnabled, isUserVerifyEmailEnabled } from '@/lib/server_settings.ts';
+import { generateRandomUUID } from '@/lib/misc.ts';
+import {
+    isUserRegistrationEnabled,
+    isUserForgetPasswordEnabled,
+    isUserVerifyEmailEnabled,
+    isInternalAuthEnabled,
+    isOAuth2Enabled
+} from '@/lib/server_settings.ts';
 
 import {
     mdiOnepassword,
@@ -194,13 +213,17 @@ const {
     backupCode,
     tempToken,
     twoFAVerifyType,
-    logining,
+    oauth2ClientSessionId,
+    loggingInByPassword,
+    loggingInByOAuth2,
     verifying,
     inputIsEmpty,
     twoFAInputIsEmpty,
+    oauth2LoginUrl,
+    oauth2LoginDisplayName,
     tips,
     doAfterLogin
-} = useLoginPageBase();
+} = useLoginPageBase('desktop');
 
 const passwordInput = useTemplateRef<VTextField>('passwordInput');
 const passcodeInput = useTemplateRef<VTextField>('passcodeInput');
@@ -227,17 +250,17 @@ function login(): void {
         return;
     }
 
-    if (logining.value) {
+    if (loggingInByPassword.value) {
         return;
     }
 
-    logining.value = true;
+    loggingInByPassword.value = true;
 
     rootStore.authorize({
         loginName: username.value,
         password: password.value
     }).then(authResponse => {
-        logining.value = false;
+        loggingInByPassword.value = false;
 
         if (authResponse.need2FA) {
             tempToken.value = authResponse.token;
@@ -256,7 +279,7 @@ function login(): void {
         doAfterLogin(authResponse);
         router.replace('/');
     }).catch(error => {
-        logining.value = false;
+        loggingInByPassword.value = false;
 
         if (isUserVerifyEmailEnabled() && error.error && error.error.errorCode === KnownErrorCode.UserEmailNotVerified && error.error.context && error.error.context.email) {
             router.push(`/verify_email?email=${encodeURIComponent(error.error.context.email)}&emailSent=${error.error.context.hasValidEmailVerifyToken || false}`);
@@ -301,4 +324,6 @@ function verify(): void {
         }
     });
 }
+
+oauth2ClientSessionId.value = generateRandomUUID();
 </script>

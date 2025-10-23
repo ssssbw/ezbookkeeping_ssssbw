@@ -1,11 +1,15 @@
 # Build backend binary file
-FROM golang:1.25.1-alpine3.22 AS be-builder
+FROM golang:1.25.3-alpine3.22 AS be-builder
 ARG RELEASE_BUILD
 ARG BUILD_PIPELINE
+ARG BUILD_UNIXTIME
+ARG BUILD_DATE
 ARG CHECK_3RD_API
 ARG SKIP_TESTS
 ENV RELEASE_BUILD=$RELEASE_BUILD
 ENV BUILD_PIPELINE=$BUILD_PIPELINE
+ENV BUILD_UNIXTIME=$BUILD_UNIXTIME
+ENV BUILD_DATE=$BUILD_DATE
 ENV CHECK_3RD_API=$CHECK_3RD_API
 ENV SKIP_TESTS=$SKIP_TESTS
 WORKDIR /go/src/github.com/mayswind/ezbookkeeping
@@ -15,11 +19,15 @@ RUN apk add git gcc g++ libc-dev
 RUN ./build.sh backend
 
 # Build frontend files
-FROM --platform=$BUILDPLATFORM node:24.7.0-alpine3.22 AS fe-builder
+FROM --platform=$BUILDPLATFORM node:24.10.0-alpine3.22 AS fe-builder
 ARG RELEASE_BUILD
 ARG BUILD_PIPELINE
+ARG BUILD_UNIXTIME
+ARG BUILD_DATE
 ENV RELEASE_BUILD=$RELEASE_BUILD
 ENV BUILD_PIPELINE=$BUILD_PIPELINE
+ENV BUILD_UNIXTIME=$BUILD_UNIXTIME
+ENV BUILD_DATE=$BUILD_DATE
 WORKDIR /go/src/github.com/mayswind/ezbookkeeping
 COPY . .
 RUN docker/frontend-build-pre-setup.sh
@@ -27,7 +35,7 @@ RUN apk add git
 RUN ./build.sh frontend
 
 # Package docker image
-FROM alpine:3.22.1
+FROM alpine:3.22.2
 LABEL maintainer="MaysWind <i@mayswind.net>"
 RUN addgroup -S -g 1000 ezbookkeeping && adduser -S -G ezbookkeeping -u 1000 ezbookkeeping
 RUN apk --no-cache add tzdata

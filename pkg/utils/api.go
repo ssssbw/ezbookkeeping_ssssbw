@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"reflect"
 
@@ -10,6 +11,32 @@ import (
 	"github.com/mayswind/ezbookkeeping/pkg/core"
 	"github.com/mayswind/ezbookkeeping/pkg/errs"
 )
+
+// GetDisplayErrorMessage returns the display error message for given error
+func GetDisplayErrorMessage(err *errs.Error) string {
+	if err.Code() == errs.ErrIncompleteOrIncorrectSubmission.Code() && len(err.BaseError) > 0 {
+		var validationErrors validator.ValidationErrors
+		ok := errors.As(err.BaseError[0], &validationErrors)
+
+		if ok {
+			for _, err := range validationErrors {
+				return getValidationErrorText(err)
+			}
+		}
+	}
+
+	return err.Error()
+}
+
+// GetJsonErrorResult returns error response in json format
+func GetJsonErrorResult(err *errs.Error, path string) map[string]any {
+	return core.O{
+		"success":      false,
+		"errorCode":    err.Code(),
+		"errorMessage": GetDisplayErrorMessage(err),
+		"path":         path,
+	}
+}
 
 // PrintJsonSuccessResult writes success response in json format to current http context
 func PrintJsonSuccessResult(c *core.WebContext, result any) {
@@ -32,25 +59,7 @@ func PrintDataSuccessResult(c *core.WebContext, contentType string, fileName str
 func PrintJsonErrorResult(c *core.WebContext, err *errs.Error) {
 	c.SetResponseError(err)
 
-	errorMessage := err.Error()
-
-	if err.Code() == errs.ErrIncompleteOrIncorrectSubmission.Code() && len(err.BaseError) > 0 {
-		validationErrors, ok := err.BaseError[0].(validator.ValidationErrors)
-
-		if ok {
-			for _, err := range validationErrors {
-				errorMessage = getValidationErrorText(err)
-				break
-			}
-		}
-	}
-
-	result := core.O{
-		"success":      false,
-		"errorCode":    err.Code(),
-		"errorMessage": errorMessage,
-		"path":         c.Request.URL.Path,
-	}
+	result := GetJsonErrorResult(err, c.Request.URL.Path)
 
 	if err.Context != nil {
 		result["context"] = err.Context
@@ -68,19 +77,6 @@ func PrintJSONRPCSuccessResult(c *core.WebContext, jsonRPCRequest *core.JSONRPCR
 func PrintJSONRPCErrorResult(c *core.WebContext, jsonRPCRequest *core.JSONRPCRequest, err *errs.Error) {
 	c.SetResponseError(err)
 
-	errorMessage := err.Error()
-
-	if err.Code() == errs.ErrIncompleteOrIncorrectSubmission.Code() && len(err.BaseError) > 0 {
-		validationErrors, ok := err.BaseError[0].(validator.ValidationErrors)
-
-		if ok {
-			for _, err := range validationErrors {
-				errorMessage = getValidationErrorText(err)
-				break
-			}
-		}
-	}
-
 	var id any
 
 	if jsonRPCRequest != nil {
@@ -97,27 +93,13 @@ func PrintJSONRPCErrorResult(c *core.WebContext, jsonRPCRequest *core.JSONRPCReq
 		jsonRPCError = core.JSONRPCInvalidParamsError
 	}
 
-	c.AbortWithStatusJSON(err.HttpStatusCode, core.NewJSONRPCErrorResponseWithCause(id, jsonRPCError, errorMessage))
+	c.AbortWithStatusJSON(err.HttpStatusCode, core.NewJSONRPCErrorResponseWithCause(id, jsonRPCError, GetDisplayErrorMessage(err)))
 }
 
 // PrintDataErrorResult writes error response in custom content type to current http context
 func PrintDataErrorResult(c *core.WebContext, contentType string, err *errs.Error) {
 	c.SetResponseError(err)
-
-	errorMessage := err.Error()
-
-	if err.Code() == errs.ErrIncompleteOrIncorrectSubmission.Code() && len(err.BaseError) > 0 {
-		validationErrors, ok := err.BaseError[0].(validator.ValidationErrors)
-
-		if ok {
-			for _, err := range validationErrors {
-				errorMessage = getValidationErrorText(err)
-				break
-			}
-		}
-	}
-
-	c.Data(err.HttpStatusCode, contentType, []byte(errorMessage))
+	c.Data(err.HttpStatusCode, contentType, []byte(GetDisplayErrorMessage(err)))
 	c.Abort()
 }
 
@@ -149,25 +131,7 @@ func WriteEventStreamJsonSuccessResult(c *core.WebContext, result any) {
 func WriteEventStreamJsonErrorResult(c *core.WebContext, originalErr *errs.Error) {
 	c.SetResponseError(originalErr)
 
-	errorMessage := originalErr.Error()
-
-	if originalErr.Code() == errs.ErrIncompleteOrIncorrectSubmission.Code() && len(originalErr.BaseError) > 0 {
-		validationErrors, ok := originalErr.BaseError[0].(validator.ValidationErrors)
-
-		if ok {
-			for _, err := range validationErrors {
-				errorMessage = getValidationErrorText(err)
-				break
-			}
-		}
-	}
-
-	result := core.O{
-		"success":      false,
-		"errorCode":    originalErr.Code(),
-		"errorMessage": errorMessage,
-		"path":         c.Request.URL.Path,
-	}
+	result := GetJsonErrorResult(originalErr, c.Request.URL.Path)
 
 	if originalErr.Context != nil {
 		result["context"] = originalErr.Context

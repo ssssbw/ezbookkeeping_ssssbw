@@ -160,6 +160,7 @@ import { UTC_TIMEZONE, ALL_TIMEZONES } from '@/consts/timezone.ts';
 import { ALL_CURRENCIES } from '@/consts/currency.ts';
 import { DEFAULT_EXPENSE_CATEGORIES, DEFAULT_INCOME_CATEGORIES, DEFAULT_TRANSFER_CATEGORIES } from '@/consts/category.ts';
 import { KnownErrorCode, SPECIFIED_API_NOT_FOUND_ERRORS, PARAMETERIZED_ERRORS } from '@/consts/api.ts';
+import { OAUTH2_PROVIDER_DISPLAY_NAME } from '@/consts/oauth2.ts';
 import { DEFAULT_DOCUMENT_LANGUAGE_FOR_IMPORT_FILE, SUPPORTED_DOCUMENT_LANGUAGES_FOR_IMPORT_FILE, SUPPORTED_IMPORT_FILE_CATEGORY_AND_TYPES } from '@/consts/file.ts';
 
 import {
@@ -188,6 +189,7 @@ import {
     getCurrentUnixTime,
     getYearMonthDayDateTime,
     parseDateTimeFromUnixTime,
+    parseDateTimeFromString,
     getGregorianCalendarYearMonthDays,
     getDateTimeFormatType,
     getFiscalYearTimeRangeFromUnixTime,
@@ -869,18 +871,18 @@ export function useI18n() {
         return textArray.join(separator);
     }
 
-    function getServerTipContent(tipConfig: Record<string, string>): string {
-        if (!tipConfig) {
+    function getServerMultiLanguageConfigContent(multiLanguageConfig: Record<string, string>): string {
+        if (!multiLanguageConfig) {
             return '';
         }
 
         const currentLanguage = getCurrentLanguageTag();
 
-        if (isString(tipConfig[currentLanguage])) {
-            return tipConfig[currentLanguage];
+        if (isString(multiLanguageConfig[currentLanguage])) {
+            return multiLanguageConfig[currentLanguage];
         }
 
-        return tipConfig['default'] || '';
+        return multiLanguageConfig['default'] || '';
     }
 
     function getCurrentLanguageTag(): string {
@@ -1905,6 +1907,8 @@ export function useI18n() {
             return undefined;
         }
 
+        const dateTimeFormatOptions = getDateTimeFormatOptions({ calendarType: calendarDisplayType });
+
         if (calendarDisplayType === CalendarType.Chinese) {
             const chineseCalendarLocaleData = getChineseCalendarLocaleData();
             const chineseDates: ChineseYearMonthDayInfo[] | undefined = getChineseYearMonthAllDayInfos(yearMonth, chineseCalendarLocaleData);
@@ -1922,7 +1926,6 @@ export function useI18n() {
 
             return ret;
         } else if (calendarDisplayType === CalendarType.Persian) {
-            const dateTimeFormatOptions = getDateTimeFormatOptions();
             const monthDays: number = getGregorianCalendarYearMonthDays(yearMonth);
             const ret: CalendarAlternateDate[] = [];
 
@@ -1944,6 +1947,8 @@ export function useI18n() {
             return undefined;
         }
 
+        const dateTimeFormatOptions = getDateTimeFormatOptions({ calendarType: calendarDisplayType });
+
         if (calendarDisplayType === CalendarType.Chinese) {
             const chineseCalendarLocaleData = getChineseCalendarLocaleData();
             const chineseDate: ChineseYearMonthDayInfo | undefined = getChineseYearMonthDayInfo(yearMonthDay, chineseCalendarLocaleData);
@@ -1954,7 +1959,6 @@ export function useI18n() {
 
             return getChineseCalendarAlternateDisplayDate(chineseDate);
         } else if (calendarDisplayType === CalendarType.Persian) {
-            const dateTimeFormatOptions = getDateTimeFormatOptions();
             const dateTime = getYearMonthDayDateTime(yearMonthDay.year, yearMonthDay.month, yearMonthDay.day);
             return getCalendarAlternateDisplayDate(dateTime, dateTimeFormatOptions);
         }
@@ -2136,6 +2140,46 @@ export function useI18n() {
         return ret;
     }
 
+    function getLocalizedOAuth2ProviderName(oauth2Provider: string, oidcDisplayNames: Record<string, string>): string {
+        if (oauth2Provider === 'oidc') {
+            const providerDisplayName = getServerMultiLanguageConfigContent(oidcDisplayNames);
+
+            if (providerDisplayName) {
+                return providerDisplayName;
+            } else {
+                return 'Connect ID';
+            }
+        } else {
+            const providerDisplayName = OAUTH2_PROVIDER_DISPLAY_NAME[oauth2Provider];
+
+            if (providerDisplayName) {
+                return providerDisplayName;
+            } else {
+                return 'OAuth 2.0';
+            }
+        }
+    }
+
+    function getLocalizedOAuth2LoginText(oauth2Provider: string, oidcDisplayNames: Record<string, string>): string {
+        if (oauth2Provider === 'oidc') {
+            const providerDisplayName = getServerMultiLanguageConfigContent(oidcDisplayNames);
+
+            if (providerDisplayName) {
+                return t('format.misc.loginWithCustomProvider', { name: providerDisplayName });
+            } else {
+                return t('Log in with Connect ID');
+            }
+        } else {
+            const providerDisplayName = OAUTH2_PROVIDER_DISPLAY_NAME[oauth2Provider];
+
+            if (providerDisplayName) {
+                return t('format.misc.loginWithCustomProvider', { name: providerDisplayName });
+            } else {
+                return t('Log in with OAuth 2.0');
+            }
+        }
+    }
+
     function setLanguage(languageKey: string | null, force?: boolean): LocaleDefaultSettings | null {
         if (!languageKey) {
             languageKey = getDefaultLanguage();
@@ -2263,7 +2307,7 @@ export function useI18n() {
         ti: translateIf,
         te: translateError,
         joinMultiText,
-        getServerTipContent,
+        getServerMultiLanguageConfigContent,
         // get current language info
         getCurrentLanguageTag,
         getCurrentLanguageInfo,
@@ -2359,6 +2403,8 @@ export function useI18n() {
         getCalendarDisplayShortMonthFromUnixTime: (unixTime: number, numeralSystem?: NumeralSystem, utcOffset?: number, currentUtcOffset?: number) => formatUnixTime(unixTime, 'MMM', getDateTimeFormatOptions({ calendarType: getCurrentCalendarDisplayType().primaryCalendarType, numeralSystem: numeralSystem }), utcOffset, currentUtcOffset),
         getCalendarDisplayDayOfMonthFromUnixTime: (unixTime: number, numeralSystem?: NumeralSystem, utcOffset?: number, currentUtcOffset?: number) => formatUnixTime(unixTime, getLocalizedShortDayFormat(), getDateTimeFormatOptions({ calendarType: getCurrentCalendarDisplayType().primaryCalendarType, numeralSystem: numeralSystem }), utcOffset, currentUtcOffset),
         // format date time (by date display type) functions
+        parseDateTimeFromLongDateTime: (dateTime: string) => parseDateTimeFromString(dateTime, getLocalizedLongDateFormat() + ' ' + getLocalizedLongTimeFormat()),
+        parseDateTimeFromShortDateTime: (dateTime: string) => parseDateTimeFromString(dateTime, getLocalizedShortDateFormat() + ' ' + getLocalizedShortTimeFormat()),
         formatUnixTimeToLongDateTime: (unixTime: number, utcOffset?: number, currentUtcOffset?: number) => formatUnixTime(unixTime, getLocalizedLongDateFormat() + ' ' + getLocalizedLongTimeFormat(), getDateTimeFormatOptions(), utcOffset, currentUtcOffset),
         formatUnixTimeToShortDateTime: (unixTime: number, utcOffset?: number, currentUtcOffset?: number) => formatUnixTime(unixTime, getLocalizedShortDateFormat() + ' ' + getLocalizedShortTimeFormat(), getDateTimeFormatOptions(), utcOffset, currentUtcOffset),
         formatUnixTimeToLongDate: (unixTime: number, utcOffset?: number, currentUtcOffset?: number) => formatUnixTime(unixTime, getLocalizedLongDateFormat(), getDateTimeFormatOptions(), utcOffset, currentUtcOffset),
@@ -2406,6 +2452,9 @@ export function useI18n() {
         getAdaptiveAmountRate,
         getAmountPrependAndAppendText,
         getCategorizedAccountsWithDisplayBalance,
+        // other format functions
+        getLocalizedOAuth2ProviderName,
+        getLocalizedOAuth2LoginText,
         // localization setting functions
         setLanguage,
         setTimeZone,
