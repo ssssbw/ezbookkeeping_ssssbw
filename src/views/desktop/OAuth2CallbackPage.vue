@@ -24,9 +24,10 @@
                     <v-card variant="flat" class="w-100 mt-0 px-4 pt-12" max-width="500">
                         <v-card-text>
                             <h4 class="text-h4 mb-2">{{ oauth2LoginDisplayName }}</h4>
-                            <p class="mb-0" v-if="!error && platform && token && !userName">{{ tt('Logging in...') }}</p>
-                            <p class="mb-0" v-else-if="!error && userName">{{ tt('format.misc.oauth2bindTip', { providerName: oauth2ProviderDisplayName, userName: userName }) }}</p>
+                            <p class="mb-0" v-if="!error && !errorMessage && platform && token && !userName">{{ tt('Logging in...') }}</p>
+                            <p class="mb-0" v-else-if="!error && !errorMessage && userName">{{ tt('format.misc.oauth2bindTip', { providerName: oauth2ProviderDisplayName, userName: userName }) }}</p>
                             <p class="mb-0" v-else-if="error">{{ te({ error }) }}</p>
+                            <p class="mb-0" v-else-if="errorMessage">{{ errorMessage }}</p>
                             <p class="mb-0" v-else>{{ tt('An error occurred') }}</p>
                         </v-card-text>
 
@@ -38,10 +39,23 @@
                                             type="password"
                                             autocomplete="password"
                                             :autofocus="true"
-                                            :disabled="loggingInByOAuth2"
+                                            :disabled="show2faInput || loggingInByOAuth2"
                                             :label="tt('Password')"
                                             :placeholder="tt('Your password')"
                                             v-model="password"
+                                            @keyup.enter="verifyAndLogin"
+                                        />
+                                    </v-col>
+
+                                    <v-col cols="12" v-show="show2faInput">
+                                        <v-text-field
+                                            type="number"
+                                            autocomplete="one-time-code"
+                                            ref="passcodeInput"
+                                            :disabled="loggingInByOAuth2"
+                                            :label="tt('Passcode')"
+                                            :placeholder="tt('Passcode')"
+                                            v-model="passcode"
                                             @keyup.enter="verifyAndLogin"
                                         />
                                     </v-col>
@@ -96,7 +110,7 @@
 <script setup lang="ts">
 import SnackBar from '@/components/desktop/SnackBar.vue';
 
-import { computed, useTemplateRef } from 'vue';
+import { ref, computed, useTemplateRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTheme } from 'vuetify';
 
@@ -106,7 +120,7 @@ import { useLoginPageBase } from '@/views/base/LoginPageBase.ts';
 import { useRootStore } from '@/stores/index.ts';
 
 import { ThemeType } from '@/core/theme.ts';
-import { type ErrorResponse } from '@/core/api.ts';
+import { type ErrorResponse, buildErrorResponse } from '@/core/api.ts';
 import { APPLICATION_LOGO_PATH } from '@/consts/asset.ts';
 import { KnownErrorCode } from '@/consts/api.ts';
 
@@ -152,20 +166,16 @@ const {
 
 const snackbar = useTemplateRef<SnackBarType>('snackbar');
 
+const passcode = ref<string>('');
+const show2faInput = ref<boolean>(false);
+
 const isDarkMode = computed<boolean>(() => theme.global.name.value === ThemeType.Dark);
 const oauth2ProviderDisplayName = computed<string>(() => getLocalizedOAuth2ProviderName(props.provider ?? '', getOIDCCustomDisplayNames()));
 const oauth2LoginDisplayName = computed<string>(() => getLocalizedOAuth2LoginText(props.provider ?? '', getOIDCCustomDisplayNames()));
 
 const error = computed<ErrorResponse | undefined>(() => {
     if (props.errorCode && props.errorMessage) {
-        const errorResponse: ErrorResponse = {
-            success: false,
-            errorCode: parseInt(props.errorCode),
-            errorMessage: props.errorMessage,
-            path: ''
-        };
-
-        return errorResponse;
+        return buildErrorResponse(parseInt(props.errorCode), props.errorMessage);
     } else {
         return undefined;
     }
@@ -201,7 +211,8 @@ function verifyAndLogin(): void  {
 
     rootStore.authorizeOAuth2({
         password: password.value,
-        token: props.token || ''
+        passcode: passcode.value,
+        callbackToken: props.token || ''
     }).then(authResponse => {
         loggingInByOAuth2.value = false;
         doAfterLogin(authResponse);
@@ -211,6 +222,9 @@ function verifyAndLogin(): void  {
 
         if (isUserVerifyEmailEnabled() && error.error && error.error.errorCode === KnownErrorCode.UserEmailNotVerified && error.error.context && error.error.context.email) {
             router.push(`/verify_email?email=${encodeURIComponent(error.error.context.email)}&emailSent=${error.error.context.hasValidEmailVerifyToken || false}`);
+            return;
+        } else if (error.error && error.error.errorCode === KnownErrorCode.TwoFactorAuthorizationPasscodeEmpty) {
+            show2faInput.value = true;
             return;
         }
 
@@ -224,7 +238,7 @@ if (!error.value && props.platform && props.token && !props.userName) {
     loggingInByOAuth2.value = true;
 
     rootStore.authorizeOAuth2({
-        token: props.token
+        callbackToken: props.token
     }).then(authResponse => {
         loggingInByOAuth2.value = false;
         doAfterLogin(authResponse);

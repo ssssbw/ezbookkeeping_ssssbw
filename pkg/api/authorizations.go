@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 
 	"github.com/pquerna/otp/totp"
 
@@ -427,6 +428,34 @@ func (a *AuthorizationsApi) OAuth2CallbackAuthorizeHandler(c *core.WebContext) (
 			return nil, errs.ErrUserPasswordWrong
 		}
 
+		if a.CurrentConfig().EnableTwoFactor {
+			twoFactorSetting, err := a.twoFactorAuthorizations.GetUserTwoFactorSettingByUid(c, uid)
+
+			if err != nil && !errors.Is(err, errs.ErrTwoFactorIsNotEnabled) {
+				log.Errorf(c, "[authorizations.OAuth2CallbackAuthorizeHandler] failed to check two-factor setting for user \"uid:%d\", because %s", user.Uid, err.Error())
+				return nil, errs.Or(err, errs.ErrSystemError)
+			}
+
+			if twoFactorSetting != nil {
+				if credential.Passcode == "" {
+					return nil, errs.ErrPasscodeEmpty
+				}
+
+				if !totp.Validate(credential.Passcode, twoFactorSetting.Secret) {
+					log.Warnf(c, "[authorizations.OAuth2CallbackAuthorizeHandler] passcode is invalid for user \"uid:%d\"", uid)
+
+					err = a.CheckAndIncreaseFailureCount(c, uid)
+
+					if err != nil {
+						log.Warnf(c, "[authorizations.OAuth2CallbackAuthorizeHandler] cannot auth for user \"uid:%d\", because %s", uid, err.Error())
+						return nil, errs.Or(err, errs.ErrFailureCountLimitReached)
+					}
+
+					return nil, errs.ErrPasscodeInvalid
+				}
+			}
+		}
+
 		userExternalAuth := &models.UserExternalAuth{
 			Uid:              user.Uid,
 			ExternalAuthType: tokenContext.ExternalAuthType,
@@ -459,11 +488,33 @@ func (a *AuthorizationsApi) OAuth2CallbackAuthorizeHandler(c *core.WebContext) (
 		log.Warnf(c, "[authorizations.OAuth2CallbackAuthorizeHandler] failed to revoke temporary token \"utid:%s\" for user \"uid:%d\", because %s", oldTokenClaims.UserTokenId, user.Uid, err.Error())
 	}
 
-	token, claims, err := a.tokens.CreateToken(c, user)
+	var token string
+	var claims *core.UserTokenClaims
 
-	if err != nil {
-		log.Errorf(c, "[authorizations.OAuth2CallbackAuthorizeHandler] failed to create token for user \"uid:%d\", because %s", user.Uid, err.Error())
-		return nil, errs.ErrTokenGenerating
+	if credential.Token != "" {
+		_, claims, _, err = a.tokens.ParseToken(c, credential.Token)
+
+		if err != nil {
+			log.Errorf(c, "[authorizations.OAuth2CallbackAuthorizeHandler] failed to parse token, because %s", err.Error())
+			return nil, errs.ErrInvalidToken
+		}
+
+		if claims.Uid != user.Uid {
+			log.Warnf(c, "[authorizations.OAuth2CallbackAuthorizeHandler] oauth 2.0 user \"uid:%d\" does not match current user \"uid:%d\"", user.Uid, claims.Uid)
+			token = ""
+			claims = nil
+		} else {
+			token = credential.Token
+		}
+	}
+
+	if token == "" {
+		token, claims, err = a.tokens.CreateToken(c, user)
+
+		if err != nil {
+			log.Errorf(c, "[authorizations.OAuth2CallbackAuthorizeHandler] failed to create token for user \"uid:%d\", because %s", user.Uid, err.Error())
+			return nil, errs.ErrTokenGenerating
+		}
 	}
 
 	c.SetTextualToken(token)

@@ -14,6 +14,7 @@
                 type="text"
                 autocomplete="username"
                 clear-button
+                :disabled="loggingInByPassword || loggingInByOAuth2"
                 :label="tt('Username')"
                 :placeholder="tt('Your username or email')"
                 v-model:value="username"
@@ -23,6 +24,7 @@
                 type="password"
                 autocomplete="current-password"
                 clear-button
+                :disabled="loggingInByPassword || loggingInByOAuth2"
                 :label="tt('Password')"
                 :placeholder="tt('Your password')"
                 v-model:value="password"
@@ -35,12 +37,12 @@
             <f7-list-item>
                 <template #title>
                     <small>
-                        <f7-link external :href="getDesktopVersionPath()">{{ tt('Switch to Desktop Version') }}</f7-link>
+                        <f7-link :class="{ 'disabled': loggingInByPassword || loggingInByOAuth2 }" @click="switchToDesktopVersion">{{ tt('Switch to Desktop Version') }}</f7-link>
                     </small>
                 </template>
                 <template #after>
                     <small>
-                        <f7-link :class="{'disabled': !isUserForgetPasswordEnabled()}" @click="forgetPasswordEmail = ''; showForgetPasswordSheet = true">{{ tt('Forget Password?') }}</f7-link>
+                        <f7-link :class="{ 'disabled': !isUserForgetPasswordEnabled() || loggingInByPassword || loggingInByOAuth2 }" @click="forgetPasswordEmail = ''; showForgetPasswordSheet = true">{{ tt('Forget Password?') }}</f7-link>
                     </small>
                 </template>
             </f7-list-item>
@@ -55,31 +57,33 @@
                 <hr class="margin-inline-start-half" />
             </f7-list-item>
             <f7-list-button external :class="{ 'disabled': loggingInByPassword || loggingInByOAuth2 }" :href="oauth2LoginUrl" :text="oauth2LoginDisplayName"
-                            @click="loggingInByOAuth2 = true" v-if="isOAuth2Enabled()"></f7-list-button>
+                            @click="loginByOAuth2" v-if="isOAuth2Enabled()"></f7-list-button>
             <f7-block-footer v-if="isInternalAuthEnabled()">
                 <span>{{ tt('Don\'t have an account?') }}</span>&nbsp;
-                <f7-link :class="{'disabled': !isUserRegistrationEnabled()}" href="/signup" :text="tt('Create an account')"></f7-link>
+                <f7-link :class="{ 'disabled': !isUserRegistrationEnabled() || loggingInByPassword || loggingInByOAuth2 }" href="/signup" :text="tt('Create an account')"></f7-link>
             </f7-block-footer>
             <f7-block-footer class="padding-bottom">
             </f7-block-footer>
         </f7-list>
 
-        <language-select-button />
-
         <f7-list class="login-page-bottom">
             <f7-block-footer>
-                <div class="login-page-powered-by">
+                <language-select-button :disabled="loggingInByPassword || loggingInByOAuth2" />
+
+                <div class="login-page-powered-by margin-top-half">
                     <span>Powered by</span>
-                    <f7-link external href="https://github.com/mayswind/ezbookkeeping" target="_blank">ezBookkeeping</f7-link>
+                    <f7-link @click="openExternalUrl('https://github.com/mayswind/ezbookkeeping')" target="_blank">ezBookkeeping</f7-link>
                     <span>{{ version }}</span>
                 </div>
             </f7-block-footer>
         </f7-list>
 
         <f7-toolbar class="login-page-fixed-bottom" tabbar bottom :outline="false">
-            <div class="login-page-powered-by">
+            <language-select-button :disabled="loggingInByPassword || loggingInByOAuth2" />
+
+            <div class="login-page-powered-by margin-top-half">
                 <span>Powered by</span>
-                <f7-link external href="https://github.com/mayswind/ezbookkeeping" target="_blank">ezBookkeeping</f7-link>
+                <f7-link @click="openExternalUrl('https://github.com/mayswind/ezbookkeeping')" target="_blank">ezBookkeeping</f7-link>
                 <span>{{ version }}</span>
             </div>
         </f7-toolbar>
@@ -131,7 +135,7 @@
             style="height:auto"
             :opened="showForgetPasswordSheet" @sheet:closed="showForgetPasswordSheet = false"
         >
-            <div class="swipe-handler" style="z-index: 10"></div>
+            <div class="swipe-handler"></div>
             <f7-page-content>
                 <div class="display-flex padding justify-content-space-between align-items-center">
                     <div class="ebk-sheet-title"><b>{{ tt('Forget Password?') }}</b></div>
@@ -201,7 +205,7 @@ const props = defineProps<{
 }>();
 
 const { tt } = useI18n();
-const { showAlert, showToast } = useI18nUIComponents();
+const { showAlert, showConfirm, showToast, openExternalUrl } = useI18nUIComponents();
 
 const rootStore = useRootStore();
 
@@ -242,6 +246,12 @@ const twoFAVerifyTypeSwitchName = computed<string>(() => {
         return 'Use Backup Code';
     }
 });
+
+function switchToDesktopVersion(): void {
+    showConfirm('Are you sure you want to switch to desktop version?', () => {
+        window.location.replace(getDesktopVersionPath());
+    });
+}
 
 function login(): void {
     const router = props.f7router;
@@ -306,6 +316,11 @@ function loginByPressEnter(): void {
     }
 
     return login();
+}
+
+function loginByOAuth2(): void {
+    loggingInByOAuth2.value = true;
+    showLoading();
 }
 
 function verify(): void {

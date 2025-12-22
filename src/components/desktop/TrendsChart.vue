@@ -1,5 +1,5 @@
 <template>
-    <v-chart autoresize class="monthly-trends-chart-container" :class="{ 'transition-in': skeleton }" :option="chartOptions"
+    <v-chart autoresize class="trends-chart-container" :class="{ 'transition-in': skeleton }" :option="chartOptions"
              @click="clickItem" @legendselectchanged="onLegendSelectChanged" />
 </template>
 
@@ -10,20 +10,33 @@ import type { ECElementEvent } from 'echarts/core';
 import type { CallbackDataParams } from 'echarts/types/dist/shared';
 
 import { useI18n } from '@/locales/helpers.ts';
-import { type CommonMonthlyTrendsChartProps, type MonthlyTrendsBarChartClickEvent, useMonthlyTrendsChartBase } from '@/components/base/MonthlyTrendsChartBase.ts'
+import {
+    type TrendsChartDateType,
+    type CommonTrendsChartProps,
+    type TrendsBarChartClickEvent,
+    useTrendsChartBase
+} from '@/components/base/TrendsChartBase.ts'
 
 import { useUserStore } from '@/stores/user.ts';
 
 import { itemAndIndex } from '@/core/base.ts';
 import { TextDirection } from '@/core/text.ts';
-import { type Year1BasedMonth, DateRangeScene } from '@/core/datetime.ts';
+import {
+    type Year1BasedMonth,
+    type YearMonthDay,
+    DateRangeScene
+} from '@/core/datetime.ts';
 import type { ColorStyleValue } from '@/core/color.ts';
 import { ThemeType } from '@/core/theme.ts';
-import { TrendChartType, ChartDateAggregationType } from '@/core/statistics.ts';
+import {
+    ChartDataAggregationType,
+    TrendChartType,
+    ChartDateAggregationType
+} from '@/core/statistics.ts';
 
 import { DEFAULT_CHART_COLORS } from '@/consts/color.ts';
 
-import type { YearMonthDataItem, SortableTransactionStatisticDataItem } from '@/models/transaction.ts';
+import type { SortableTransactionStatisticDataItem } from '@/models/transaction.ts';
 
 import {
     isArray,
@@ -42,14 +55,14 @@ import {
     sortStatisticsItems
 } from '@/lib/statistics.ts';
 
-interface DesktopMonthlyTrendsChartProps<T extends Year1BasedMonth> extends CommonMonthlyTrendsChartProps<T> {
+interface DesktopTrendsChartProps<T extends TrendsChartDateType> extends CommonTrendsChartProps<T> {
     skeleton?: boolean;
     type?: number;
     showValue?: boolean;
     showTotalAmountInTooltip?: boolean;
 }
 
-interface MonthlyTrendsChartDataItem {
+interface TrendsChartDataItem {
     id: string;
     name: string;
     itemStyle: {
@@ -58,22 +71,23 @@ interface MonthlyTrendsChartDataItem {
     selected: boolean;
     type: string;
     areaStyle?: object;
-    stack: string;
+    stack?: string;
+    symbolSize?: (data: number) => number;
     animation: boolean;
     data: number[];
 }
 
-interface MonthlyTrendsChartTooltipItem extends SortableTransactionStatisticDataItem {
+interface TrendsChartTooltipItem extends SortableTransactionStatisticDataItem {
     readonly name: string;
     readonly color: unknown;
     readonly displayOrders: number[];
     readonly totalAmount: number;
 }
 
-const props = defineProps<DesktopMonthlyTrendsChartProps<YearMonthDataItem>>();
+const props = defineProps<DesktopTrendsChartProps<TrendsChartDateType>>();
 
 const emit = defineEmits<{
-    (e: 'click', value: MonthlyTrendsBarChartClickEvent): void;
+    (e: 'click', value: TrendsBarChartClickEvent): void;
 }>();
 
 const theme = useTheme();
@@ -81,6 +95,7 @@ const theme = useTheme();
 const {
     tt,
     getCurrentLanguageTextDirection,
+    formatUnixTimeToShortDate,
     formatUnixTimeToGregorianLikeShortYear,
     formatUnixTimeToGregorianLikeShortYearMonth,
     formatYearQuarterToGregorianLikeYearQuarter,
@@ -89,7 +104,7 @@ const {
     formatAmountToLocalizedNumeralsWithCurrency
 } = useI18n();
 
-const { allDateRanges, getItemName } = useMonthlyTrendsChartBase(props);
+const { allDateRanges, getItemName } = useTrendsChartBase(props);
 
 const userStore = useUserStore();
 
@@ -142,16 +157,19 @@ const allDisplayDateRanges = computed<string[]>(() => {
             allDisplayDateRanges.push(formatUnixTimeToGregorianLikeFiscalYear(dateRange.minUnixTime));
         } else if (props.dateAggregationType === ChartDateAggregationType.Quarter.type && 'quarter' in dateRange) {
             allDisplayDateRanges.push(formatYearQuarterToGregorianLikeYearQuarter(dateRange.year, dateRange.quarter));
-        } else { // if (props.dateAggregationType === ChartDateAggregationType.Month.type) {
+        } else if (props.dateAggregationType === ChartDateAggregationType.Month.type) {
             allDisplayDateRanges.push(formatUnixTimeToGregorianLikeShortYearMonth(dateRange.minUnixTime));
+        } else if (props.dateAggregationType === ChartDateAggregationType.Day.type && props.chartMode === 'daily') {
+            allDisplayDateRanges.push(formatUnixTimeToShortDate(dateRange.minUnixTime));
         }
     }
 
     return allDisplayDateRanges;
 });
 
-const allSeries = computed<MonthlyTrendsChartDataItem[]>(() => {
-    const allSeries: MonthlyTrendsChartDataItem[] = [];
+const allSeries = computed<TrendsChartDataItem[]>(() => {
+    const allSeries: TrendsChartDataItem[] = [];
+    let maxAmount: number = 0;
 
     for (const [item, index] of itemAndIndex(props.items)) {
         if (props.hiddenField && item[props.hiddenField]) {
@@ -159,23 +177,41 @@ const allSeries = computed<MonthlyTrendsChartDataItem[]>(() => {
         }
 
         const allAmounts: number[] = [];
-        const dateRangeAmountMap: Record<string, YearMonthDataItem[]> = {};
+        const dateRangeAmountMap: Record<string, (Year1BasedMonth | YearMonthDay)[]> = {};
 
         for (const dataItem of item.items) {
             let dateRangeKey = '';
 
-            if (props.dateAggregationType === ChartDateAggregationType.Year.type) {
-                dateRangeKey = dataItem.year.toString();
-            } else if (props.dateAggregationType === ChartDateAggregationType.FiscalYear.type) {
-                const fiscalYear = getFiscalYearFromUnixTime(
-                    getYearMonthFirstUnixTime({ year: dataItem.year, month1base: dataItem.month1base }),
-                    props.fiscalYearStart
-                );
-                dateRangeKey = fiscalYear.toString();
-            } else if (props.dateAggregationType === ChartDateAggregationType.Quarter.type) {
-                dateRangeKey = `${dataItem.year}-${Math.floor((dataItem.month1base - 1) / 3) + 1}`;
-            } else { // if (props.dateAggregationType === ChartDateAggregationType.Month.type) {
-                dateRangeKey = `${dataItem.year}-${dataItem.month1base}`;
+            if (props.chartMode === 'daily' && 'month' in dataItem) {
+                if (props.dateAggregationType === ChartDateAggregationType.Year.type) {
+                    dateRangeKey = dataItem.year.toString();
+                } else if (props.dateAggregationType === ChartDateAggregationType.FiscalYear.type) {
+                    const fiscalYear = getFiscalYearFromUnixTime(
+                        getYearMonthFirstUnixTime({ year: dataItem.year, month1base: dataItem.month }),
+                        props.fiscalYearStart
+                    );
+                    dateRangeKey = fiscalYear.toString();
+                } else if (props.dateAggregationType === ChartDateAggregationType.Quarter.type) {
+                    dateRangeKey = `${dataItem.year}-${Math.floor((dataItem.month - 1) / 3) + 1}`;
+                } else if (props.dateAggregationType === ChartDateAggregationType.Month.type) {
+                    dateRangeKey = `${dataItem.year}-${dataItem.month}`;
+                } else { // if (props.dateAggregationType === ChartDateAggregationType.Day.type) {
+                    dateRangeKey = `${dataItem.year}-${dataItem.month}-${dataItem.day}`;
+                }
+            } else if (props.chartMode === 'monthly' && 'month1base' in dataItem) {
+                if (props.dateAggregationType === ChartDateAggregationType.Year.type) {
+                    dateRangeKey = dataItem.year.toString();
+                } else if (props.dateAggregationType === ChartDateAggregationType.FiscalYear.type) {
+                    const fiscalYear = getFiscalYearFromUnixTime(
+                        getYearMonthFirstUnixTime({ year: dataItem.year, month1base: dataItem.month1base }),
+                        props.fiscalYearStart
+                    );
+                    dateRangeKey = fiscalYear.toString();
+                } else if (props.dateAggregationType === ChartDateAggregationType.Quarter.type) {
+                    dateRangeKey = `${dataItem.year}-${Math.floor((dataItem.month1base - 1) / 3) + 1}`;
+                } else { // if (props.dateAggregationType === ChartDateAggregationType.Month.type) {
+                    dateRangeKey = `${dataItem.year}-${dataItem.month1base}`;
+                }
             }
 
             const dataItems = dateRangeAmountMap[dateRangeKey] || [];
@@ -195,6 +231,8 @@ const allSeries = computed<MonthlyTrendsChartDataItem[]>(() => {
                 dateRangeKey = `${dateRange.year}-${dateRange.quarter}`;
             } else if (props.dateAggregationType === ChartDateAggregationType.Month.type && 'month0base' in dateRange) {
                 dateRangeKey = `${dateRange.year}-${dateRange.month0base + 1}`;
+            } else if (props.dateAggregationType === ChartDateAggregationType.Day.type && 'day' in dateRange && props.chartMode === 'daily') {
+                dateRangeKey = `${dateRange.year}-${dateRange.month}-${dateRange.day}`;
             }
 
             let amount = 0;
@@ -202,16 +240,26 @@ const allSeries = computed<MonthlyTrendsChartDataItem[]>(() => {
 
             if (isArray(dataItems)) {
                 for (const dataItem of dataItems) {
-                    if (isNumber(dataItem[props.valueField])) {
-                        amount += dataItem[props.valueField] as number;
+                    const value = (dataItem as unknown as Record<string, unknown>)[props.valueField];
+
+                    if (isNumber(value)) {
+                        if (props.dataAggregationType === ChartDataAggregationType.Sum) {
+                            amount += value;
+                        } else if (props.dataAggregationType === ChartDataAggregationType.Last) {
+                            amount = value;
+                        }
                     }
                 }
+            }
+
+            if (amount > maxAmount) {
+                maxAmount = amount;
             }
 
             allAmounts.push(amount);
         }
 
-        const finalItem: MonthlyTrendsChartDataItem = {
+        const finalItem: TrendsChartDataItem = {
             id: (props.idField && item[props.idField]) ? item[props.idField] as string : getItemName(item[props.nameField] as string),
             name: (props.idField && item[props.idField]) ? item[props.idField] as string : getItemName(item[props.nameField] as string),
             itemStyle: {
@@ -219,15 +267,25 @@ const allSeries = computed<MonthlyTrendsChartDataItem[]>(() => {
             },
             selected: true,
             type: 'line',
-            stack: 'a',
             animation: !props.skeleton,
             data: allAmounts
         };
+
+        if (props.stacked) {
+            finalItem.stack = 'a';
+        } else if (props.idField && item[props.idField]) {
+            finalItem.stack = item[props.idField] as string;
+        }
 
         if (props.type === TrendChartType.Area.type) {
             finalItem.areaStyle = {};
         } else if (props.type === TrendChartType.Column.type) {
             finalItem.type = 'bar';
+        } else if (props.type === TrendChartType.Bubble.type) {
+            finalItem.type = 'scatter';
+            finalItem.symbolSize = (data: number): number => {
+                return Math.sqrt(data) / Math.sqrt(maxAmount) * 80 + 5;
+            }
         }
 
         allSeries.push(finalItem);
@@ -300,7 +358,8 @@ const chartOptions = computed<object>(() => {
             formatter: (params: CallbackDataParams[]) => {
                 let tooltip = '';
                 let totalAmount = 0;
-                const displayItems: MonthlyTrendsChartTooltipItem[] = [];
+                let actualDisplayItemCount = 0;
+                const displayItems: TrendsChartTooltipItem[] = [];
 
                 for (const param of params) {
                     const id = param.seriesId as string;
@@ -327,12 +386,13 @@ const chartOptions = computed<object>(() => {
                         tooltip += '<div><span class="chart-pointer" style="background-color: ' + item.color + '"></span>';
                         tooltip += `<span>${item.name}</span><span class="ms-5" style="float: inline-end">${value}</span><br/>`;
                         tooltip += '</div>';
+                        actualDisplayItemCount++;
                     }
                 }
 
                 if (props.showTotalAmountInTooltip) {
                     const displayTotalAmount = formatAmountToLocalizedNumeralsWithCurrency(totalAmount, props.defaultCurrency);
-                    tooltip = '<div style="border-bottom: ' + (isDarkMode.value ? '#eee' : '#333') + ' dashed 1px">'
+                    tooltip = (actualDisplayItemCount > 0 ? '<div style="border-bottom: ' + (isDarkMode.value ? '#eee' : '#333') + ' dashed 1px">' : '<div></div>')
                         + '<span class="chart-pointer" style="background-color: ' + (isDarkMode.value ? '#eee' : '#333') + '"></span>'
                         + `<span>${tt('Total Amount')}</span><span class="ms-5" style="float: inline-end">${displayTotalAmount}</span><br/>`
                         + '</div>' + tooltip;
@@ -347,6 +407,8 @@ const chartOptions = computed<object>(() => {
         },
         legend: {
             orient: 'horizontal',
+            type: 'scroll',
+            top: 0,
             data: allSeries.value.map(item => item.name),
             selected: selectedLegends.value,
             textStyle: {
@@ -358,19 +420,24 @@ const chartOptions = computed<object>(() => {
         },
         grid: {
             left: yAxisWidth.value,
-            right: 20
+            right: 20,
+            bottom: 40
         },
         xAxis: [
             {
                 type: 'category',
                 data: allDisplayDateRanges.value,
-                inverse: textDirection.value === TextDirection.RTL
+                inverse: textDirection.value === TextDirection.RTL,
+                axisLabel: {
+                    color: isDarkMode.value ? '#888' : '#666'
+                }
             }
         ],
         yAxis: [
             {
                 type: 'value',
                 axisLabel: {
+                    color: isDarkMode.value ? '#888' : '#666',
                     formatter: (value: string) => {
                         return formatAmountToLocalizedNumeralsWithCurrency(parseInt(value), props.defaultCurrency);
                     }
@@ -410,19 +477,33 @@ function clickItem(e: ECElementEvent): void {
     let minUnixTime = dateRange.minUnixTime;
     let maxUnixTime = dateRange.maxUnixTime;
 
-    if (props.startYearMonth) {
-        const startMinUnixTime = getYearMonthFirstUnixTime(props.startYearMonth);
-
-        if (startMinUnixTime > minUnixTime) {
-            minUnixTime = startMinUnixTime;
+    if (props.chartMode === 'daily') {
+        if (props.startTime) {
+            if (props.startTime > minUnixTime) {
+                minUnixTime = props.startTime;
+            }
         }
-    }
 
-    if (props.endYearMonth) {
-        const endMaxUnixTime = getYearMonthLastUnixTime(props.endYearMonth);
+        if (props.endTime) {
+            if (props.endTime < maxUnixTime) {
+                maxUnixTime = props.endTime;
+            }
+        }
+    } else if (props.chartMode === 'monthly') {
+        if (props.startYearMonth) {
+            const startMinUnixTime = getYearMonthFirstUnixTime(props.startYearMonth);
 
-        if (endMaxUnixTime < maxUnixTime) {
-            maxUnixTime = endMaxUnixTime;
+            if (startMinUnixTime > minUnixTime) {
+                minUnixTime = startMinUnixTime;
+            }
+        }
+
+        if (props.endYearMonth) {
+            const endMaxUnixTime = getYearMonthLastUnixTime(props.endYearMonth);
+
+            if (endMaxUnixTime < maxUnixTime) {
+                maxUnixTime = endMaxUnixTime;
+            }
         }
     }
 
@@ -473,15 +554,15 @@ defineExpose({
 </script>
 
 <style scoped>
-.monthly-trends-chart-container {
+.trends-chart-container {
     width: 100%;
-    height: 560px;
+    height: 720px;
     margin-top: 10px;
 }
 
 @media (min-width: 600px) {
-    .monthly-trends-chart-container {
-        height: 600px;
+    .trends-chart-container {
+        height: 790px;
     }
 }
 </style>

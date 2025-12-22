@@ -2,15 +2,14 @@
     <vue-date-picker inline auto-apply
                      month-picker
                      :class="monthPickerClass"
+                     :input-attrs="{ clearable: !!clearable }"
                      :dark="isDarkMode"
-                     :clearable="!!clearable"
                      :year-range="yearRange"
                      :year-first="isYearFirst"
                      :range="isDateRange ? { partialRange: false } : undefined"
                      v-model="dateTime">
-        <!-- @vue-expect-error It seems to be a bug in vue-date-picker (https://github.com/Vuepic/vue-datepicker/issues/1154), when using the month picker, it does not provide the value and text props in the slot, but provides the year. -->
-        <template #year="{ year }">
-            {{ getDisplayYear(year) }}
+        <template #year="{ value }">
+            {{ getDisplayYear(value) }}
         </template>
         <template #year-overlay-value="{ value }">
             {{ getDisplayYear(value) }}
@@ -26,7 +25,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import VueDatePicker from '@vuepic/vue-datepicker';
+import { VueDatePicker } from '@vuepic/vue-datepicker';
 
 import { useI18n } from '@/locales/helpers.ts';
 

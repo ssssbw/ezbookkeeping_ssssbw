@@ -8,6 +8,9 @@ import type {
 import type {
     VersionInfo
 } from '@/core/version.ts';
+import type {
+    ImportFileTypeSupportedAdditionalOptions
+} from '@/core/file.ts';
 import {
     TransactionType
 } from '@/core/transaction.ts';
@@ -66,6 +69,7 @@ import type {
     TransactionImportRequest,
     TransactionListByMaxTimeRequest,
     TransactionListInMonthByPageRequest,
+    TransactionAllListRequest,
     TransactionInfoResponse,
     TransactionInfoPageWrapperResponse,
     TransactionInfoPageWrapperResponse2,
@@ -75,6 +79,8 @@ import type {
     TransactionStatisticResponse,
     TransactionStatisticTrendsRequest,
     TransactionStatisticTrendsResponseItem,
+    TransactionStatisticAssetTrendsRequest,
+    TransactionStatisticAssetTrendsResponseItem,
     TransactionAmountsRequestParams,
     TransactionAmountsResponse
 } from '@/models/transaction.ts';
@@ -112,8 +118,10 @@ import type {
     TransactionTemplateInfoResponse
 } from '@/models/transaction_template.ts';
 import type {
+    TokenGenerateAPIRequest,
     TokenGenerateMCPRequest,
     TokenRevokeRequest,
+    TokenGenerateAPIResponse,
     TokenGenerateMCPResponse,
     TokenRefreshResponse,
     TokenInfoResponse
@@ -136,6 +144,10 @@ import type {
     UserProfileUpdateResponse
 } from '@/models/user.ts';
 import type {
+    UserExternalAuthUnlinkRequest,
+    UserExternalAuthInfoResponse
+} from '@/models/user_external_auth.ts';
+import type {
     OAuth2CallbackLoginRequest
 } from '@/models/oauth2.ts';
 import type {
@@ -152,15 +164,22 @@ import {
 
 import {
     isDefined,
-    isBoolean
+    isBoolean,
+    objectFieldWithValueToArrayItem
 } from './common.ts';
+import {
+    getTimeZone
+} from './settings.ts';
 import {
     getGoogleMapAPIKey,
     getBaiduMapAK,
     getAmapApplicationKey,
     getExchangeRatesRequestTimeout
 } from './server_settings.ts';
-import { getTimezoneOffsetMinutes } from './datetime.ts';
+import {
+    getTimezoneOffsetMinutes,
+    guessTimezoneName
+} from './datetime.ts';
 import { generateRandomUUID } from './misc.ts';
 import { getBasePath } from './web.ts';
 import logger from './logger.ts';
@@ -190,6 +209,14 @@ axios.interceptors.request.use((config: ApiRequestConfig) => {
     }
 
     config.headers['X-Timezone-Offset'] = getTimezoneOffsetMinutes();
+
+    let timezoneName = getTimeZone();
+
+    if (!timezoneName || timezoneName.trim().length < 1) {
+        timezoneName = guessTimezoneName();
+    }
+
+    config.headers['X-Timezone-Name'] = timezoneName;
 
     if (needBlockRequest && !config.ignoreBlocked) {
         return new Promise(resolve => {
@@ -254,26 +281,35 @@ export default {
         return axios.post<ApiResponse<AuthResponse>>('2fa/authorize.json', {
             passcode: passcode
         }, {
+            noAuth: true,
             headers: {
                 Authorization: `Bearer ${token}`
             }
-        });
+        } as ApiRequestConfig);
     },
     authorize2FAByBackupCode: ({ recoveryCode, token }: { recoveryCode: string, token: string }): ApiResponsePromise<AuthResponse> => {
         return axios.post<ApiResponse<AuthResponse>>('2fa/recovery.json', {
             recoveryCode: recoveryCode
         }, {
+            noAuth: true,
             headers: {
                 Authorization: `Bearer ${token}`
             }
-        });
+        } as ApiRequestConfig);
     },
-    authorizeOAuth2: ({ req, token }: { req: OAuth2CallbackLoginRequest, token: string }): ApiResponsePromise<AuthResponse> => {
+    authorizeOAuth2: ({ password, passcode, callbackToken }: { password?: string, passcode?: string, callbackToken: string }): ApiResponsePromise<AuthResponse> => {
+        const req: OAuth2CallbackLoginRequest = {
+            password,
+            passcode,
+            token: getCurrentToken() || undefined
+        };
+
         return axios.post<ApiResponse<AuthResponse>>('oauth2/authorize.json', req, {
+            noAuth: true,
             headers: {
-                Authorization: `Bearer ${token}`
+                Authorization: `Bearer ${callbackToken}`
             }
-        });
+        } as ApiRequestConfig);
     },
     register: (req: UserRegisterRequest): ApiResponsePromise<RegisterResponse> => {
         return axios.post<ApiResponse<RegisterResponse>>('register.json', req);
@@ -323,8 +359,17 @@ export default {
             });
         });
     },
+    getExternalAuths: (): ApiResponsePromise<UserExternalAuthInfoResponse[]> => {
+        return axios.get<ApiResponse<UserExternalAuthInfoResponse[]>>('v1/users/external_auth/list.json');
+    },
+    unlinkExternalAuth: (req: UserExternalAuthUnlinkRequest): ApiResponsePromise<boolean> => {
+        return axios.post<ApiResponse<boolean>>('v1/users/external_auth/unlink.json', req);
+    },
     getTokens: (): ApiResponsePromise<TokenInfoResponse[]> => {
         return axios.get<ApiResponse<TokenInfoResponse[]>>('v1/tokens/list.json');
+    },
+    generateAPIToken: (req: TokenGenerateAPIRequest): ApiResponsePromise<TokenGenerateAPIResponse> => {
+        return axios.post<ApiResponse<TokenGenerateAPIResponse>>('v1/tokens/generate/api.json', req);
     },
     generateMCPToken: (req: TokenGenerateMCPRequest): ApiResponsePromise<TokenGenerateMCPResponse> => {
         return axios.post<ApiResponse<TokenGenerateMCPResponse>>('v1/tokens/generate/mcp.json', req);
@@ -391,11 +436,12 @@ export default {
         let params = '';
 
         if (req) {
+            const tagFilter = encodeURIComponent(req.tagFilter);
             const amountFilter = encodeURIComponent(req.amountFilter);
             const keyword = encodeURIComponent(req.keyword);
-            params = `max_time=${req.maxTime}&min_time=${req.minTime}&type=${req.type}&category_ids=${req.categoryIds}&account_ids=${req.accountIds}&tag_ids=${req.tagIds}&tag_filter_type=${req.tagFilterType}&amount_filter=${amountFilter}&keyword=${keyword}`;
+            params = `max_time=${req.maxTime}&min_time=${req.minTime}&type=${req.type}&category_ids=${req.categoryIds}&account_ids=${req.accountIds}&tag_filter=${tagFilter}&amount_filter=${amountFilter}&keyword=${keyword}`;
         } else {
-            params = 'max_time=0&min_time=0&type=0&category_ids=&account_ids=&tag_ids=&tag_filter_type=0&amount_filter=&keyword=';
+            params = 'max_time=0&min_time=0&type=0&category_ids=&account_ids=&tag_filter=&amount_filter=&keyword=';
         }
 
         if (fileType === 'csv') {
@@ -450,20 +496,25 @@ export default {
         return axios.post<ApiResponse<boolean>>('v1/accounts/sub_account/delete.json', req);
     },
     getTransactions: (req: TransactionListByMaxTimeRequest): ApiResponsePromise<TransactionInfoPageWrapperResponse> => {
+        const tagFilter = encodeURIComponent(req.tagFilter);
         const amountFilter = encodeURIComponent(req.amountFilter);
         const keyword = encodeURIComponent(req.keyword);
-        return axios.get<ApiResponse<TransactionInfoPageWrapperResponse>>(`v1/transactions/list.json?max_time=${req.maxTime}&min_time=${req.minTime}&type=${req.type}&category_ids=${req.categoryIds}&account_ids=${req.accountIds}&tag_ids=${req.tagIds}&tag_filter_type=${req.tagFilterType}&amount_filter=${amountFilter}&keyword=${keyword}&count=${req.count}&page=${req.page}&with_count=${req.withCount}&trim_account=true&trim_category=true&trim_tag=true`);
+        return axios.get<ApiResponse<TransactionInfoPageWrapperResponse>>(`v1/transactions/list.json?max_time=${req.maxTime}&min_time=${req.minTime}&type=${req.type}&category_ids=${req.categoryIds}&account_ids=${req.accountIds}&tag_filter=${tagFilter}&amount_filter=${amountFilter}&keyword=${keyword}&count=${req.count}&page=${req.page}&with_count=${req.withCount}&trim_account=true&trim_category=true&trim_tag=true`);
     },
     getAllTransactionsByMonth: (req: TransactionListInMonthByPageRequest): ApiResponsePromise<TransactionInfoPageWrapperResponse2> => {
+        const tagFilter = encodeURIComponent(req.tagFilter);
         const amountFilter = encodeURIComponent(req.amountFilter);
         const keyword = encodeURIComponent(req.keyword);
-        return axios.get<ApiResponse<TransactionInfoPageWrapperResponse2>>(`v1/transactions/list/by_month.json?year=${req.year}&month=${req.month}&type=${req.type}&category_ids=${req.categoryIds}&account_ids=${req.accountIds}&tag_ids=${req.tagIds}&tag_filter_type=${req.tagFilterType}&amount_filter=${amountFilter}&keyword=${keyword}&trim_account=true&trim_category=true&trim_tag=true`);
+        return axios.get<ApiResponse<TransactionInfoPageWrapperResponse2>>(`v1/transactions/list/by_month.json?year=${req.year}&month=${req.month}&type=${req.type}&category_ids=${req.categoryIds}&account_ids=${req.accountIds}&tag_filter=${tagFilter}&amount_filter=${amountFilter}&keyword=${keyword}&trim_account=true&trim_category=true&trim_tag=true`);
+    },
+    getAllTransactions: (req: TransactionAllListRequest): ApiResponsePromise<TransactionInfoResponse[]> => {
+        return axios.get<ApiResponse<TransactionInfoResponse[]>>(`v1/transactions/list/all.json?trim_account=true&trim_category=true&trim_tag=true&start_time=${req.startTime}&end_time=${req.endTime}`);
     },
     getReconciliationStatements: (req: TransactionReconciliationStatementRequest): ApiResponsePromise<TransactionReconciliationStatementResponse> => {
         return axios.get<ApiResponse<TransactionReconciliationStatementResponse>>(`v1/transactions/reconciliation_statements.json?account_id=${req.accountId}&start_time=${req.startTime}&end_time=${req.endTime}`);
     },
     getTransactionStatistics: (req: TransactionStatisticRequest): ApiResponsePromise<TransactionStatisticResponse> => {
-        const queryParams = [];
+        const queryParams: string[] = [];
 
         if (req.startTime) {
             queryParams.push(`start_time=${req.startTime}`);
@@ -473,12 +524,8 @@ export default {
             queryParams.push(`end_time=${req.endTime}`);
         }
 
-        if (req.tagIds) {
-            queryParams.push(`tag_ids=${req.tagIds}`);
-        }
-
-        if (req.tagFilterType) {
-            queryParams.push(`tag_filter_type=${req.tagFilterType}`);
+        if (req.tagFilter) {
+            queryParams.push(`tag_filter=${encodeURIComponent(req.tagFilter)}`);
         }
 
         if (req.keyword) {
@@ -488,7 +535,7 @@ export default {
         return axios.get<ApiResponse<TransactionStatisticResponse>>(`v1/transactions/statistics.json?use_transaction_timezone=${req.useTransactionTimezone}` + (queryParams.length ? '&' + queryParams.join('&') : ''));
     },
     getTransactionStatisticsTrends: (req: TransactionStatisticTrendsRequest): ApiResponsePromise<TransactionStatisticTrendsResponseItem[]> => {
-        const queryParams = [];
+        const queryParams: string[] = [];
 
         if (req.startYearMonth) {
             queryParams.push(`start_year_month=${req.startYearMonth}`);
@@ -498,12 +545,8 @@ export default {
             queryParams.push(`end_year_month=${req.endYearMonth}`);
         }
 
-        if (req.tagIds) {
-            queryParams.push(`tag_ids=${req.tagIds}`);
-        }
-
-        if (req.tagFilterType) {
-            queryParams.push(`tag_filter_type=${req.tagFilterType}`);
+        if (req.tagFilter) {
+            queryParams.push(`tag_filter=${encodeURIComponent(req.tagFilter)}`);
         }
 
         if (req.keyword) {
@@ -511,6 +554,19 @@ export default {
         }
 
         return axios.get<ApiResponse<TransactionStatisticTrendsResponseItem[]>>(`v1/transactions/statistics/trends.json?use_transaction_timezone=${req.useTransactionTimezone}` + (queryParams.length ? '&' + queryParams.join('&') : ''));
+    },
+    getTransactionStatisticsAssetTrends: (req: TransactionStatisticAssetTrendsRequest): ApiResponsePromise<TransactionStatisticAssetTrendsResponseItem[]> => {
+        const queryParams: string[] = [];
+
+        if (req.startTime) {
+            queryParams.push(`start_time=${req.startTime}`);
+        }
+
+        if (req.endTime) {
+            queryParams.push(`end_time=${req.endTime}`);
+        }
+
+        return axios.get<ApiResponse<TransactionStatisticAssetTrendsResponseItem[]>>('v1/transactions/statistics/asset_trends.json' + (queryParams.length ? '?' + queryParams.join('&') : ''));
     },
     getTransactionAmounts: (params: TransactionAmountsRequestParams, excludeAccountIds: string[], excludeCategoryIds: string[]): ApiResponsePromise<TransactionAmountsResponse> => {
         const req = TransactionAmountsRequest.of(params);
@@ -554,10 +610,15 @@ export default {
             timeout: DEFAULT_UPLOAD_API_TIMEOUT
         } as ApiRequestConfig);
     },
-    parseImportTransaction: ({ fileType, fileEncoding, importFile, columnMapping, transactionTypeMapping, hasHeaderLine, timeFormat, timezoneFormat, amountDecimalSeparator, amountDigitGroupingSymbol, geoSeparator, geoOrder, tagSeparator }: { fileType: string, fileEncoding?: string, importFile: File, columnMapping?: Record<number, number>, transactionTypeMapping?: Record<string, TransactionType>, hasHeaderLine?: boolean, timeFormat?: string, timezoneFormat?: string, amountDecimalSeparator?: string, amountDigitGroupingSymbol?: string, geoSeparator?: string, geoOrder?: string, tagSeparator?: string }): ApiResponsePromise<ImportTransactionResponsePageWrapper> => {
+    parseImportTransaction: ({ fileType, additionalOptions, fileEncoding, importFile, columnMapping, transactionTypeMapping, hasHeaderLine, timeFormat, timezoneFormat, amountDecimalSeparator, amountDigitGroupingSymbol, geoSeparator, geoOrder, tagSeparator }: { fileType: string, additionalOptions?: ImportFileTypeSupportedAdditionalOptions, fileEncoding?: string, importFile: File, columnMapping?: Record<number, number>, transactionTypeMapping?: Record<string, TransactionType>, hasHeaderLine?: boolean, timeFormat?: string, timezoneFormat?: string, amountDecimalSeparator?: string, amountDigitGroupingSymbol?: string, geoSeparator?: string, geoOrder?: string, tagSeparator?: string }): ApiResponsePromise<ImportTransactionResponsePageWrapper> => {
+        let textualAdditionalOptions: string | undefined = undefined;
         let textualColumnMapping: string | undefined = undefined;
         let textualTransactionTypeMapping: string | undefined = undefined;
         let textualHasHeaderLine: string | undefined = undefined;
+
+        if (additionalOptions) {
+            textualAdditionalOptions = objectFieldWithValueToArrayItem(additionalOptions, true).join(',');
+        }
 
         if (columnMapping) {
             textualColumnMapping = JSON.stringify(columnMapping);
@@ -573,6 +634,7 @@ export default {
 
         return axios.postForm<ApiResponse<ImportTransactionResponsePageWrapper>>('v1/transactions/parse_import.json', {
             fileType: fileType,
+            options: textualAdditionalOptions,
             fileEncoding: fileEncoding,
             file: importFile,
             columnMapping: textualColumnMapping,
@@ -708,6 +770,9 @@ export default {
     generateOAuth2LoginUrl: (platform: 'mobile' | 'desktop', clientSessionId: string): string => {
         return `${getBasePath()}/oauth2/login?platform=${platform}&client_session_id=${clientSessionId}`;
     },
+    generateOAuth2LinkUrl: (platform: 'mobile' | 'desktop', clientSessionId: string): string => {
+        return `${getBasePath()}/oauth2/login?platform=${platform}&client_session_id=${clientSessionId}&token=${getCurrentToken()}`;
+    },
     generateQrCodeUrl: (qrCodeName: string): string => {
         return `${getBasePath()}${BASE_QRCODE_PATH}/${qrCodeName}.png`;
     },
@@ -754,7 +819,7 @@ export default {
             return avatarUrl;
         }
 
-        const params = [];
+        const params: string[] = [];
         params.push('token=' + getCurrentToken());
 
         if (disableBrowserCache) {
@@ -776,7 +841,7 @@ export default {
             return pictureUrl;
         }
 
-        const params = [];
+        const params: string[] = [];
         params.push('token=' + getCurrentToken());
 
         if (disableBrowserCache) {

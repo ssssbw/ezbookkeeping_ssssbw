@@ -51,6 +51,13 @@ export const ALL_APPLICATION_CLOUD_SETTINGS: CategorizedApplicationCloudSettingI
         ]
     },
     {
+        categoryName: 'Insights & Explore Page',
+        items: [
+            { settingKey: 'insightsExploreDefaultDateRangeType', settingName: 'Default Date Range', mobile: false, desktop: true },
+            { settingKey: 'timezoneUsedForInsightsExplorePage', settingName: 'Timezone Used for Date Range', mobile: false, desktop: true },
+        ]
+    },
+    {
         categoryName: 'Account List Page',
         items: [
             { settingKey: 'totalAmountExcludeAccountIds', settingName: 'Accounts Included in Total', mobile: true, desktop: true },
@@ -87,6 +94,14 @@ export const ALL_APPLICATION_CLOUD_SETTINGS: CategorizedApplicationCloudSettingI
         items: [
             { settingKey: 'statistics.defaultTrendChartType', settingName: 'Default Chart Type', mobile: false, desktop: true },
             { settingKey: 'statistics.defaultTrendChartDataRangeType', settingName: 'Default Date Range', mobile: true, desktop: true }
+        ]
+    },
+    {
+        categoryName: 'Statistics Settings',
+        categorySubName: 'Asset Trends Settings',
+        items: [
+            { settingKey: 'statistics.defaultAssetTrendsChartType', settingName: 'Default Chart Type', mobile: false, desktop: true },
+            { settingKey: 'statistics.defaultAssetTrendsChartDataRangeType', settingName: 'Default Date Range', mobile: true, desktop: true }
         ]
     }
 ];

@@ -3,7 +3,7 @@
         <f7-navbar>
             <f7-nav-left :back-link="tt('Back')"></f7-nav-left>
             <f7-nav-title :title="tt('About')"></f7-nav-title>
-            <f7-nav-right>
+            <f7-nav-right :class="{ 'navbar-hidden-icon': clientVersionMatchServerVersion && !forceShowRefreshBrowserCacheMenu }">
                 <f7-link icon-f7="" v-if="clientVersionMatchServerVersion && !forceShowRefreshBrowserCacheMenu"/>
                 <f7-link icon-f7="ellipsis" @click="showRefreshBrowserCacheSheet = true"
                          v-else-if="!clientVersionMatchServerVersion || forceShowRefreshBrowserCacheMenu"></f7-link>
@@ -14,33 +14,33 @@
         <f7-list strong inset dividers>
             <f7-list-item :title="tt('Version')" :after="clientVersion" @click="showVersion"></f7-list-item>
             <f7-list-item :title="tt('Build Time')" :after="clientBuildTime" v-if="clientBuildTime"></f7-list-item>
-            <f7-list-item external :title="tt('Official Website')" link="https://github.com/mayswind/ezbookkeeping" target="_blank"></f7-list-item>
-            <f7-list-item external :title="tt('Report Issue')" link="https://github.com/mayswind/ezbookkeeping/issues" target="_blank"></f7-list-item>
-            <f7-list-item external :title="tt('Getting help')" link="https://ezbookkeeping.mayswind.net" target="_blank"></f7-list-item>
+            <f7-list-item :title="tt('Official Website')" link="#" @click="openExternalUrl('https://github.com/mayswind/ezbookkeeping')"></f7-list-item>
+            <f7-list-item :title="tt('Report Issue')" link="#" @click="openExternalUrl('https://github.com/mayswind/ezbookkeeping/issues')"></f7-list-item>
+            <f7-list-item :title="tt('Getting help')" link="#" @click="openExternalUrl('https://ezbookkeeping.mayswind.net')"></f7-list-item>
             <f7-list-item :title="tt('License')" link="#" popup-open=".license-popup"></f7-list-item>
         </f7-list>
 
         <f7-block-title class="margin-top" v-if="exchangeRatesData && !isUserCustomExchangeRates">{{ tt('Exchange Rates Data') }}</f7-block-title>
         <f7-list strong inset dividers v-if="exchangeRatesData && !isUserCustomExchangeRates">
-            <f7-list-item external :title="tt('Provider')" :after="exchangeRatesData.dataSource"
-                          :link="exchangeRatesData.referenceUrl" target="_blank" v-if="exchangeRatesData.referenceUrl"></f7-list-item>
+            <f7-list-item :title="tt('Provider')" :after="exchangeRatesData.dataSource" link="#"
+                          @click="openExternalUrl(exchangeRatesData.referenceUrl)" v-if="exchangeRatesData.referenceUrl"></f7-list-item>
             <f7-list-item :title="tt('Provider')" :after="exchangeRatesData.dataSource" v-if="!exchangeRatesData.referenceUrl"></f7-list-item>
         </f7-list>
 
         <f7-block-title class="margin-top" v-if="mapProviderName">{{ tt('Map') }}</f7-block-title>
         <f7-list strong inset dividers v-if="mapProviderName">
-            <f7-list-item external :title="tt('Provider')" :after="mapProviderName"
-                          :link="mapProviderWebsite" target="_blank" v-if="mapProviderWebsite"></f7-list-item>
+            <f7-list-item :title="tt('Provider')" :after="mapProviderName" link="#"
+                          @click="openExternalUrl(mapProviderWebsite)" v-if="mapProviderWebsite"></f7-list-item>
             <f7-list-item :title="tt('Provider')" :after="mapProviderName" v-if="!mapProviderWebsite"></f7-list-item>
         </f7-list>
 
-        <f7-popup push with-subnavbar swipe-to-close swipe-handler=".swipe-handler" class="license-popup">
+        <f7-popup push swipe-to-close swipe-handler=".swipe-handler" class="license-popup">
             <f7-page>
                 <f7-navbar>
-                    <div class="swipe-handler" style="z-index: 10"></div>
-                    <f7-subnavbar :title="tt('License') "></f7-subnavbar>
+                    <div class="swipe-handler"></div>
+                    <f7-nav-title class="license-title">{{ tt('License') }}</f7-nav-title>
                 </f7-navbar>
-                <f7-block strong outline class="license-content">
+                <f7-block strong outline class="license-content no-margin-top">
                     <p>
                         <span :key="num" v-for="(line, num) in licenseLines"
                               :style="{ 'display': line ? 'initial' : 'block', 'padding' : line ? '0' : '0 0 1em 0' }">
@@ -82,7 +82,7 @@ import { useI18nUIComponents } from '@/lib/ui/mobile.ts';
 import { useAboutPageBase } from '@/views/base/AboutPageBase.ts';
 
 const { tt } = useI18n();
-const { showAlert } = useI18nUIComponents();
+const { showAlert, openExternalUrl } = useI18nUIComponents();
 const {
     clientVersion,
     clientVersionMatchServerVersion,
@@ -120,16 +120,9 @@ init();
 </script>
 
 <style>
-.license-popup .navbar-bg {
-    background-color: rgb(var(--f7-navbar-bg-color-rgb, var(--f7-bars-bg-color-rgb)));
-}
-
-.license-popup .subnavbar {
-    background-color: rgb(var(--f7-subnavbar-bg-color-rgb, var(--f7-bars-bg-color-rgb)));
-}
-
-.license-popup .subnavbar-title {
-    --f7-subnavbar-title-font-size: var(--ebk-license-popup-title-font-size);
+.license-popup .license-title {
+    margin-top: 26px;
+    font-size: var(--ebk-license-popup-title-font-size);
 }
 
 .license-content {
