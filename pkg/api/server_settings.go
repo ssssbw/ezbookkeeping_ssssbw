@@ -39,6 +39,7 @@ func (a *ServerSettingsApi) ServerSettingsJavascriptHandler(c *core.WebContext) 
 	a.appendBooleanSetting(builder, "o", config.EnableOAuth2Login)
 	a.appendBooleanSetting(builder, "r", config.EnableInternalAuth && config.EnableUserRegister)
 	a.appendBooleanSetting(builder, "f", config.EnableInternalAuth && config.EnableUserForgetPassword)
+	a.appendBooleanSetting(builder, "t", config.EnableAPIToken)
 	a.appendBooleanSetting(builder, "v", config.EnableUserVerifyEmail)
 	a.appendBooleanSetting(builder, "p", config.EnableTransactionPictures)
 	a.appendBooleanSetting(builder, "s", config.EnableScheduledTransaction)
@@ -46,6 +47,10 @@ func (a *ServerSettingsApi) ServerSettingsJavascriptHandler(c *core.WebContext) 
 	a.appendBooleanSetting(builder, "i", config.EnableDataImport)
 
 	a.appendStringSetting(builder, "op", config.OAuth2Provider)
+
+	if config.OAuth2Provider == settings.OAuth2ProviderOIDC && config.OAuth2OIDCCustomDisplayNameConfig.Enabled {
+		a.appendMultiLanguageTipSetting(builder, "ocn", config.OAuth2OIDCCustomDisplayNameConfig)
+	}
 
 	if config.EnableMCPServer {
 		a.appendBooleanSetting(builder, "mcp", config.EnableMCPServer)

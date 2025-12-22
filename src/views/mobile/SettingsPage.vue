@@ -39,11 +39,18 @@
             <f7-list-item :title="tt('Text Size')" link="/settings/textsize"></f7-list-item>
 
             <f7-list-item
+                class="item-truncate-after-text"
                 link="#"
-                :title="tt('Timezone')"
-                :after="currentTimezoneName"
                 @click="showTimezonePopup = true"
             >
+                <template #after-title>
+                    <div class="item-actual-title">
+                        <span>{{ tt('Timezone') }}</span>
+                    </div>
+                </template>
+                <template #after>
+                    {{ currentTimezoneName }}
+                </template>
                 <list-item-selection-popup value-type="item"
                                            key-field="name" value-field="name"
                                            title-field="displayNameWithUtcOffset"
@@ -62,13 +69,21 @@
             <f7-list-item :title="tt('Exchange Rates Data')" :after="exchangeRatesLastUpdateDate" link="/exchange_rates"></f7-list-item>
 
             <f7-list-item>
-                <span>{{ tt('Auto-update Exchange Rates Data') }}</span>
-                <f7-toggle :checked="isAutoUpdateExchangeRatesData" @toggle:change="isAutoUpdateExchangeRatesData = $event"></f7-toggle>
+                <template #after-title>
+                    {{ tt('Auto-update Exchange Rates Data') }}
+                </template>
+                <template #after>
+                    <f7-toggle :checked="isAutoUpdateExchangeRatesData" @toggle:change="isAutoUpdateExchangeRatesData = $event"></f7-toggle>
+                </template>
             </f7-list-item>
 
             <f7-list-item>
-                <span>{{ tt('Show Account Balance') }}</span>
-                <f7-toggle :checked="showAccountBalance" @toggle:change="showAccountBalance = $event"></f7-toggle>
+                <template #after-title>
+                    {{ tt('Show Account Balance') }}
+                </template>
+                <template #after>
+                    <f7-toggle :checked="showAccountBalance" @toggle:change="showAccountBalance = $event"></f7-toggle>
+                </template>
             </f7-list-item>
 
             <f7-list-item :title="tt('Page Settings')" link="/settings/page"></f7-list-item>
@@ -76,13 +91,21 @@
             <f7-list-item :title="tt('Settings Sync')" link="/settings/sync"></f7-list-item>
 
             <f7-list-item>
-                <span>{{ tt('Enable Swipe Back') }}</span>
-                <f7-toggle :checked="isEnableSwipeBack" @toggle:change="isEnableSwipeBack = $event"></f7-toggle>
+                <template #after-title>
+                    {{ tt('Enable Swipe Back') }}
+                </template>
+                <template #after>
+                    <f7-toggle :checked="isEnableSwipeBack" @toggle:change="isEnableSwipeBack = $event"></f7-toggle>
+                </template>
             </f7-list-item>
 
             <f7-list-item>
-                <span>{{ tt('Enable Animation') }}</span>
-                <f7-toggle :checked="isEnableAnimate" @toggle:change="isEnableAnimate = $event"></f7-toggle>
+                <template #after-title>
+                    {{ tt('Enable Animation') }}
+                </template>
+                <template #after>
+                    <f7-toggle :checked="isEnableAnimate" @toggle:change="isEnableAnimate = $event"></f7-toggle>
+                </template>
             </f7-list-item>
 
             <f7-list-item link="#" no-chevron :title="tt('Switch to Desktop Version')" @click="switchToDesktopVersion"></f7-list-item>

@@ -224,19 +224,25 @@ const chartOptions = computed<object>(() => {
         },
         grid: {
             left: yAxisWidth.value,
-            right: 20
+            right: 20,
+            top: 0,
+            bottom: 20
         },
         xAxis: [
             {
                 type: 'category',
                 data: allDisplayDateRanges.value,
-                inverse: textDirection.value === TextDirection.RTL
+                inverse: textDirection.value === TextDirection.RTL,
+                axisLabel: {
+                    color: isDarkMode.value ? '#888' : '#666'
+                }
             }
         ],
         yAxis: [
             {
                 type: 'value',
                 axisLabel: {
+                    color: isDarkMode.value ? '#888' : '#666',
                     formatter: (value: string) => {
                         return formatAmountToLocalizedNumeralsWithCurrency(parseInt(value), props.account.currency);
                     }
@@ -263,7 +269,7 @@ const chartOptions = computed<object>(() => {
 <style scoped>
 .account-balance-trends-chart-container {
     width: 100%;
-    height: 400px;
+    height: 418px;
     margin-top: 10px;
 }
 </style>

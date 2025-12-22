@@ -93,6 +93,7 @@ const (
 
 // OAuth 2.0 provider types
 const (
+	OAuth2ProviderOIDC      string = "oidc"
 	OAuth2ProviderNextcloud string = "nextcloud"
 	OAuth2ProviderGitea     string = "gitea"
 	OAuth2ProviderGithub    string = "github"
@@ -144,8 +145,6 @@ const (
 )
 
 const (
-	defaultAppName string = "ezBookkeeping"
-
 	defaultHttpAddr string = "0.0.0.0"
 	defaultHttpPort uint16 = 8080
 	defaultDomain   string = "localhost"
@@ -266,7 +265,6 @@ type MultiLanguageContentConfig struct {
 // Config represents the global setting config
 type Config struct {
 	// Global
-	AppName     string
 	Mode        SystemMode
 	WorkingPath string
 
@@ -356,27 +354,32 @@ type Config struct {
 	EmailVerifyTokenExpiredTimeDuration   time.Duration
 	PasswordResetTokenExpiredTime         uint32
 	PasswordResetTokenExpiredTimeDuration time.Duration
+	EnableAPIToken                        bool
 	MaxFailuresPerIpPerMinute             uint32
 	MaxFailuresPerUserPerMinute           uint32
 
 	// Auth
-	EnableInternalAuth               bool
-	EnableOAuth2Login                bool
-	EnableTwoFactor                  bool
-	EnableUserForgetPassword         bool
-	ForgetPasswordRequireVerifyEmail bool
-	OAuth2ClientID                   string
-	OAuth2ClientSecret               string
-	OAuth2UserIdentifier             string
-	OAuth2AutoRegister               bool
-	OAuth2Provider                   string
-	OAuth2StateExpiredTime           uint32
-	OAuth2StateExpiredTimeDuration   time.Duration
-	OAuth2RequestTimeout             uint32
-	OAuth2Proxy                      string
-	OAuth2SkipTLSVerify              bool
-	OAuth2NextcloudBaseUrl           string
-	OAuth2GiteaBaseUrl               string
+	EnableInternalAuth                bool
+	EnableOAuth2Login                 bool
+	EnableTwoFactor                   bool
+	EnableUserForgetPassword          bool
+	ForgetPasswordRequireVerifyEmail  bool
+	OAuth2ClientID                    string
+	OAuth2ClientSecret                string
+	OAuth2UsePKCE                     bool
+	OAuth2UserIdentifier              string
+	OAuth2AutoRegister                bool
+	OAuth2Provider                    string
+	OAuth2StateExpiredTime            uint32
+	OAuth2StateExpiredTimeDuration    time.Duration
+	OAuth2RequestTimeout              uint32
+	OAuth2Proxy                       string
+	OAuth2SkipTLSVerify               bool
+	OAuth2OIDCProviderIssuerURL       string
+	OAuth2OIDCProviderCheckIssuerURL  bool
+	OAuth2OIDCCustomDisplayNameConfig MultiLanguageContentConfig
+	OAuth2NextcloudBaseUrl            string
+	OAuth2GiteaBaseUrl                string
 
 	// User
 	EnableUserRegister            bool
@@ -589,8 +592,6 @@ func GetDefaultConfigFilePath() (string, error) {
 }
 
 func loadGlobalConfiguration(config *Config, configFile *ini.File, sectionName string) error {
-	config.AppName = getConfigItemStringValue(configFile, sectionName, "app_name", defaultAppName)
-
 	if getConfigItemStringValue(configFile, sectionName, "mode") == "production" {
 		config.Mode = MODE_PRODUCTION
 	} else if getConfigItemStringValue(configFile, sectionName, "mode") == "development" {
@@ -972,6 +973,8 @@ func loadSecurityConfiguration(config *Config, configFile *ini.File, sectionName
 
 	config.PasswordResetTokenExpiredTimeDuration = time.Duration(config.PasswordResetTokenExpiredTime) * time.Second
 
+	config.EnableAPIToken = getConfigItemBoolValue(configFile, sectionName, "enable_api_token", false)
+
 	config.MaxFailuresPerIpPerMinute = getConfigItemUint32Value(configFile, sectionName, "max_failures_per_ip_per_minute", defaultMaxFailuresPerIpPerMinute)
 	config.MaxFailuresPerUserPerMinute = getConfigItemUint32Value(configFile, sectionName, "max_failures_per_user_per_minute", defaultMaxFailuresPerUserPerMinute)
 
@@ -986,6 +989,7 @@ func loadAuthConfiguration(config *Config, configFile *ini.File, sectionName str
 	config.ForgetPasswordRequireVerifyEmail = getConfigItemBoolValue(configFile, sectionName, "forget_password_require_email_verify", false)
 	config.OAuth2ClientID = getConfigItemStringValue(configFile, sectionName, "oauth2_client_id")
 	config.OAuth2ClientSecret = getConfigItemStringValue(configFile, sectionName, "oauth2_client_secret")
+	config.OAuth2UsePKCE = getConfigItemBoolValue(configFile, sectionName, "oauth2_use_pkce", false)
 
 	oauth2UserIdentifier := getConfigItemStringValue(configFile, sectionName, "oauth2_user_identifier")
 
@@ -1003,6 +1007,8 @@ func loadAuthConfiguration(config *Config, configFile *ini.File, sectionName str
 
 	if oauth2Provider == "" {
 		config.OAuth2Provider = ""
+	} else if oauth2Provider == OAuth2ProviderOIDC {
+		config.OAuth2Provider = OAuth2ProviderOIDC
 	} else if oauth2Provider == OAuth2ProviderNextcloud {
 		config.OAuth2Provider = OAuth2ProviderNextcloud
 	} else if oauth2Provider == OAuth2ProviderGitea {
@@ -1025,6 +1031,9 @@ func loadAuthConfiguration(config *Config, configFile *ini.File, sectionName str
 	config.OAuth2RequestTimeout = getConfigItemUint32Value(configFile, sectionName, "oauth2_request_timeout", defaultOAuth2RequestTimeout)
 	config.OAuth2SkipTLSVerify = getConfigItemBoolValue(configFile, sectionName, "oauth2_skip_tls_verify", false)
 
+	config.OAuth2OIDCProviderIssuerURL = getConfigItemStringValue(configFile, sectionName, "oidc_provider_base_url")
+	config.OAuth2OIDCProviderCheckIssuerURL = getConfigItemBoolValue(configFile, sectionName, "oidc_provider_check_issuer_url", true)
+	config.OAuth2OIDCCustomDisplayNameConfig = getMultiLanguageContentConfig(configFile, sectionName, "enable_oidc_display_name", "oidc_custom_display_name")
 	config.OAuth2NextcloudBaseUrl = getConfigItemStringValue(configFile, sectionName, "nextcloud_base_url")
 	config.OAuth2GiteaBaseUrl = getConfigItemStringValue(configFile, sectionName, "gitea_base_url")
 

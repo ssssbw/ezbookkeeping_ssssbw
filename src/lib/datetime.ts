@@ -282,6 +282,10 @@ class MomentDateTime implements DateTime {
         return this.instance.utcOffset();
     }
 
+    public getDateTimeAfterDays(days: number): DateTime {
+        return MomentDateTime.of(this.instance.clone().add(days, 'days'));
+    }
+
     public toGregorianCalendarYearMonthDay(): YearMonthDay {
         return {
             year: this.instance.year(),
@@ -398,7 +402,7 @@ class MomentDateTime implements DateTime {
     }
 }
 
-export function getAllowedYearRange(): number[] {
+export function getAllowedYearRange(): [number, number] {
     return [2000, moment().year() + 1];
 }
 
@@ -515,6 +519,10 @@ export function getBrowserTimezoneOffset(): string {
 
 export function getBrowserTimezoneOffsetMinutes(): number {
     return -new Date().getTimezoneOffset();
+}
+
+export function guessTimezoneName(): string {
+    return moment.tz.guess(true);
 }
 
 export function getLocalDatetimeFromUnixTime(unixTime: number): Date {

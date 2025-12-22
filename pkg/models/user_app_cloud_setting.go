@@ -29,6 +29,9 @@ var ALL_ALLOWED_CLOUD_SYNC_APP_SETTING_KEY_TYPES = map[string]UserApplicationClo
 	"autoSaveTransactionDraft":                                 USER_APPLICATION_CLOUD_SETTING_TYPE_STRING,
 	"autoGetCurrentGeoLocation":                                USER_APPLICATION_CLOUD_SETTING_TYPE_BOOLEAN,
 	"alwaysShowTransactionPicturesInMobileTransactionEditPage": USER_APPLICATION_CLOUD_SETTING_TYPE_BOOLEAN,
+	// Insights & Explore Page
+	"insightsExploreDefaultDateRangeType": USER_APPLICATION_CLOUD_SETTING_TYPE_NUMBER,
+	"timezoneUsedForInsightsExplorePage":  USER_APPLICATION_CLOUD_SETTING_TYPE_NUMBER,
 	// Account List Page
 	"totalAmountExcludeAccountIds": USER_APPLICATION_CLOUD_SETTING_TYPE_STRING_BOOLEAN_MAP,
 	// Exchange Rates Data Page
@@ -43,6 +46,8 @@ var ALL_ALLOWED_CLOUD_SYNC_APP_SETTING_KEY_TYPES = map[string]UserApplicationClo
 	"statistics.defaultCategoricalChartDataRangeType": USER_APPLICATION_CLOUD_SETTING_TYPE_NUMBER,
 	"statistics.defaultTrendChartType":                USER_APPLICATION_CLOUD_SETTING_TYPE_NUMBER,
 	"statistics.defaultTrendChartDataRangeType":       USER_APPLICATION_CLOUD_SETTING_TYPE_NUMBER,
+	"statistics.defaultAssetTrendsChartType":          USER_APPLICATION_CLOUD_SETTING_TYPE_NUMBER,
+	"statistics.defaultAssetTrendsChartDataRangeType": USER_APPLICATION_CLOUD_SETTING_TYPE_NUMBER,
 }
 
 // UserApplicationCloudSetting represents user application cloud setting stored in database

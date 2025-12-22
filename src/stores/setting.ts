@@ -245,6 +245,19 @@ export const useSettingsStore = defineStore('settings', () => {
         updateUserApplicationCloudSettingValue('alwaysShowTransactionPicturesInMobileTransactionEditPage', value);
     }
 
+    // Insights & Explore Page
+    function setInsightsExploreDefaultDateRangeType(value: number): void {
+        updateApplicationSettingsValue('insightsExploreDefaultDateRangeType', value);
+        appSettings.value.insightsExploreDefaultDateRangeType = value;
+        updateUserApplicationCloudSettingValue('insightsExploreDefaultDateRangeType', value);
+    }
+
+    function setTimezoneUsedForInsightsExplorePage(value: number): void {
+        updateApplicationSettingsValue('timezoneUsedForInsightsExplorePage', value);
+        appSettings.value.timezoneUsedForInsightsExplorePage = value;
+        updateUserApplicationCloudSettingValue('timezoneUsedForInsightsExplorePage', value);
+    }
+
     // Account List Page
     function setTotalAmountExcludeAccountIds(value: Record<string, boolean>): void {
         updateApplicationSettingsValue('totalAmountExcludeAccountIds', value);
@@ -312,6 +325,18 @@ export const useSettingsStore = defineStore('settings', () => {
         updateApplicationSettingsSubValue('statistics', 'defaultTrendChartDataRangeType', value);
         appSettings.value.statistics.defaultTrendChartDataRangeType = value;
         updateUserApplicationCloudSettingValue('statistics.defaultTrendChartDataRangeType', value);
+    }
+
+    function setStatisticsDefaultAssetTrendsChartType(value: number): void {
+        updateApplicationSettingsSubValue('statistics', 'defaultAssetTrendsChartType', value);
+        appSettings.value.statistics.defaultAssetTrendsChartType = value;
+        updateUserApplicationCloudSettingValue('statistics.defaultAssetTrendsChartType', value);
+    }
+
+    function setStatisticsDefaultAssetTrendsChartDateRange(value: number): void {
+        updateApplicationSettingsSubValue('statistics', 'defaultAssetTrendsChartDataRangeType', value);
+        appSettings.value.statistics.defaultAssetTrendsChartDataRangeType = value;
+        updateUserApplicationCloudSettingValue('statistics.defaultAssetTrendsChartDataRangeType', value);
     }
 
     function clearAppSettings(): void {
@@ -455,6 +480,9 @@ export const useSettingsStore = defineStore('settings', () => {
         setAutoSaveTransactionDraft,
         setAutoGetCurrentGeoLocation,
         setAlwaysShowTransactionPicturesInMobileTransactionEditPage,
+        // -- Insights & Explore Page
+        setInsightsExploreDefaultDateRangeType,
+        setTimezoneUsedForInsightsExplorePage,
         // -- Account List Page
         setTotalAmountExcludeAccountIds,
         // -- Exchange Rates Data Page
@@ -469,6 +497,8 @@ export const useSettingsStore = defineStore('settings', () => {
         setStatisticsDefaultCategoricalChartDateRange,
         setStatisticsDefaultTrendChartType,
         setStatisticsDefaultTrendChartDateRange,
+        setStatisticsDefaultAssetTrendsChartType,
+        setStatisticsDefaultAssetTrendsChartDateRange,
         clearAppSettings,
         createApplicationCloudSettings,
         setApplicationSettingsFromCloudSettings,

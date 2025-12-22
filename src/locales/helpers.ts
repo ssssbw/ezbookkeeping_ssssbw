@@ -2,7 +2,7 @@ import { useI18n as useVueI18n } from 'vue-i18n';
 import moment from 'moment-timezone';
 import 'moment-timezone/moment-timezone-utils';
 
-import type { PartialRecord, NameValue, TypeAndName, TypeAndDisplayName, LocalizedSwitchOption } from '@/core/base.ts';
+import type { NameValue, TypeAndName, TypeAndDisplayName, LocalizedSwitchOption } from '@/core/base.ts';
 
 import {
     type LanguageInfo,
@@ -122,8 +122,7 @@ import {
 } from '@/core/category.ts';
 
 import {
-    TransactionEditScopeType,
-    TransactionTagFilterType
+    TransactionEditScopeType
 } from '@/core/transaction.ts';
 
 import {
@@ -143,6 +142,11 @@ import {
     ChartSortingType,
     ChartDateAggregationType
 } from '@/core/statistics.ts';
+
+import {
+    TransactionExploreConditionField,
+    TransactionExploreConditionOperator
+} from '@/core/explore.ts';
 
 import {
     type LocalizedImportFileCategoryAndTypes,
@@ -198,6 +202,7 @@ import {
     getTimeDifferenceHoursAndMinutes,
     getTimezoneOffset,
     getTimezoneOffsetMinutes,
+    guessTimezoneName,
     isDateRangeMatchFullMonths,
     isDateRangeMatchFullYears,
     isPM
@@ -554,6 +559,19 @@ export function useI18n() {
         return ret;
     }
 
+    function getLocalizedNameValue(nameValues: NameValue[]): NameValue[] {
+        const ret: NameValue[] = [];
+
+        for (const nameValue of nameValues) {
+            ret.push({
+                name: t(nameValue.name),
+                value: nameValue.value
+            });
+        }
+
+        return ret;
+    }
+
     function getLocalizedDisplayNameAndTypeWithSystemDefault(typeAndNames: TypeAndName[], defaultValue: number, defaultType: TypeAndName): TypeAndDisplayName[] {
         const ret: TypeAndDisplayName[] = [];
 
@@ -598,9 +616,9 @@ export function useI18n() {
         return ret;
     }
 
-    function getLocalizedChartDateAggregationTypeAndDisplayName(fullName: boolean): TypeAndDisplayName[] {
+    function getLocalizedChartDateAggregationTypeAndDisplayName(analysisType: StatisticsAnalysisType, fullName: boolean): TypeAndDisplayName[] {
         const ret: TypeAndDisplayName[] = [];
-        const allTypes: ChartDateAggregationType[] = ChartDateAggregationType.values();
+        const allTypes: ChartDateAggregationType[] = ChartDateAggregationType.values(analysisType);
 
         for (const type of allTypes) {
             ret.push({
@@ -1341,8 +1359,8 @@ export function useI18n() {
         return ret;
     }
 
-    function getAllTransactionDefaultCategories(categoryType: 0 | CategoryType, locale: string): PartialRecord<CategoryType, LocalizedPresetCategory[]> {
-        const allCategories: PartialRecord<CategoryType, LocalizedPresetCategory[]> = {};
+    function getAllTransactionDefaultCategories(categoryType: 0 | CategoryType, locale: string): Record<string, LocalizedPresetCategory[]> {
+        const allCategories: Record<string, LocalizedPresetCategory[]> = {};
         const categoryTypes: CategoryType[] = [];
 
         if (categoryType === 0) {
@@ -1386,7 +1404,7 @@ export function useI18n() {
                 categories.push(submitCategory);
             }
 
-            allCategories[categoryType] = categories;
+            allCategories[`${categoryType}`] = categories;
         }
 
         return allCategories;
@@ -1526,6 +1544,7 @@ export function useI18n() {
                     subTypes: subTypes.length ? subTypes : undefined,
                     supportedEncodings: supportedEncodings.length ? supportedEncodings : undefined,
                     dataFromTextbox: fileType.dataFromTextbox,
+                    supportedAdditionalOptions: fileType.supportedAdditionalOptions,
                     document: document
                 };
 
@@ -2140,6 +2159,10 @@ export function useI18n() {
         return ret;
     }
 
+    function getLocalizedFileEncodingName(encoding: string): string {
+        return t(`encoding.${encoding}`);
+    }
+
     function getLocalizedOAuth2ProviderName(oauth2Provider: string, oidcDisplayNames: Record<string, string>): string {
         if (oauth2Provider === 'oidc') {
             const providerDisplayName = getServerMultiLanguageConfigContent(oidcDisplayNames);
@@ -2294,7 +2317,7 @@ export function useI18n() {
             logger.info(`Current timezone is ${timezone}`);
             setTimeZone(timezone);
         } else {
-            logger.info(`No timezone is set, use browser default ${getTimezoneOffset()} (maybe ${moment.tz.guess(true)})`);
+            logger.info(`No timezone is set, use browser default ${getTimezoneOffset()} (maybe ${guessTimezoneName()})`);
             setTimeZone('');
         }
 
@@ -2349,20 +2372,21 @@ export function useI18n() {
         getAllIncomeAmountColors: () => getAllExpenseIncomeAmountColors(CategoryType.Income),
         getAllAccountCategories,
         getAllAccountTypes: () => getLocalizedDisplayNameAndType(AccountType.values()),
-        getAllCategoricalChartTypes: () => getLocalizedDisplayNameAndType(CategoricalChartType.values()),
+        getAllCategoricalChartTypes: (withDesktopOnlyChart?: boolean) => getLocalizedDisplayNameAndType(CategoricalChartType.values(!!withDesktopOnlyChart)),
         getAllTrendChartTypes: () => getLocalizedDisplayNameAndType(TrendChartType.values()),
         getAllAccountBalanceTrendChartTypes: () => getLocalizedDisplayNameAndType(AccountBalanceTrendChartType.values()),
-        getAllStatisticsChartDataTypes: (analysisType: StatisticsAnalysisType) => getLocalizedDisplayNameAndType(ChartDataType.values(analysisType)),
+        getAllStatisticsChartDataTypes: (analysisType: StatisticsAnalysisType, withDesktopOnlyChart?: boolean) => getLocalizedDisplayNameAndType(ChartDataType.values(analysisType, withDesktopOnlyChart)),
         getAllStatisticsSortingTypes: () => getLocalizedDisplayNameAndType(ChartSortingType.values()),
-        getAllStatisticsDateAggregationTypes: () => getLocalizedChartDateAggregationTypeAndDisplayName(true),
-        getAllStatisticsDateAggregationTypesWithShortName: () => getLocalizedChartDateAggregationTypeAndDisplayName(false),
+        getAllStatisticsDateAggregationTypes: (analysisType: StatisticsAnalysisType) => getLocalizedChartDateAggregationTypeAndDisplayName(analysisType, true),
+        getAllStatisticsDateAggregationTypesWithShortName: (analysisType: StatisticsAnalysisType) => getLocalizedChartDateAggregationTypeAndDisplayName(analysisType, false),
         getAllTransactionEditScopeTypes: () => getLocalizedDisplayNameAndType(TransactionEditScopeType.values()),
-        getAllTransactionTagFilterTypes: () => getLocalizedDisplayNameAndType(TransactionTagFilterType.values()),
         getAllTransactionScheduledFrequencyTypes: () => getLocalizedDisplayNameAndType(ScheduledTemplateFrequencyType.values()),
         getAllImportTransactionColumnTypes: () => getLocalizedDisplayNameAndType(ImportTransactionColumnType.values()),
         getAllTransactionDefaultCategories,
         getAllDisplayExchangeRates,
         getAllSupportedImportFileCagtegoryAndTypes,
+        getAllTransactionExploreConditionFields: () => getLocalizedNameValue(TransactionExploreConditionField.values()),
+        getAllTransactionExploreConditionOperators: (operators?: TransactionExploreConditionOperator[]) => getLocalizedNameValue(operators ?? TransactionExploreConditionOperator.values()),
         // get localized info
         getLanguageInfo,
         getMonthShortName,
@@ -2453,6 +2477,7 @@ export function useI18n() {
         getAmountPrependAndAppendText,
         getCategorizedAccountsWithDisplayBalance,
         // other format functions
+        getLocalizedFileEncodingName,
         getLocalizedOAuth2ProviderName,
         getLocalizedOAuth2LoginText,
         // localization setting functions

@@ -28,6 +28,7 @@ export interface DateTime {
     getSecond(): number;
     getDisplayAMPM(options: DateTimeFormatOptions): string;
     getTimezoneUtcOffsetMinutes(): number;
+    getDateTimeAfterDays(day: number): DateTime;
     toGregorianCalendarYearMonthDay(): YearMonthDay;
     toGregorianCalendarYear0BasedMonth(): Year0BasedMonth;
     format(format: string, options: DateTimeFormatOptions): string;
@@ -338,6 +339,9 @@ export class KnownDateTimeFormat {
     public static readonly YYYYMMDDSlash = new KnownDateTimeFormat('YYYY/MM/DD', /^\d{4}\/(0[1-9]|1[0-2])\/(0[1-9]|[1-2][0-9]|3[0-1])$/);
     public static readonly MMDDYYSlash = new KnownDateTimeFormat('MM/DD/YYYY', /^(0[1-9]|1[0-2])\/(0[1-9]|[1-2][0-9]|3[0-1])\/\d{4}$/);
     public static readonly DDMMYYSlash = new KnownDateTimeFormat('DD/MM/YYYY', /^(0[1-9]|[1-2][0-9]|3[0-1])\/(0[1-9]|1[0-2])\/\d{4}$/);
+    public static readonly YYYYMMDDDot = new KnownDateTimeFormat('YYYY.MM.DD', /^\d{4}\.(0[1-9]|1[0-2])\.(0[1-9]|[1-2][0-9]|3[0-1])$/);
+    public static readonly MMDDYYDot = new KnownDateTimeFormat('MM.DD.YYYY', /^(0[1-9]|1[0-2])\.(0[1-9]|[1-2][0-9]|3[0-1])\.\d{4}$/);
+    public static readonly DDMMYYDot = new KnownDateTimeFormat('DD.MM.YYYY', /^(0[1-9]|[1-2][0-9]|3[0-1])\.(0[1-9]|1[0-2])\.\d{4}$/);
     public static readonly YYYYMMDD = new KnownDateTimeFormat('YYYYMMDD', /^\d{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])$/);
 
     public readonly format: string;
@@ -584,7 +588,9 @@ export class ShortTimeFormat implements TimeFormat {
 
 export enum DateRangeScene {
     Normal = 0,
-    TrendAnalysis = 1
+    TrendAnalysis = 1,
+    AssetTrends = 2,
+    InsightsExplore = 3
 }
 
 export class DateRange implements TypeAndName {
@@ -592,38 +598,38 @@ export class DateRange implements TypeAndName {
     private static readonly allInstancesByType: Record<number, DateRange> = {};
 
     // All date range
-    public static readonly All = new DateRange(0, 'All', false, false, DateRangeScene.Normal, DateRangeScene.TrendAnalysis);
+    public static readonly All = new DateRange(0, 'All', false, false, DateRangeScene.Normal, DateRangeScene.TrendAnalysis, DateRangeScene.AssetTrends, DateRangeScene.InsightsExplore);
 
     // Date ranges for normal scene only
-    public static readonly Today = new DateRange(1, 'Today', false, false, DateRangeScene.Normal);
-    public static readonly Yesterday = new DateRange(2, 'Yesterday', false, false, DateRangeScene.Normal);
-    public static readonly LastSevenDays = new DateRange(3, 'Recent 7 days', false, false, DateRangeScene.Normal);
-    public static readonly LastThirtyDays = new DateRange(4, 'Recent 30 days', false, false, DateRangeScene.Normal);
-    public static readonly ThisWeek = new DateRange(5, 'This week', false, false, DateRangeScene.Normal);
-    public static readonly LastWeek = new DateRange(6, 'Last week', false, false, DateRangeScene.Normal);
-    public static readonly ThisMonth = new DateRange(7, 'This month', false, false, DateRangeScene.Normal);
-    public static readonly LastMonth = new DateRange(8, 'Last month', false, false, DateRangeScene.Normal);
+    public static readonly Today = new DateRange(1, 'Today', false, false, DateRangeScene.Normal, DateRangeScene.InsightsExplore);
+    public static readonly Yesterday = new DateRange(2, 'Yesterday', false, false, DateRangeScene.Normal, DateRangeScene.InsightsExplore);
+    public static readonly LastSevenDays = new DateRange(3, 'Recent 7 days', false, false, DateRangeScene.Normal, DateRangeScene.AssetTrends, DateRangeScene.InsightsExplore);
+    public static readonly LastThirtyDays = new DateRange(4, 'Recent 30 days', false, false, DateRangeScene.Normal, DateRangeScene.AssetTrends, DateRangeScene.InsightsExplore);
+    public static readonly ThisWeek = new DateRange(5, 'This week', false, false, DateRangeScene.Normal, DateRangeScene.AssetTrends, DateRangeScene.InsightsExplore);
+    public static readonly LastWeek = new DateRange(6, 'Last week', false, false, DateRangeScene.Normal, DateRangeScene.AssetTrends, DateRangeScene.InsightsExplore);
+    public static readonly ThisMonth = new DateRange(7, 'This month', false, false, DateRangeScene.Normal, DateRangeScene.AssetTrends, DateRangeScene.InsightsExplore);
+    public static readonly LastMonth = new DateRange(8, 'Last month', false, false, DateRangeScene.Normal, DateRangeScene.AssetTrends, DateRangeScene.InsightsExplore);
 
     // Date ranges for normal and trend analysis scene
-    public static readonly ThisYear = new DateRange(9, 'This year', false, false, DateRangeScene.Normal, DateRangeScene.TrendAnalysis);
-    public static readonly LastYear = new DateRange(10, 'Last year', false, false, DateRangeScene.Normal, DateRangeScene.TrendAnalysis);
-    public static readonly ThisFiscalYear = new DateRange(11, 'This fiscal year', false, true, DateRangeScene.Normal, DateRangeScene.TrendAnalysis);
-    public static readonly LastFiscalYear = new DateRange(12, 'Last fiscal year', false, true, DateRangeScene.Normal, DateRangeScene.TrendAnalysis);
+    public static readonly ThisYear = new DateRange(9, 'This year', false, false, DateRangeScene.Normal, DateRangeScene.TrendAnalysis, DateRangeScene.AssetTrends, DateRangeScene.InsightsExplore);
+    public static readonly LastYear = new DateRange(10, 'Last year', false, false, DateRangeScene.Normal, DateRangeScene.TrendAnalysis, DateRangeScene.AssetTrends, DateRangeScene.InsightsExplore);
+    public static readonly ThisFiscalYear = new DateRange(11, 'This fiscal year', false, true, DateRangeScene.Normal, DateRangeScene.TrendAnalysis, DateRangeScene.AssetTrends, DateRangeScene.InsightsExplore);
+    public static readonly LastFiscalYear = new DateRange(12, 'Last fiscal year', false, true, DateRangeScene.Normal, DateRangeScene.TrendAnalysis, DateRangeScene.AssetTrends, DateRangeScene.InsightsExplore);
 
     // Billing cycle date ranges for normal scene only
     public static readonly CurrentBillingCycle = new DateRange(51, 'Current Billing Cycle', true, true, DateRangeScene.Normal);
     public static readonly PreviousBillingCycle = new DateRange(52, 'Previous Billing Cycle', true, true, DateRangeScene.Normal);
 
     // Date ranges for trend analysis scene only
-    public static readonly RecentTwelveMonths = new DateRange(101, 'Recent 12 months', false, false, DateRangeScene.TrendAnalysis);
-    public static readonly RecentTwentyFourMonths = new DateRange(102, 'Recent 24 months', false, false, DateRangeScene.TrendAnalysis);
-    public static readonly RecentThirtySixMonths = new DateRange(103, 'Recent 36 months', false, false, DateRangeScene.TrendAnalysis);
-    public static readonly RecentTwoYears = new DateRange(104, 'Recent 2 years', false, false, DateRangeScene.TrendAnalysis);
-    public static readonly RecentThreeYears = new DateRange(105, 'Recent 3 years', false, false, DateRangeScene.TrendAnalysis);
-    public static readonly RecentFiveYears = new DateRange(106, 'Recent 5 years', false, false, DateRangeScene.TrendAnalysis);
+    public static readonly RecentTwelveMonths = new DateRange(101, 'Recent 12 months', false, false, DateRangeScene.TrendAnalysis, DateRangeScene.AssetTrends, DateRangeScene.InsightsExplore);
+    public static readonly RecentTwentyFourMonths = new DateRange(102, 'Recent 24 months', false, false, DateRangeScene.TrendAnalysis, DateRangeScene.AssetTrends, DateRangeScene.InsightsExplore);
+    public static readonly RecentThirtySixMonths = new DateRange(103, 'Recent 36 months', false, false, DateRangeScene.TrendAnalysis, DateRangeScene.AssetTrends, DateRangeScene.InsightsExplore);
+    public static readonly RecentTwoYears = new DateRange(104, 'Recent 2 years', false, false, DateRangeScene.TrendAnalysis, DateRangeScene.AssetTrends, DateRangeScene.InsightsExplore);
+    public static readonly RecentThreeYears = new DateRange(105, 'Recent 3 years', false, false, DateRangeScene.TrendAnalysis, DateRangeScene.AssetTrends, DateRangeScene.InsightsExplore);
+    public static readonly RecentFiveYears = new DateRange(106, 'Recent 5 years', false, false, DateRangeScene.TrendAnalysis, DateRangeScene.AssetTrends, DateRangeScene.InsightsExplore);
 
     // Custom date range
-    public static readonly Custom = new DateRange(255, 'Custom Date', false, true, DateRangeScene.Normal, DateRangeScene.TrendAnalysis);
+    public static readonly Custom = new DateRange(255, 'Custom Date', false, true, DateRangeScene.Normal, DateRangeScene.TrendAnalysis, DateRangeScene.AssetTrends, DateRangeScene.InsightsExplore);
 
     public readonly type: number;
     public readonly name: string;
