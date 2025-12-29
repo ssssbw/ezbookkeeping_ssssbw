@@ -78,7 +78,7 @@
                                     <v-spacer/>
                                     <v-btn density="comfortable" color="default" variant="text" class="ms-2"
                                            :disabled="loading" :icon="true"
-                                           v-if="activeTab !== 'query'">
+                                           v-if="activeTab === 'table' || activeTab === 'chart'">
                                         <v-icon :icon="mdiDotsVertical" />
                                         <v-menu activator="parent">
                                             <v-list>
@@ -102,7 +102,8 @@
                                                             v-model:count-per-page="countPerPage" />
                                 </v-window-item>
                                 <v-window-item value="chart">
-
+                                    <explore-chart-tab ref="exploreChartTab"
+                                                       :loading="loading" />
                                 </v-window-item>
                             </v-window>
                         </v-card>
@@ -127,6 +128,7 @@
 <script setup lang="ts">
 import ExploreQueryTab from '@/views/desktop/insights/tabs/ExploreQueryTab.vue';
 import ExploreDataTableTab from '@/views/desktop/insights/tabs/ExploreDataTableTab.vue';
+import ExploreChartTab from '@/views/desktop/insights/tabs/ExploreChartTab.vue';
 import ExportDialog from '@/views/desktop/statistics/transaction/dialogs/ExportDialog.vue';
 import SnackBar from '@/components/desktop/SnackBar.vue';
 
@@ -151,9 +153,10 @@ import {
 } from '@/models/transaction.ts';
 
 import {
+    parseDateTimeFromUnixTime,
     getShiftedDateRangeAndDateType,
     getDateTypeByDateRange,
-    getDateRangeByDateType,
+    getDateRangeByDateType
 } from '@/lib/datetime.ts';
 
 import {
@@ -179,6 +182,7 @@ const props = defineProps<InsightsExploreProps>();
 type ExplorePageTabType = 'query' | 'table' | 'chart';
 type SnackBarType = InstanceType<typeof SnackBar>;
 type ExploreDataTableTabType = InstanceType<typeof ExploreDataTableTab>;
+type ExploreChartTabType = InstanceType<typeof ExploreChartTab>;
 type ExportDialogType = InstanceType<typeof ExportDialog>;
 
 const router = useRouter();
@@ -188,7 +192,7 @@ const {
     tt,
     getAllDateRanges,
     getCurrentNumeralSystemType,
-    formatUnixTimeToLongDateTime,
+    formatDateTimeToLongDateTime,
     formatDateRange
 } = useI18n();
 
@@ -200,6 +204,7 @@ const exploresStore = useExploresStore();
 
 const snackbar = useTemplateRef<SnackBarType>('snackbar');
 const exploreDataTableTab = useTemplateRef<ExploreDataTableTabType>('exploreDataTableTab');
+const exploreChartTab = useTemplateRef<ExploreChartTabType>('exploreChartTab');
 const exportDialog = useTemplateRef<ExportDialogType>('exportDialog');
 
 const loading = ref<boolean>(true);
@@ -221,8 +226,8 @@ const filteredTransactions = computed<TransactionInsightDataItem[]>(() => explor
 const allDateRanges = computed<LocalizedDateRange[]>(() => getAllDateRanges(DateRangeScene.InsightsExplore, true));
 const canShiftDateRange = computed<boolean>(() => query.value.dateRangeType !== DateRange.All.type);
 const displayQueryDateRangeName = computed<string>(() => formatDateRange(query.value.dateRangeType, query.value.startTime, query.value.endTime));
-const displayQueryStartTime = computed<string>(() => formatUnixTimeToLongDateTime(query.value.startTime));
-const displayQueryEndTime = computed<string>(() => formatUnixTimeToLongDateTime(query.value.endTime));
+const displayQueryStartTime = computed<string>(() => formatDateTimeToLongDateTime(parseDateTimeFromUnixTime(query.value.startTime)));
+const displayQueryEndTime = computed<string>(() => formatDateTimeToLongDateTime(parseDateTimeFromUnixTime(query.value.endTime)));
 
 const allTabs = computed<{ name: string, value: ExplorePageTabType }[]>(() => {
     return [
@@ -233,6 +238,10 @@ const allTabs = computed<{ name: string, value: ExplorePageTabType }[]>(() => {
         {
             name: tt('Data Table'),
             value: 'table'
+        },
+        {
+            name: tt('Chart'),
+            value: 'chart'
         }
     ];
 });
@@ -331,6 +340,12 @@ function reload(force: boolean): Promise<unknown> | null {
 function exportResults(): void {
     if (activeTab.value === 'table' && filteredTransactions.value) {
         const results = exploreDataTableTab.value?.buildExportResults();
+
+        if (results) {
+            exportDialog.value?.open(results);
+        }
+    } else if (activeTab.value === 'chart') {
+        const results = exploreChartTab.value?.buildExportResults();
 
         if (results) {
             exportDialog.value?.open(results);
