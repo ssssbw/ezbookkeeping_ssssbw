@@ -24,7 +24,7 @@ func TestExchangeRatesApiLatestExchangeRateHandler_ReserveBankOfAustraliaDataSou
 	assert.Equal(t, "AUD", exchangeRateResponse.BaseCurrency)
 
 	supportedCurrencyCodes := []string{"CAD", "CHF", "CNY", "EUR", "GBP", "HKD", "IDR", "INR", "JPY", "KRW",
-		"MYR", "NZD", "PHP", "SGD", "THB", "TWD", "USD", "VND"}
+		"MYR", "NZD", "PGK", "PHP", "SGD", "THB", "TWD", "USD", "VND"}
 
 	checkExchangeRatesHaveSpecifiedCurrencies(t, exchangeRateResponse.BaseCurrency, supportedCurrencyCodes, exchangeRateResponse.ExchangeRates)
 }
@@ -234,7 +234,7 @@ func TestExchangeRatesApiLatestExchangeRateHandler_BankOfRussiaDataSource(t *tes
 
 	assert.Equal(t, "RUB", exchangeRateResponse.BaseCurrency)
 
-	supportedCurrencyCodes := []string{"AED", "AMD", "AUD", "AZN", "BDT", "BGN", "BHD", "BOB", "BRL", "BYN",
+	supportedCurrencyCodes := []string{"AED", "AMD", "AUD", "AZN", "BDT", "BHD", "BOB", "BRL", "BYN",
 		"CAD", "CHF", "CNY", "CUP", "CZK", "DKK", "DZD", "EGP", "ETB", "EUR", "GBP", "GEL", "HKD", "HUF",
 		"IDR", "INR", "IRR", "JPY", "KGS", "KRW", "KZT", "MDL", "MMK", "MNT", "NGN", "NOK", "NZD",
 		"OMR", "PLN", "QAR", "RON", "RSD", "SAR", "SEK", "SGD", "THB", "TJS", "TMT", "TRY",

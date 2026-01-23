@@ -101,6 +101,13 @@ import type {
     TransactionPictureInfoBasicResponse
 } from '@/models/transaction_picture_info.ts';
 import type {
+    TransactionTagGroupCreateRequest,
+    TransactionTagGroupModifyRequest,
+    TransactionTagGroupMoveRequest,
+    TransactionTagGroupDeleteRequest,
+    TransactionTagGroupInfoResponse
+} from '@/models/transaction_tag_group.ts';
+import type {
     TransactionTagCreateRequest,
     TransactionTagCreateBatchRequest,
     TransactionTagModifyRequest,
@@ -117,6 +124,14 @@ import type {
     TransactionTemplateDeleteRequest,
     TransactionTemplateInfoResponse
 } from '@/models/transaction_template.ts';
+import type {
+    InsightsExplorerCreateRequest,
+    InsightsExplorerModifyRequest,
+    InsightsExplorerHideRequest,
+    InsightsExplorerMoveRequest,
+    InsightsExplorerDeleteRequest,
+    InsightsExplorerInfoResponse,
+} from '@/models/explorer.ts';
 import type {
     TokenGenerateAPIRequest,
     TokenGenerateMCPRequest,
@@ -697,6 +712,24 @@ export default {
     deleteTransactionCategory: (req: TransactionCategoryDeleteRequest): ApiResponsePromise<boolean> => {
         return axios.post<ApiResponse<boolean>>('v1/transaction/categories/delete.json', req);
     },
+    getAllTransactionTagGroups: (): ApiResponsePromise<TransactionTagGroupInfoResponse[]> => {
+        return axios.get<ApiResponse<TransactionTagInfoResponse[]>>('v1/transaction/tags/groups/list.json');
+    },
+    getTransactionTagGroup: ({ id }: { id: string }): ApiResponsePromise<TransactionTagGroupInfoResponse> => {
+        return axios.get<ApiResponse<TransactionTagInfoResponse>>('v1/transaction/tags/groups/get.json?id=' + id);
+    },
+    addTransactionTagGroup: (req: TransactionTagGroupCreateRequest): ApiResponsePromise<TransactionTagGroupInfoResponse> => {
+        return axios.post<ApiResponse<TransactionTagInfoResponse>>('v1/transaction/tags/groups/add.json', req);
+    },
+    modifyTransactionTagGroup: (req: TransactionTagGroupModifyRequest): ApiResponsePromise<TransactionTagGroupInfoResponse> => {
+        return axios.post<ApiResponse<TransactionTagInfoResponse>>('v1/transaction/tags/groups/modify.json', req);
+    },
+    moveTransactionTagGroup: (req: TransactionTagGroupMoveRequest): ApiResponsePromise<boolean> => {
+        return axios.post<ApiResponse<boolean>>('v1/transaction/tags/groups/move.json', req);
+    },
+    deleteTransactionTagGroup: (req: TransactionTagGroupDeleteRequest): ApiResponsePromise<boolean> => {
+        return axios.post<ApiResponse<boolean>>('v1/transaction/tags/groups/delete.json', req);
+    },
     getAllTransactionTags: (): ApiResponsePromise<TransactionTagInfoResponse[]> => {
         return axios.get<ApiResponse<TransactionTagInfoResponse[]>>('v1/transaction/tags/list.json');
     },
@@ -741,6 +774,27 @@ export default {
     },
     deleteTransactionTemplate: (req: TransactionTemplateDeleteRequest): ApiResponsePromise<boolean> => {
         return axios.post<ApiResponse<boolean>>('v1/transaction/templates/delete.json', req);
+    },
+    getAllInsightsExplorers: (): ApiResponsePromise<InsightsExplorerInfoResponse[]> => {
+        return axios.get<ApiResponse<InsightsExplorerInfoResponse[]>>('v1/insights/explorers/list.json');
+    },
+    getInsightsExplorer: ({ id }: { id: string }): ApiResponsePromise<InsightsExplorerInfoResponse> => {
+        return axios.get<ApiResponse<InsightsExplorerInfoResponse>>('v1/insights/explorers/get.json?id=' + id);
+    },
+    addInsightsExplorer: (req: InsightsExplorerCreateRequest): ApiResponsePromise<InsightsExplorerInfoResponse> => {
+        return axios.post<ApiResponse<InsightsExplorerInfoResponse>>('v1/insights/explorers/add.json', req);
+    },
+    modifyInsightsExplorer: (req: InsightsExplorerModifyRequest): ApiResponsePromise<InsightsExplorerInfoResponse> => {
+        return axios.post<ApiResponse<InsightsExplorerInfoResponse>>('v1/insights/explorers/modify.json', req);
+    },
+    hideInsightsExplorer: (req: InsightsExplorerHideRequest): ApiResponsePromise<boolean> => {
+        return axios.post<ApiResponse<boolean>>('v1/insights/explorers/hide.json', req);
+    },
+    moveInsightsExplorer: (req: InsightsExplorerMoveRequest): ApiResponsePromise<boolean> => {
+        return axios.post<ApiResponse<boolean>>('v1/insights/explorers/move.json', req);
+    },
+    deleteInsightsExplorer: (req: InsightsExplorerDeleteRequest): ApiResponsePromise<boolean> => {
+        return axios.post<ApiResponse<boolean>>('v1/insights/explorers/delete.json', req);
     },
     recognizeReceiptImage: ({ imageFile, cancelableUuid }: { imageFile: File, cancelableUuid?: string }): ApiResponsePromise<RecognizedReceiptImageResponse> => {
         return axios.postForm<ApiResponse<RecognizedReceiptImageResponse>>('v1/llm/transactions/recognize_receipt_image.json', {
