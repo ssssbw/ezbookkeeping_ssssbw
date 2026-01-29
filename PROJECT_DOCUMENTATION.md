@@ -227,7 +227,7 @@ docker run -p8080:8080 mayswind/ezbookkeeping:latest-snapshot
 2. 克隆代码：`git clone https://github.com/mayswind/ezbookkeeping.git`
 3. 构建：
    - Linux/macOS: `./build.sh package -o ezbookkeeping.tar.gz`
-   - Windows: `.uild.bat package -o ezbookkeeping.zip`
+   - Windows: `./build.bat package -o ezbookkeeping.zip`
 
 ## 9. 开发流程
 
