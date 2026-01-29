@@ -92,7 +92,7 @@ ezBookkeeping 采用前后端分离架构：
 ### 后端核心文件
 
 | 文件路径 | 主要功能 |
-|---------|---------|
+|---------|--------|
 | `ezbookkeeping.go` | 后端主入口文件，处理命令行参数和启动服务 |
 | `cmd/webserver.go` | Web 服务器启动和配置 |
 | `cmd/database.go` | 数据库初始化和迁移 |
@@ -108,7 +108,7 @@ ezBookkeeping 采用前后端分离架构：
 ### 前端核心文件
 
 | 文件路径 | 主要功能 |
-|---------|---------|
+|---------|--------|
 | `src/DesktopApp.vue` | 桌面端主应用组件 |
 | `src/MobileApp.vue` | 移动端主应用组件 |
 | `src/router/` | 路由配置，处理页面导航 |
@@ -116,17 +116,6 @@ ezBookkeeping 采用前后端分离架构：
 | `src/components/` | 可复用组件，分为基础、通用、桌面和移动组件 |
 | `src/lib/` | 核心工具库，包含各种工具函数 |
 | `src/locales/` | 多语言支持，包含各种语言的翻译文件 |
-
-### 构建与部署文件
-
-| 文件路径 | 主要功能 |
-|---------|---------|
-| `Dockerfile` | Docker 镜像构建文件 |
-| `build.sh` | Linux/macOS 构建脚本 |
-| `build.bat` | Windows 批处理构建脚本 |
-| `build.ps1` | PowerShell 构建脚本 |
-| `docker/docker-entrypoint.sh` | Docker 容器入口脚本 |
-| `etc/systemd/ezbookkeeping.service` | Systemd 服务配置文件 |
 
 ## 6. 核心功能模块
 
@@ -173,9 +162,310 @@ ezBookkeeping 采用前后端分离架构：
 - 本地化货币和日期格式
 - 自动汇率更新（来自各国央行）
 
-## 7. 配置说明
+## 7. 数据结构详细解析
 
-### 7.1 主要配置文件
+### 7.1 账户相关数据结构
+
+#### 账户分类 (AccountCategory)
+```go
+// AccountCategory represents account category
+type AccountCategory byte
+
+// Account categories
+const (
+    ACCOUNT_CATEGORY_CASH                   AccountCategory = 1
+    ACCOUNT_CATEGORY_CHECKING_ACCOUNT       AccountCategory = 2
+    ACCOUNT_CATEGORY_CREDIT_CARD            AccountCategory = 3
+    ACCOUNT_CATEGORY_VIRTUAL                AccountCategory = 4
+    ACCOUNT_CATEGORY_DEBT                   AccountCategory = 5
+    ACCOUNT_CATEGORY_RECEIVABLES            AccountCategory = 6
+    ACCOUNT_CATEGORY_INVESTMENT             AccountCategory = 7
+    ACCOUNT_CATEGORY_SAVINGS_ACCOUNT        AccountCategory = 8
+    ACCOUNT_CATEGORY_CERTIFICATE_OF_DEPOSIT AccountCategory = 9
+)
+```
+
+#### 账户类型 (AccountType)
+```go
+// AccountType represents account type
+type AccountType byte
+
+// Account types
+const (
+    ACCOUNT_TYPE_SINGLE_ACCOUNT     AccountType = 1
+    ACCOUNT_TYPE_MULTI_SUB_ACCOUNTS AccountType = 2
+)
+```
+
+#### 账户模型 (Account)
+```go
+// Account represents account data stored in database
+type Account struct {
+    AccountId       int64           `xorm:"PK"`
+    Uid             int64           `xorm:"INDEX(IDX_account_uid_deleted_parent_account_id_order) NOT NULL"`
+    Deleted         bool            `xorm:"INDEX(IDX_account_uid_deleted_parent_account_id_order) NOT NULL"`
+    Category        AccountCategory `xorm:"NOT NULL"`
+    Type            AccountType     `xorm:"NOT NULL"`
+    ParentAccountId int64           `xorm:"INDEX(IDX_account_uid_deleted_parent_account_id_order) NOT NULL"`
+    Name            string          `xorm:"VARCHAR(64) NOT NULL"`
+    DisplayOrder    int32           `xorm:"INDEX(IDX_account_uid_deleted_parent_account_id_order) NOT NULL"`
+    Icon            int64           `xorm:"NOT NULL"`
+    Color           string          `xorm:"VARCHAR(6) NOT NULL"`
+    Currency        string          `xorm:"VARCHAR(3) NOT NULL"`
+    Balance         int64           `xorm:"NOT NULL"`
+    Comment         string          `xorm:"VARCHAR(255) NOT NULL"`
+    Extend          *AccountExtend  `xorm:"BLOB"`
+    Hidden          bool            `xorm:"NOT NULL"`
+    CreatedUnixTime int64
+    UpdatedUnixTime int64
+    DeletedUnixTime int64
+}
+```
+
+#### 账户扩展信息 (AccountExtend)
+```go
+// AccountExtend represents account extend data stored in database
+type AccountExtend struct {
+    CreditCardStatementDate *int `json:"creditCardStatementDate"`
+}
+```
+
+### 7.2 交易相关数据结构
+
+#### 交易类型 (TransactionType)
+```go
+// TransactionType represents transaction type
+type TransactionType byte
+
+// Transaction types
+const (
+    TRANSACTION_TYPE_MODIFY_BALANCE TransactionType = 1
+    TRANSACTION_TYPE_INCOME         TransactionType = 2
+    TRANSACTION_TYPE_EXPENSE        TransactionType = 3
+    TRANSACTION_TYPE_TRANSFER       TransactionType = 4
+)
+```
+
+#### 交易数据库类型 (TransactionDbType)
+```go
+// TransactionDbType represents transaction type in database
+type TransactionDbType byte
+
+// Transaction db types
+const (
+    TRANSACTION_DB_TYPE_MODIFY_BALANCE TransactionDbType = 1
+    TRANSACTION_DB_TYPE_INCOME         TransactionDbType = 2
+    TRANSACTION_DB_TYPE_EXPENSE        TransactionDbType = 3
+    TRANSACTION_DB_TYPE_TRANSFER_OUT   TransactionDbType = 4
+    TRANSACTION_DB_TYPE_TRANSFER_IN    TransactionDbType = 5
+)
+```
+
+#### 交易模型 (Transaction)
+```go
+// Transaction represents transaction data stored in database
+type Transaction struct {
+    TransactionId        int64             `xorm:"PK"`
+    Uid                  int64             `xorm:"UNIQUE(UQE_transaction_uid_time) INDEX(IDX_transaction_uid_deleted_time) INDEX(IDX_transaction_uid_deleted_type_time) INDEX(IDX_transaction_uid_deleted_type_account_id_time) INDEX(IDX_transaction_uid_deleted_category_id_time) INDEX(IDX_transaction_uid_deleted_account_id_time) INDEX(IDX_transaction_uid_deleted_time_longitude_latitude) NOT NULL"`
+    Deleted              bool              `xorm:"INDEX(IDX_transaction_uid_deleted_time) INDEX(IDX_transaction_uid_deleted_type_time) INDEX(IDX_transaction_uid_deleted_type_account_id_time) INDEX(IDX_transaction_uid_deleted_category_id_time) INDEX(IDX_transaction_uid_deleted_account_id_time) INDEX(IDX_transaction_uid_deleted_time_longitude_latitude) NOT NULL"`
+    Type                 TransactionDbType `xorm:"INDEX(IDX_transaction_uid_deleted_type_time) INDEX(IDX_transaction_uid_deleted_type_account_id_time) NOT NULL"`
+    CategoryId           int64             `xorm:"INDEX(IDX_transaction_uid_deleted_category_id_time) NOT NULL"`
+    AccountId            int64             `xorm:"INDEX(IDX_transaction_uid_deleted_account_id_time) INDEX(IDX_transaction_uid_deleted_type_account_id_time) NOT NULL"`
+    TransactionTime      int64             `xorm:"UNIQUE(UQE_transaction_uid_time) INDEX(IDX_transaction_uid_deleted_time) INDEX(IDX_transaction_uid_deleted_type_time) INDEX(IDX_transaction_uid_deleted_type_account_id_time) INDEX(IDX_transaction_uid_deleted_category_id_time) INDEX(IDX_transaction_uid_deleted_account_id_time) NOT NULL"`
+    TimezoneUtcOffset    int16             `xorm:"NOT NULL"`
+    Amount               int64             `xorm:"NOT NULL"`
+    RelatedId            int64             `xorm:"NOT NULL"`
+    RelatedAccountId     int64             `xorm:"NOT NULL"`
+    RelatedAccountAmount int64             `xorm:"NOT NULL"`
+    HideAmount           bool              `xorm:"NOT NULL"`
+    Comment              string            `xorm:"VARCHAR(255) NOT NULL"`
+    GeoLongitude         float64           `xorm:"INDEX(IDX_transaction_uid_deleted_time_longitude_latitude)"`
+    GeoLatitude          float64           `xorm:"INDEX(IDX_transaction_uid_deleted_time_longitude_latitude)"`
+    CreatedIp            string            `xorm:"VARCHAR(39)"`
+    ScheduledCreated     bool
+    CreatedUnixTime      int64
+    UpdatedUnixTime      int64
+    DeletedUnixTime      int64
+}
+```
+
+### 7.3 分类相关数据结构
+
+#### 交易分类类型 (TransactionCategoryType)
+```go
+// TransactionCategoryType represents transaction category type
+type TransactionCategoryType byte
+
+// Transaction category types
+const (
+    CATEGORY_TYPE_INCOME   TransactionCategoryType = 1
+    CATEGORY_TYPE_EXPENSE  TransactionCategoryType = 2
+    CATEGORY_TYPE_TRANSFER TransactionCategoryType = 3
+)
+```
+
+#### 交易分类模型 (TransactionCategory)
+```go
+// TransactionCategory represents transaction category data stored in database
+type TransactionCategory struct {
+    CategoryId       int64                   `xorm:"PK"`
+    Uid              int64                   `xorm:"INDEX(IDX_category_uid_deleted_type_parent_category_id_order) NOT NULL"`
+    Deleted          bool                    `xorm:"INDEX(IDX_category_uid_deleted_type_parent_category_id_order) NOT NULL"`
+    Type             TransactionCategoryType `xorm:"INDEX(IDX_category_uid_deleted_type_parent_category_id_order) NOT NULL"`
+    ParentCategoryId int64                   `xorm:"INDEX(IDX_category_uid_deleted_type_parent_category_id_order) NOT NULL"`
+    Name             string                  `xorm:"VARCHAR(64) NOT NULL"`
+    DisplayOrder     int32                   `xorm:"INDEX(IDX_category_uid_deleted_type_parent_category_id_order) NOT NULL"`
+    Icon             int64                   `xorm:"NOT NULL"`
+    Color            string                  `xorm:"VARCHAR(6) NOT NULL"`
+    Hidden           bool                    `xorm:"NOT NULL"`
+    Comment          string                  `xorm:"VARCHAR(255) NOT NULL"`
+    CreatedUnixTime  int64
+    UpdatedUnixTime  int64
+    DeletedUnixTime  int64
+}
+```
+
+### 7.4 标签相关数据结构
+
+#### 交易标签模型 (TransactionTag)
+```go
+// TransactionTag represents transaction tag data stored in database
+type TransactionTag struct {
+    TagId        int64  `xorm:"PK"`
+    Uid          int64  `xorm:"INDEX(IDX_tag_uid_deleted_group_id_order) NOT NULL"`
+    Deleted      bool   `xorm:"INDEX(IDX_tag_uid_deleted_group_id_order) NOT NULL"`
+    GroupId      int64  `xorm:"INDEX(IDX_tag_uid_deleted_group_id_order) NOT NULL"`
+    Name         string `xorm:"VARCHAR(32) NOT NULL"`
+    DisplayOrder int32  `xorm:"INDEX(IDX_tag_uid_deleted_group_id_order) NOT NULL"`
+    Color        string `xorm:"VARCHAR(6) NOT NULL"`
+    CreatedUnixTime int64
+    UpdatedUnixTime int64
+    DeletedUnixTime int64
+}
+```
+
+#### 交易标签组模型 (TransactionTagGroup)
+```go
+// TransactionTagGroup represents transaction tag group data stored in database
+type TransactionTagGroup struct {
+    GroupId      int64  `xorm:"PK"`
+    Uid          int64  `xorm:"INDEX(IDX_tag_group_uid_deleted_order) NOT NULL"`
+    Deleted      bool   `xorm:"INDEX(IDX_tag_group_uid_deleted_order) NOT NULL"`
+    Name         string `xorm:"VARCHAR(32) NOT NULL"`
+    DisplayOrder int32  `xorm:"INDEX(IDX_tag_group_uid_deleted_order) NOT NULL"`
+    CreatedUnixTime int64
+    UpdatedUnixTime int64
+    DeletedUnixTime int64
+}
+```
+
+### 7.5 用户相关数据结构
+
+#### 用户模型 (User)
+```go
+// User represents user data stored in database
+type User struct {
+    Uid                 int64  `xorm:"PK"`
+    Username            string `xorm:"UNIQUE(UQE_user_username) VARCHAR(32) NOT NULL"`
+    Email               string `xorm:"UNIQUE(UQE_user_email) VARCHAR(128) NOT NULL"`
+    PasswordHash        string `xorm:"VARCHAR(128) NOT NULL"`
+    Salt                string `xorm:"VARCHAR(16) NOT NULL"`
+    Language            string `xorm:"VARCHAR(10) NOT NULL"`
+    TimeZone            string `xorm:"VARCHAR(32) NOT NULL"`
+    Currency            string `xorm:"VARCHAR(3) NOT NULL"`
+    ExpenseAmountColor  string `xorm:"VARCHAR(6) NOT NULL"`
+    IncomeAmountColor   string `xorm:"VARCHAR(6) NOT NULL"`
+    InitialLogin        bool   `xorm:"NOT NULL"`
+    EmailVerified       bool   `xorm:"NOT NULL"`
+    TwoFactorAuthEnabled bool  `xorm:"NOT NULL"`
+    CreatedUnixTime     int64
+    UpdatedUnixTime     int64
+}
+```
+
+### 7.6 交易图片相关数据结构
+
+#### 交易图片信息模型 (TransactionPictureInfo)
+```go
+// TransactionPictureInfo represents transaction picture info data stored in database
+type TransactionPictureInfo struct {
+    PictureId        int64  `xorm:"PK"`
+    Uid              int64  `xorm:"INDEX(IDX_picture_uid) NOT NULL"`
+    TransactionId    int64  `xorm:"INDEX(IDX_picture_transaction_id) NOT NULL"`
+    StorageKey       string `xorm:"VARCHAR(255) NOT NULL"`
+    OriginalFileName string `xorm:"VARCHAR(255) NOT NULL"`
+    Width            int    `xorm:"NOT NULL"`
+    Height           int    `xorm:"NOT NULL"`
+    Size             int64  `xorm:"NOT NULL"`
+    UploadedUnixTime int64
+}
+```
+
+### 7.7 交易模板相关数据结构
+
+#### 交易模板模型 (TransactionTemplate)
+```go
+// TransactionTemplate represents transaction template data stored in database
+type TransactionTemplate struct {
+    TemplateId      int64  `xorm:"PK"`
+    Uid             int64  `xorm:"INDEX(IDX_template_uid_deleted) NOT NULL"`
+    Deleted         bool   `xorm:"INDEX(IDX_template_uid_deleted) NOT NULL"`
+    Name            string `xorm:"VARCHAR(64) NOT NULL"`
+    Type            TransactionType `xorm:"NOT NULL"`
+    CategoryId      int64  `xorm:"NOT NULL"`
+    SourceAccountId int64  `xorm:"NOT NULL"`
+    DestinationAccountId int64 `xorm:"NOT NULL"`
+    Amount          int64  `xorm:"NOT NULL"`
+    Comment         string `xorm:"VARCHAR(255) NOT NULL"`
+    Icon            int64  `xorm:"NOT NULL"`
+    Color           string `xorm:"VARCHAR(6) NOT NULL"`
+    CreatedUnixTime int64
+    UpdatedUnixTime int64
+    DeletedUnixTime int64
+}
+```
+
+### 7.8 汇率相关数据结构
+
+#### 汇率模型 (ExchangeRate)
+```go
+// ExchangeRate represents exchange rate data stored in database
+type ExchangeRate struct {
+    FromCurrency string  `xorm:"PK(VARCHAR(3))"`
+    ToCurrency   string  `xorm:"PK(VARCHAR(3))"`
+    Rate         float64 `xorm:"NOT NULL"`
+    UpdatedUnixTime int64
+}
+```
+
+### 7.9 认证相关数据结构
+
+#### 令牌记录模型 (TokenRecord)
+```go
+// TokenRecord represents token record data stored in database
+type TokenRecord struct {
+    TokenId      string `xorm:"PK(VARCHAR(64))"`
+    Uid          int64  `xorm:"INDEX(IDX_token_uid) NOT NULL"`
+    Type         int    `xorm:"NOT NULL"`
+    ExpiredUnixTime int64
+    CreatedUnixTime int64
+}
+```
+
+#### 双因素认证模型 (TwoFactor)
+```go
+// TwoFactor represents two-factor authentication data stored in database
+type TwoFactor struct {
+    Uid        int64  `xorm:"PK"`
+    Secret     string `xorm:"VARCHAR(128) NOT NULL"`
+    CreatedUnixTime int64
+    UpdatedUnixTime int64
+}
+```
+
+## 8. 配置说明
+
+### 8.1 主要配置文件
 
 配置文件位于 `conf/ezbookkeeping.ini`，包含以下主要部分：
 
@@ -188,7 +478,7 @@ ezBookkeeping 采用前后端分离架构：
 - **[auth]**：认证配置，如内部认证、OAuth2 等
 - **[user]**：用户配置，如注册、邮件验证等
 
-### 7.2 关键配置项
+### 8.2 关键配置项
 
 | 配置项 | 说明 | 默认值 |
 |-------|------|--------|
@@ -200,9 +490,9 @@ ezBookkeeping 采用前后端分离架构：
 | `user.enable_register` | 是否允许用户注册 | true |
 | `user.enable_email_verify` | 是否启用邮件验证 | false |
 
-## 8. 部署方式
+## 9. 部署方式
 
-### 8.1 Docker 部署
+### 9.1 Docker 部署
 
 **最新稳定版**：
 ```bash
@@ -214,14 +504,14 @@ docker run -p8080:8080 mayswind/ezbookkeeping
 docker run -p8080:8080 mayswind/ezbookkeeping:latest-snapshot
 ```
 
-### 8.2 二进制部署
+### 9.2 二进制部署
 
 1. 从 [GitHub Releases](https://github.com/mayswind/ezbookkeeping/releases) 下载最新版本
 2. 解压并运行：
    - Linux/macOS: `./ezbookkeeping server run`
    - Windows: `.ezbookkeeping.exe server run`
 
-### 8.3 源码构建
+### 9.3 源码构建
 
 1. 安装依赖：Go 1.25+、GCC、Node.js、NPM
 2. 克隆代码：`git clone https://github.com/mayswind/ezbookkeeping.git`
@@ -229,16 +519,16 @@ docker run -p8080:8080 mayswind/ezbookkeeping:latest-snapshot
    - Linux/macOS: `./build.sh package -o ezbookkeeping.tar.gz`
    - Windows: `./build.bat package -o ezbookkeeping.zip`
 
-## 9. 开发流程
+## 10. 开发流程
 
-### 9.1 后端开发
+### 10.1 后端开发
 
 1. 安装 Go 1.25+ 和依赖管理工具
 2. 安装依赖：`go mod download`
 3. 运行开发服务器：`go run ezbookkeeping.go server run`
 4. 运行测试：`go test ./pkg/...`
 
-### 9.2 前端开发
+### 10.2 前端开发
 
 1. 安装 Node.js 和 NPM
 2. 安装依赖：`npm install`
@@ -246,31 +536,31 @@ docker run -p8080:8080 mayswind/ezbookkeeping:latest-snapshot
 4. 构建生产版本：`npm run build`
 5. 运行测试：`npm test`
 
-## 10. 安全特性
+## 11. 安全特性
 
-### 10.1 数据安全
+### 11.1 数据安全
 
 - 数据库连接加密（支持 TLS）
 - 敏感数据加密存储
 - JWT 令牌签名验证
 - 密码哈希存储（bcrypt）
 
-### 10.2 访问控制
+### 11.2 访问控制
 
 - 基于角色的访问控制
 - API 限流
 - IP 访问限制
 - 登录失败次数限制
 
-### 10.3 安全更新
+### 11.3 安全更新
 
 - 定期更新依赖库
 - 及时修复安全漏洞
 - 提供安全更新通知
 
-## 11. 贡献指南
+## 12. 贡献指南
 
-### 11.1 代码贡献
+### 12.1 代码贡献
 
 1. Fork 项目
 2. 创建功能分支：`git checkout -b feature/your-feature`
@@ -278,28 +568,28 @@ docker run -p8080:8080 mayswind/ezbookkeeping:latest-snapshot
 4. 推送到分支：`git push origin feature/your-feature`
 5. 创建 Pull Request
 
-### 11.2 翻译贡献
+### 12.2 翻译贡献
 
 1. 编辑或添加语言文件：`src/locales/xx.json`
 2. 提交更改并创建 Pull Request
 
-### 11.3 报告问题
+### 12.3 报告问题
 
 - 使用 GitHub Issues 报告 Bug
 - 提供详细的问题描述和复现步骤
 - 包含相关日志和截图
 
-## 12. 许可证
+## 13. 许可证
 
 本项目采用 [MIT 许可证](LICENSE)，详见 LICENSE 文件。
 
-## 13. 联系方式
+## 14. 联系方式
 
 - 项目主页：https://github.com/mayswind/ezbookkeeping
 - 官方文档：https://ezbookkeeping.mayswind.net
 - 演示地址：https://ezbookkeeping-demo.mayswind.net
 
-## 14. 更新日志
+## 15. 更新日志
 
 ### 最新版本
 
