@@ -1,3 +1,8 @@
+/**
+ * 功能：实现数据库维护的CLI命令，主要用于更新数据库结构
+ * 关联：依赖github.com/urfave/cli/v3、github.com/mayswind/ezbookkeeping/pkg/core和github.com/mayswind/ezbookkeeping/pkg/datastore
+ * 注意：用于同步所有数据库表结构，确保数据模型与代码定义一致
+ */
 package cmd
 
 import (

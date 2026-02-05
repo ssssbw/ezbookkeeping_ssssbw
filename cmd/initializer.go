@@ -1,3 +1,8 @@
+/**
+ * 功能：实现系统初始化功能，包括加载配置、初始化各种组件（数据存储、日志、存储、LLM等）
+ * 关联：依赖多个内部包，如settings、datastore、log、storage、llm、mail等
+ * 注意：是系统启动的核心初始化函数，被其他命令调用
+ */
 package cmd
 
 import (

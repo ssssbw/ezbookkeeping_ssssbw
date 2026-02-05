@@ -1,3 +1,8 @@
+/**
+ * 功能：实现用户数据管理的CLI命令，包括用户管理、会话管理、交易管理等
+ * 关联：依赖github.com/urfave/cli/v3、github.com/mayswind/ezbookkeeping/pkg/core和github.com/mayswind/ezbookkeeping/pkg/cli
+ * 注意：提供全面的用户数据维护功能，包括添加、修改、删除用户，管理用户会话等
+ */
 package cmd
 
 import (

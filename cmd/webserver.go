@@ -1,3 +1,8 @@
+/**
+ * 功能：实现web服务器的CLI命令，主要用于启动ezBookkeeping web服务器
+ * 关联：依赖github.com/gin-gonic/gin、github.com/urfave/cli/v3和多个内部包
+ * 注意：配置路由、中间件、静态文件服务等，是系统的核心启动入口
+ */
 package cmd
 
 import (

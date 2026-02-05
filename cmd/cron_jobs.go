@@ -1,3 +1,8 @@
+/**
+ * 功能：实现cron作业管理的CLI命令，包括列出所有启用的cron作业和运行指定的cron作业
+ * 关联：依赖github.com/urfave/cli/v3、github.com/mayswind/ezbookkeeping/pkg/core和github.com/mayswind/ezbookkeeping/pkg/cron
+ * 注意：用于管理系统定时任务，确保作业正常执行
+ */
 package cmd
 
 import (

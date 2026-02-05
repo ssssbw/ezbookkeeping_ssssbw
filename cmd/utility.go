@@ -1,3 +1,8 @@
+/**
+ * 功能：实现通用工具的CLI命令，包括解析请求ID和发送测试邮件
+ * 关联：依赖github.com/urfave/cli/v3、github.com/mayswind/ezbookkeeping/pkg/core和github.com/mayswind/ezbookkeeping/pkg/requestid
+ * 注意：用于调试和测试系统功能
+ */
 package cmd
 
 import (

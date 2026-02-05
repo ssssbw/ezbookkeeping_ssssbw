@@ -1,3 +1,8 @@
+/**
+ * 功能：实现安全相关的CLI命令，主要用于生成随机密钥
+ * 关联：依赖github.com/urfave/cli/v3、github.com/mayswind/ezbookkeeping/pkg/core和github.com/mayswind/ezbookkeeping/pkg/utils
+ * 注意：用于生成安全的随机密钥，可指定长度
+ */
 package cmd
 
 import (
