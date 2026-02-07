@@ -1,3 +1,7 @@
+/**
+  * 功能：实现日志文件轮转写入器，支持按天轮转和按文件大小轮转，以及自动清理旧日志文件
+  * 注意：支持配置单个日志文件最大大小和日志文件最大保存天数，自动管理日志文件生命周期
+  */
 package log
 
 import (
@@ -15,6 +19,7 @@ import (
 
 const (
 	logRotateSuffixDateFormat = "20060102150405"
+	logDateSuffixFormat = "20060102"
 )
 
 type RotateFileWriter struct {
@@ -28,6 +33,7 @@ type RotateFileWriter struct {
 
 	mutex                 sync.Mutex
 	lastRemoveOldFilesDay int
+	currentFileDate       string
 }
 
 var logFallbackLogger = logrus.New()
@@ -46,6 +52,7 @@ func NewRotateFileWriter(filePath string, enableRotate bool, maxFileSize int64, 
 		MaxFileDays:  maxFileDays,
 		filePath:     filePath,
 		totalSize:    0,
+		currentFileDate: time.Now().Format(logDateSuffixFormat),
 	}
 
 	err := writer.openFile()
@@ -61,7 +68,22 @@ func NewRotateFileWriter(filePath string, enableRotate bool, maxFileSize int64, 
 func (w *RotateFileWriter) Write(p []byte) (n int, err error) {
 	dataSize := int64(len(p))
 
-	if w.EnableRotate && w.totalSize > 0 && w.totalSize+dataSize >= w.MaxFileSize {
+	// 检查是否需要按天轮转
+	today := time.Now().Format(logDateSuffixFormat)
+	if w.EnableRotate && today != w.currentFileDate {
+		w.mutex.Lock()
+		defer w.mutex.Unlock()
+
+		if w.EnableRotate && time.Now().Format(logDateSuffixFormat) != w.currentFileDate {
+			err := w.rotateFile()
+
+			if err != nil {
+				logFallbackLogger.Errorf("[rotate_file_writer.Write] cannot rotate log file \"%s\", because %s", w.file.Name(), err.Error())
+				return 0, err
+			}
+		}
+	} else if w.EnableRotate && w.totalSize > 0 && w.totalSize+dataSize >= w.MaxFileSize {
+		// 检查是否需要按文件大小轮转
 		w.mutex.Lock()
 		defer w.mutex.Unlock()
 
@@ -111,6 +133,9 @@ func (w *RotateFileWriter) rotateFile() error {
 		return errs.NewLoggingError(fmt.Sprintf("cannot rename log file \"%s\" to \"%s\", because %s", currentFileName, archiveFileName, err.Error()), err)
 	}
 
+	// 更新当前文件日期
+	w.currentFileDate = time.Now().Format(logDateSuffixFormat)
+
 	err = w.openFile()
 
 	if err != nil {
@@ -133,6 +158,7 @@ func (w *RotateFileWriter) openFile() error {
 	}
 
 	w.file = file
+	w.totalSize = 0
 	return nil
 }
 

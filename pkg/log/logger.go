@@ -1,3 +1,7 @@
+/**
+ * 功能：实现日志系统核心功能，包括日志记录器管理、日志配置、日志记录方法等
+ * 注意：提供多种日志记录器（启动、CLI、默认、请求、SQL查询），支持控制台和文件输出，支持按天轮转和旧日志清理
+ */
 package log
 
 import (
@@ -62,8 +66,8 @@ func SetLoggerConfiguration(config *settings.Config, isDisableBootLog bool) erro
 		defaultLogger.SetFormatter(colorFormatter)
 
 		// 为特殊日志器保持原有前缀
-    	requestLogger.SetFormatter(&LogFormatter{Prefix: "[REQUEST]", DisableLevel: true, ForceColors: true})
-    	sqlQueryLogger.SetFormatter(&LogFormatter{Prefix: "[SQLQUERY]", DisableLevel: true, ForceColors: true})
+		requestLogger.SetFormatter(&LogFormatter{Prefix: "[REQUEST]", DisableLevel: true, ForceColors: true})
+		sqlQueryLogger.SetFormatter(&LogFormatter{Prefix: "[SQLQUERY]", DisableLevel: true, ForceColors: true})
 
 		defaultWriters = append(defaultWriters, os.Stdout)
 		requestWriters = append(requestWriters, os.Stdout)
