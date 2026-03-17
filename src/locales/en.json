@@ -1,7 +1,8 @@
 {
     "global": {
         "app": {
-            "title": "ezBookkeeping"
+            "title": "ezBookkeeping",
+            "investmentTitle": "ezInvestment"
         }
     },
     "language": {
@@ -1295,6 +1296,18 @@
         "failure count exceeded maximum limit": "Failure count exceeded maximum limit, please try again after some time",
         "repeated request": "Repeated Request",
         "ip address is forbidden to access this resource": "IP address is forbidden to access this resource"
+    },
+    "finance": {
+        "Switch to Bookkeeping Mode": "Switch to Bookkeeping Mode",
+        "Switch to Investment Mode": "Switch to Investment Mode",
+        "Investment Overview": "Investment Overview",
+        "Investment Data": "Investment Data",
+        "Investment Portfolio": "Investment Portfolio",
+        "Performance Analysis": "Performance Analysis",
+        "Asset Management": "Asset Management",
+        "Investment Transactions": "Investment Transactions",
+        "Advanced Features": "Advanced Features",
+        "Strategy Configuration": "Strategy Configuration"
     },
     "parameter": {
         "id": "ID",

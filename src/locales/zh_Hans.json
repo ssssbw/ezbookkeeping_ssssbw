@@ -1,7 +1,8 @@
 {
     "global": {
         "app": {
-            "title": "ezBookkeeping"
+            "title": "ezBookkeeping",
+            "investmentTitle": "ezInvestment"
         }
     },
     "language": {
@@ -1295,6 +1296,18 @@
         "failure count exceeded maximum limit": "失败次数超出最大限制，请稍后重试",
         "repeated request": "重复的请求",
         "ip address is forbidden to access this resource": "IP 地址被禁止访问该资源"
+    },
+    "finance": {
+        "Switch to Bookkeeping Mode": "切换到记账模式",
+        "Switch to Investment Mode": "切换到理财模式",
+        "Investment Overview": "投资概览",
+        "Investment Data": "投资数据",
+        "Investment Portfolio": "投资组合",
+        "Performance Analysis": "收益分析",
+        "Asset Management": "资产管理",
+        "Investment Transactions": "投资交易",
+        "Advanced Features": "高级功能",
+        "Strategy Configuration": "策略配置"
     },
     "parameter": {
         "id": "ID",

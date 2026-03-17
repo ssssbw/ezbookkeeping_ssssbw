@@ -206,6 +206,37 @@ const router = createRouter({
                     path: '/about',
                     component: AboutPage,
                     beforeEnter: checkLogin
+                },
+                // 理财模式路由
+                {
+                    path: '/investment/overview',
+                    component: () => import('@/views/desktop/investment/OverviewPage.vue'),
+                    beforeEnter: checkLogin
+                },
+                {
+                    path: '/investment/portfolio',
+                    component: () => import('@/views/desktop/investment/PortfolioPage.vue'),
+                    beforeEnter: checkLogin
+                },
+                {
+                    path: '/investment/analysis',
+                    component: () => import('@/views/desktop/investment/AnalysisPage.vue'),
+                    beforeEnter: checkLogin
+                },
+                {
+                    path: '/investment/assets',
+                    component: () => import('@/views/desktop/investment/AssetsPage.vue'),
+                    beforeEnter: checkLogin
+                },
+                {
+                    path: '/investment/transactions',
+                    component: () => import('@/views/desktop/investment/TransactionsPage.vue'),
+                    beforeEnter: checkLogin
+                },
+                {
+                    path: '/investment/strategy',
+                    component: () => import('@/views/desktop/investment/StrategyPage.vue'),
+                    beforeEnter: checkLogin
                 }
             ]
         },

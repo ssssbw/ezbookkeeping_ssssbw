@@ -3,11 +3,12 @@
          :class="{ 'layout-overlay-nav': mdAndDown }">
         <div class="layout-vertical-nav" :class="{'visible': showVerticalOverlayMenu, 'scrolled': isVerticalNavScrolled, 'overlay-nav': mdAndDown}">
             <div class="nav-header">
-                <router-link to="/" class="app-logo d-flex align-center gap-x-3 app-title-wrapper">
+                <router-link to="/" class="app-logo d-flex align-center gap-x-3 app-title-wrapper" @click.prevent="toggleMode">
                     <div class="d-flex">
-                        <img alt="logo" class="main-logo" :src="APPLICATION_LOGO_PATH" />
+                        <img alt="logo" class="main-logo" :src="isInvestmentMode ? INVESTMENT_LOGO_PATH : APPLICATION_LOGO_PATH" />
                     </div>
-                    <h1 class="font-weight-medium text-xl">{{ tt('global.app.title') }}</h1>
+                    <h1 class="font-weight-medium text-xl">{{ isInvestmentMode ? tt('global.app.investmentTitle') : tt('global.app.title') }}</h1>
+                    <v-tooltip activator="parent">{{ isInvestmentMode ? tt('Switch to Bookkeeping Mode') : tt('Switch to Investment Mode') }}</v-tooltip>
                 </router-link>
             </div>
             <perfect-scrollbar
@@ -15,99 +16,164 @@
                 :options="{ wheelPropagation: false }"
                 @ps-scroll-y="handleNavScroll"
             >
-                <li class="nav-link home-link">
-                    <router-link to="/">
-                        <v-icon class="nav-item-icon" :icon="mdiHomeOutline"/>
-                        <span class="nav-item-title">{{ tt('Overview') }}</span>
-                    </router-link>
-                </li>
-                <li class="nav-section-title">
-                    <div class="title-wrapper">
-                        <span class="title-text">{{ tt('Transaction Data') }}</span>
-                    </div>
-                </li>
-                <li class="nav-link">
-                    <router-link to="/transaction/list?pageType=0&dateType=7">
-                        <v-icon class="nav-item-icon" :icon="mdiListBoxOutline"/>
-                        <span class="nav-item-title d-inline-block">{{ tt('Transaction Details') }}</span>
-                        <v-btn density="compact" color="secondary" variant="text" size="22"
-                               class="ms-1" :icon="true" v-if="showAddTransactionButtonInDesktopNavbar"
-                               @click="showAddDialogInTransactionListPage">
-                            <v-icon :icon="mdiPlusCircle" size="22" />
-                            <v-tooltip activator="parent">{{ tt('Add Transaction') }}</v-tooltip>
-                        </v-btn>
-                    </router-link>
-                </li>
-                <li class="nav-link">
-                    <router-link to="/statistics/transaction">
-                        <v-icon class="nav-item-icon" :icon="mdiChartPieOutline"/>
-                        <span class="nav-item-title">{{ tt('Statistics & Analysis') }}</span>
-                    </router-link>
-                </li>
-                <li class="nav-link">
-                    <router-link to="/insights/explorer">
-                        <v-icon class="nav-item-icon" :icon="mdiCompassOutline"/>
-                        <span class="nav-item-title">{{ tt('Insights Explorer') }}</span>
-                    </router-link>
-                </li>
-                <li class="nav-section-title">
-                    <div class="title-wrapper">
-                        <span class="title-text">{{ tt('Basis Data') }}</span>
-                    </div>
-                </li>
-                <li class="nav-link">
-                    <router-link to="/account/list">
-                        <v-icon class="nav-item-icon" :icon="mdiCreditCardOutline"/>
-                        <span class="nav-item-title">{{ tt('Accounts') }}</span>
-                    </router-link>
-                </li>
-                <li class="nav-link">
-                    <router-link to="/category/list">
-                        <v-icon class="nav-item-icon" :icon="mdiViewDashboardOutline"/>
-                        <span class="nav-item-title">{{ tt('Transaction Categories') }}</span>
-                    </router-link>
-                </li>
-                <li class="nav-link">
-                    <router-link to="/tag/list">
-                        <v-icon class="nav-item-icon" :icon="mdiTagOutline"/>
-                        <span class="nav-item-title">{{ tt('Transaction Tags') }}</span>
-                    </router-link>
-                </li>
-                <li class="nav-link">
-                    <router-link to="/template/list">
-                        <v-icon class="nav-item-icon" :icon="mdiClipboardTextOutline"/>
-                        <span class="nav-item-title">{{ tt('Transaction Templates') }}</span>
-                    </router-link>
-                </li>
-                <li class="nav-link" v-if="isUserScheduledTransactionEnabled()">
-                    <router-link to="/schedule/list">
-                        <v-icon class="nav-item-icon" :icon="mdiClipboardTextClockOutline"/>
-                        <span class="nav-item-title">{{ tt('Scheduled Transactions') }}</span>
-                    </router-link>
-                </li>
-                <li class="nav-section-title">
-                    <div class="title-wrapper">
-                        <span class="title-text">{{ tt('Miscellaneous') }}</span>
-                    </div>
-                </li>
-                <li class="nav-link">
-                    <router-link to="/exchange_rates">
-                        <v-icon class="nav-item-icon" :icon="mdiSwapHorizontal"/>
-                        <span class="nav-item-title">{{ tt('Exchange Rates Data') }}</span>
-                    </router-link>
-                </li>
-                <li class="nav-link">
-                    <a href="javascript:void(0);" @click="showMobileQrCode = true">
-                        <v-icon class="nav-item-icon" :icon="mdiCellphone"/>
-                        <span class="nav-item-title">{{ tt('Use on Mobile Device') }}</span>
-                    </a>
-                </li>
-                <li class="nav-link">
-                    <router-link to="/about">
-                        <v-icon class="nav-item-icon" :icon="mdiInformationOutline"/>
-                        <span class="nav-item-title">{{ tt('About') }}</span>
-                    </router-link>
-                </li>
+                <!-- 记账模式导航 -->
+                <template v-if="!isInvestmentMode">
+                    <li class="nav-link home-link">
+                        <router-link to="/">
+                            <v-icon class="nav-item-icon" :icon="mdiHomeOutline"/>
+                            <span class="nav-item-title">{{ tt('Overview') }}</span>
+                        </router-link>
+                    </li>
+                    <li class="nav-section-title">
+                        <div class="title-wrapper">
+                            <span class="title-text">{{ tt('Transaction Data') }}</span>
+                        </div>
+                    </li>
+                    <li class="nav-link">
+                        <router-link to="/transaction/list?pageType=0&dateType=7">
+                            <v-icon class="nav-item-icon" :icon="mdiListBoxOutline"/>
+                            <span class="nav-item-title d-inline-block">{{ tt('Transaction Details') }}</span>
+                            <v-btn density="compact" color="secondary" variant="text" size="22"
+                                   class="ms-1" :icon="true" v-if="showAddTransactionButtonInDesktopNavbar"
+                                   @click="showAddDialogInTransactionListPage">
+                                <v-icon :icon="mdiPlusCircle" size="22" />
+                                <v-tooltip activator="parent">{{ tt('Add Transaction') }}</v-tooltip>
+                            </v-btn>
+                        </router-link>
+                    </li>
+                    <li class="nav-link">
+                        <router-link to="/statistics/transaction">
+                            <v-icon class="nav-item-icon" :icon="mdiChartPieOutline"/>
+                            <span class="nav-item-title">{{ tt('Statistics & Analysis') }}</span>
+                        </router-link>
+                    </li>
+                    <li class="nav-link">
+                        <router-link to="/insights/explorer">
+                            <v-icon class="nav-item-icon" :icon="mdiCompassOutline"/>
+                            <span class="nav-item-title">{{ tt('Insights Explorer') }}</span>
+                        </router-link>
+                    </li>
+                    <li class="nav-section-title">
+                        <div class="title-wrapper">
+                            <span class="title-text">{{ tt('Basis Data') }}</span>
+                        </div>
+                    </li>
+                    <li class="nav-link">
+                        <router-link to="/account/list">
+                            <v-icon class="nav-item-icon" :icon="mdiCreditCardOutline"/>
+                            <span class="nav-item-title">{{ tt('Accounts') }}</span>
+                        </router-link>
+                    </li>
+                    <li class="nav-link">
+                        <router-link to="/category/list">
+                            <v-icon class="nav-item-icon" :icon="mdiViewDashboardOutline"/>
+                            <span class="nav-item-title">{{ tt('Transaction Categories') }}</span>
+                        </router-link>
+                    </li>
+                    <li class="nav-link">
+                        <router-link to="/tag/list">
+                            <v-icon class="nav-item-icon" :icon="mdiTagOutline"/>
+                            <span class="nav-item-title">{{ tt('Transaction Tags') }}</span>
+                        </router-link>
+                    </li>
+                    <li class="nav-link">
+                        <router-link to="/template/list">
+                            <v-icon class="nav-item-icon" :icon="mdiClipboardTextOutline"/>
+                            <span class="nav-item-title">{{ tt('Transaction Templates') }}</span>
+                        </router-link>
+                    </li>
+                    <li class="nav-link" v-if="isUserScheduledTransactionEnabled()">
+                        <router-link to="/schedule/list">
+                            <v-icon class="nav-item-icon" :icon="mdiClipboardTextClockOutline"/>
+                            <span class="nav-item-title">{{ tt('Scheduled Transactions') }}</span>
+                        </router-link>
+                    </li>
+                    <li class="nav-section-title">
+                        <div class="title-wrapper">
+                            <span class="title-text">{{ tt('Miscellaneous') }}</span>
+                        </div>
+                    </li>
+                    <li class="nav-link">
+                        <router-link to="/exchange_rates">
+                            <v-icon class="nav-item-icon" :icon="mdiSwapHorizontal"/>
+                            <span class="nav-item-title">{{ tt('Exchange Rates Data') }}</span>
+                        </router-link>
+                    </li>
+                    <li class="nav-link">
+                        <a href="javascript:void(0);" @click="showMobileQrCode = true">
+                            <v-icon class="nav-item-icon" :icon="mdiCellphone"/>
+                            <span class="nav-item-title">{{ tt('Use on Mobile Device') }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-link">
+                        <router-link to="/about">
+                            <v-icon class="nav-item-icon" :icon="mdiInformationOutline"/>
+                            <span class="nav-item-title">{{ tt('About') }}</span>
+                        </router-link>
+                    </li>
+                </template>
+
+                <!-- 理财模式导航 -->
+                <template v-else>
+                    <li class="nav-link home-link">
+                        <router-link to="/investment/overview">
+                            <v-icon class="nav-item-icon" :icon="mdiHomeOutline"/>
+                            <span class="nav-item-title">{{ tt('Investment Overview') }}</span>
+                        </router-link>
+                    </li>
+                    <li class="nav-section-title">
+                        <div class="title-wrapper">
+                            <span class="title-text">{{ tt('Investment Data') }}</span>
+                        </div>
+                    </li>
+                    <li class="nav-link">
+                        <router-link to="/investment/portfolio">
+                            <v-icon class="nav-item-icon" :icon="mdiChartLine"/>
+                            <span class="nav-item-title">{{ tt('Investment Portfolio') }}</span>
+                        </router-link>
+                    </li>
+                    <li class="nav-link">
+                        <router-link to="/investment/analysis">
+                            <v-icon class="nav-item-icon" :icon="mdiChartPieOutline"/>
+                            <span class="nav-item-title">{{ tt('Performance Analysis') }}</span>
+                        </router-link>
+                    </li>
+                    <li class="nav-link">
+                        <router-link to="/investment/assets">
+                            <v-icon class="nav-item-icon" :icon="mdiDatabase"/>
+                            <span class="nav-item-title">{{ tt('Asset Management') }}</span>
+                        </router-link>
+                    </li>
+                    <li class="nav-link">
+                        <router-link to="/investment/transactions">
+                            <v-icon class="nav-item-icon" :icon="mdiListBoxOutline"/>
+                            <span class="nav-item-title">{{ tt('Investment Transactions') }}</span>
+                        </router-link>
+                    </li>
+                    <li class="nav-section-title">
+                        <div class="title-wrapper">
+                            <span class="title-text">{{ tt('Advanced Features') }}</span>
+                        </div>
+                    </li>
+                    <li class="nav-link">
+                        <router-link to="/investment/strategy">
+                            <v-icon class="nav-item-icon" :icon="mdiCogOutline"/>
+                            <span class="nav-item-title">{{ tt('Strategy Configuration') }}</span>
+                        </router-link>
+                    </li>
+                    <li class="nav-link">
+                        <a href="javascript:void(0);" @click="showMobileQrCode = true">
+                            <v-icon class="nav-item-icon" :icon="mdiCellphone"/>
+                            <span class="nav-item-title">{{ tt('Use on Mobile Device') }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-link">
+                        <router-link to="/about">
+                            <v-icon class="nav-item-icon" :icon="mdiInformationOutline"/>
+                            <span class="nav-item-title">{{ tt('About') }}</span>
+                        </router-link>
+                    </li>
+                </template>
             </perfect-scrollbar>
         </div>
 
@@ -119,11 +185,12 @@
                                :icon="true" @click="showVerticalOverlayMenu = true">
                             <v-icon :icon="mdiMenu" size="24" />
                         </v-btn>
-                        <div class="app-logo d-flex align-center gap-x-3 app-title-wrapper" v-if="mdAndDown">
+                        <div class="app-logo d-flex align-center gap-x-3 app-title-wrapper" v-if="mdAndDown" @click.prevent="toggleMode">
                             <div class="d-flex">
-                                <img alt="logo" class="main-logo" :src="APPLICATION_LOGO_PATH" />
+                                <img alt="logo" class="main-logo" :src="isInvestmentMode ? INVESTMENT_LOGO_PATH : APPLICATION_LOGO_PATH" />
                             </div>
-                            <h1 class="font-weight-medium text-xl">{{ tt('global.app.title') }}</h1>
+                            <h1 class="font-weight-medium text-xl">{{ isInvestmentMode ? tt('global.app.investmentTitle') : tt('global.app.title') }}</h1>
+                            <v-tooltip activator="parent">{{ isInvestmentMode ? tt('Switch to Bookkeeping Mode') : tt('Switch to Investment Mode') }}</v-tooltip>
                         </div>
                         <v-spacer />
                         <v-btn color="primary" variant="text" class="me-2"
@@ -218,7 +285,7 @@ import { useSettingsStore } from '@/stores/setting.ts';
 import { useUserStore } from '@/stores/user.ts';
 import { useDesktopPageStore } from '@/stores/desktopPage.ts';
 
-import { APPLICATION_LOGO_PATH } from '@/consts/asset.ts';
+import { APPLICATION_LOGO_PATH, INVESTMENT_LOGO_PATH } from '@/consts/asset.ts';
 import { ThemeType } from '@/core/theme.ts';
 import { isUserScheduledTransactionEnabled } from '@/lib/server_settings.ts';
 import { getSystemTheme, setExpenseAndIncomeAmountColor } from '@/lib/ui/common.ts';
@@ -245,7 +312,9 @@ import {
     mdiAccount,
     mdiAccountCogOutline,
     mdiLockOutline,
-    mdiLogout
+    mdiLogout,
+    mdiChartLine,
+    mdiDatabase
 } from '@mdi/js';
 
 type SnackBarType = InstanceType<typeof SnackBar>;
@@ -269,6 +338,7 @@ const isVerticalNavScrolled = ref<boolean>(false);
 const showVerticalOverlayMenu = ref<boolean>(false);
 const showLoading = ref<boolean>(false);
 const showMobileQrCode = ref<boolean>(false);
+const isInvestmentMode = ref<boolean>(false);
 
 const mdAndDown = computed<boolean>(() => display.mdAndDown.value);
 const currentRoutePath = computed<string>(() => route.path);
@@ -333,6 +403,15 @@ function logout(): void {
 
 function showAddDialogInTransactionListPage(): void {
     desktopPageStore.setShowAddTransactionDialogInTransactionList();
+}
+
+function toggleMode(): void {
+    isInvestmentMode.value = !isInvestmentMode.value;
+    if (isInvestmentMode.value) {
+        router.push('/investment/overview');
+    } else {
+        router.push('/');
+    }
 }
 </script>
 
