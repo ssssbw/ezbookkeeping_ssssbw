@@ -9,7 +9,8 @@
         "lvdou-bing",
         "dshemin",
         "lucdsouza",
-        "OuIChien"
+        "OuIChien",
+        "RasterCrow"
     ],
     "translators": {
         "de": [
@@ -41,10 +42,12 @@
             "automagics"
         ],
         "pt-BR": [
-            "thecodergus"
+            "thecodergus",
+            "balaios"
         ],
         "ru": [
-            "artegoser"
+            "artegoser",
+            "dshemin"
         ],
         "sl": [
             "thehijacker"

@@ -414,11 +414,25 @@
                     <v-tooltip :disabled="!inputIsEmpty" :text="inputEmptyProblemMessage ? tt(inputEmptyProblemMessage) : ''">
                         <template v-slot:activator="{ props }">
                             <div v-bind="props" class="d-inline-block">
-                                <v-btn :disabled="inputIsEmpty || loading || submitting"
-                                       v-if="mode !== TransactionEditPageMode.View" @click="save">
-                                    {{ tt(saveButtonTitle) }}
-                                    <v-progress-circular indeterminate size="22" class="ms-2" v-if="submitting"></v-progress-circular>
-                                </v-btn>
+                                <v-btn-group density="comfortable" v-if="mode === TransactionEditPageMode.Add || mode === TransactionEditPageMode.Edit">
+                                    <v-btn color="primary" :disabled="inputIsEmpty || loading || submitting" @click="save(AfterSaveAction.GoBack)">
+                                        {{ tt(saveButtonTitle) }}
+                                        <v-progress-circular indeterminate size="22" class="ms-2" v-if="submitting"></v-progress-circular>
+                                    </v-btn>
+                                    <v-btn color="primary" density="compact"
+                                           :disabled="inputIsEmpty || loading || submitting" :icon="true"
+                                           v-if="type === TransactionEditPageType.Transaction && mode === TransactionEditPageMode.Add">
+                                        <v-icon :icon="mdiMenuDown" size="24" />
+                                        <v-menu activator="parent">
+                                            <v-list>
+                                                <v-list-item :title="tt(TransactionQuickAddButtonActionType.SaveAndAddNewTransaction.name)"
+                                                             @click="save(AfterSaveAction.StayWithNewTransaction)"></v-list-item>
+                                                <v-list-item :title="tt(TransactionQuickAddButtonActionType.SaveAndKeepCurrentData.name)"
+                                                             @click="save(AfterSaveAction.StayWithCurrentTransaction)"></v-list-item>
+                                            </v-list>
+                                        </v-menu>
+                                    </v-btn>
+                                </v-btn-group>
                             </div>
                         </template>
                     </v-tooltip>
@@ -474,6 +488,7 @@ import {
     TransactionEditPageMode,
     TransactionEditPageType,
     GeoLocationStatus,
+    AfterSaveAction,
     useTransactionEditPageBase
 } from '@/views/base/transactions/TransactionEditPageBase.ts';
 
@@ -487,7 +502,7 @@ import { useTransactionTemplatesStore } from '@/stores/transactionTemplate.ts';
 
 import type { Coordinate } from '@/core/coordinate.ts';
 import { CategoryType } from '@/core/category.ts';
-import { TransactionType, TransactionEditScopeType } from '@/core/transaction.ts';
+import { TransactionType, TransactionEditScopeType, TransactionQuickAddButtonActionType } from '@/core/transaction.ts';
 import { TemplateType, ScheduledTemplateFrequencyType } from '@/core/template.ts';
 import { KnownErrorCode } from '@/consts/api.ts';
 import { SUPPORTED_IMAGE_EXTENSIONS } from '@/consts/file.ts';
@@ -506,7 +521,7 @@ import {
     getTransactionPrimaryCategoryName,
     getTransactionSecondaryCategoryName
 } from '@/lib/category.ts';
-import { type SetTransactionOptions, setTransactionModelByTransaction } from '@/lib/transaction.ts';
+import { type SetTransactionOptions } from '@/lib/transaction.ts';
 import {
     isTransactionPicturesEnabled,
     getMapProvider
@@ -563,20 +578,17 @@ const {
     clientSessionId,
     loading,
     submitting,
+    submitted,
     uploadingPicture,
     geoLocationStatus,
     setGeoLocationByClickMap,
     transaction,
     defaultCurrency,
-    defaultAccountId,
     coordinateDisplayType,
     allTimezones,
     allVisibleAccounts,
-    allAccountsMap,
     allVisibleCategorizedAccounts,
     allCategories,
-    allCategoriesMap,
-    allTagsMap,
     firstVisibleAccountId,
     hasVisibleExpenseCategories,
     hasVisibleIncomeCategories,
@@ -599,6 +611,8 @@ const {
     inputEmptyProblemMessage,
     inputIsEmpty,
     createNewTransactionModel,
+    setTransactionModel,
+    updateTransactionModelByAfterSaveAction,
     updateTransactionTime,
     updateTransactionTimezone,
     swapTransactionData,
@@ -625,10 +639,7 @@ const noTransactionDraft = ref<boolean>(false);
 const geoMenuState = ref<boolean>(false);
 const removingPictureId = ref<string>('');
 
-const initAmount = ref<number | undefined>(undefined);
-const initCategoryId = ref<string | undefined>(undefined);
-const initAccountId = ref<string | undefined>(undefined);
-const initTagIds = ref<string | undefined>(undefined);
+const initOptions = ref<TransactionEditOptions | undefined>(undefined);
 
 let resolveFunc: ((response?: TransactionEditResponse) => void) | null = null;
 let rejectFunc: ((reason?: unknown) => void) | null = null;
@@ -645,42 +656,15 @@ const sourceAmountColor = computed<string | undefined>(() => {
     return undefined;
 });
 
-
-
 const isTransactionModified = computed<boolean>(() => {
     if (mode.value === TransactionEditPageMode.Add) {
-        return transactionsStore.isTransactionDraftModified(transaction.value, initAmount.value, initCategoryId.value, initAccountId.value, initTagIds.value, firstVisibleAccountId.value);
+        return transactionsStore.isTransactionDraftModified(transaction.value, initOptions.value?.amount, initOptions.value?.categoryId, initOptions.value?.accountId, initOptions.value?.tagIds, firstVisibleAccountId.value);
     } else if (mode.value === TransactionEditPageMode.Edit) {
         return true;
     } else {
         return false;
     }
 });
-
-function setTransaction(newTransaction: Transaction | null, options: SetTransactionOptions, setContextData: boolean): void {
-    setTransactionModelByTransaction(
-        transaction.value,
-        newTransaction,
-        allCategories.value,
-        allCategoriesMap.value,
-        allVisibleAccounts.value,
-        allAccountsMap.value,
-        allTagsMap.value,
-        defaultAccountId.value,
-        {
-            time: options.time,
-            type: options.type,
-            categoryId: options.categoryId,
-            accountId: options.accountId,
-            destinationAccountId: options.destinationAccountId,
-            amount: options.amount,
-            destinationAmount: options.destinationAmount,
-            tagIds: options.tagIds,
-            comment: options.comment
-        },
-        setContextData
-    );
-}
 
 function open(options: TransactionEditOptions): Promise<TransactionEditResponse | undefined> {
     addByTemplateId.value = null;
@@ -689,18 +673,16 @@ function open(options: TransactionEditOptions): Promise<TransactionEditResponse 
     activeTab.value = 'basicInfo';
     loading.value = true;
     submitting.value = false;
+    submitted.value = false;
     geoLocationStatus.value = null;
     setGeoLocationByClickMap.value = false;
     originalTransactionEditable.value = false;
     noTransactionDraft.value = options.noTransactionDraft || false;
 
-    initAmount.value = options.amount;
-    initCategoryId.value = options.categoryId;
-    initAccountId.value = options.accountId;
-    initTagIds.value = options.tagIds;
+    initOptions.value = options;
 
     const newTransaction = createNewTransactionModel(options.type);
-    setTransaction(newTransaction, options, true);
+    setTransactionModel(newTransaction, options, true);
 
     const promises: Promise<unknown>[] = [
         accountsStore.loadAllAccounts({ force: false }),
@@ -711,7 +693,7 @@ function open(options: TransactionEditOptions): Promise<TransactionEditResponse 
     if (props.type === TransactionEditPageType.Transaction) {
         if (options && options.id) {
             if (options.currentTransaction) {
-                setTransaction(options.currentTransaction, options, true);
+                setTransactionModel(options.currentTransaction, options, true);
             }
 
             mode.value = TransactionEditPageMode.View;
@@ -723,10 +705,10 @@ function open(options: TransactionEditOptions): Promise<TransactionEditResponse 
             editId.value = null;
 
             if (options.template) {
-                setTransaction(options.template, options, false);
+                setTransactionModel(options.template, options, false);
                 addByTemplateId.value = options.template.id;
             } else if (!options.noTransactionDraft && (settingsStore.appSettings.autoSaveTransactionDraft === 'enabled' || settingsStore.appSettings.autoSaveTransactionDraft === 'confirmation') && transactionsStore.transactionDraft) {
-                setTransaction(Transaction.ofDraft(transactionsStore.transactionDraft), options, false);
+                setTransactionModel(Transaction.ofDraft(transactionsStore.transactionDraft), options, false);
             }
 
             if (settingsStore.appSettings.autoGetCurrentGeoLocation
@@ -751,7 +733,7 @@ function open(options: TransactionEditOptions): Promise<TransactionEditResponse 
 
         if (options && options.id) {
             if (options.currentTemplate) {
-                setTransaction(options.currentTemplate, options, false);
+                setTransactionModel(options.currentTemplate, options, false);
                 (transaction.value as TransactionTemplate).fillFrom(options.currentTemplate);
             }
 
@@ -792,11 +774,11 @@ function open(options: TransactionEditOptions): Promise<TransactionEditResponse 
 
         if (props.type === TransactionEditPageType.Transaction && options && options.id && responses[3] && responses[3] instanceof Transaction) {
             const transaction: Transaction = responses[3];
-            setTransaction(transaction, options, true);
+            setTransactionModel(transaction, options, true);
             originalTransactionEditable.value = transaction.editable;
         } else if (props.type === TransactionEditPageType.Template && options && options.id && responses[3] && responses[3] instanceof TransactionTemplate) {
             const template: TransactionTemplate = responses[3];
-            setTransaction(template, options, false);
+            setTransactionModel(template, options, false);
 
             if (!(transaction.value instanceof TransactionTemplate)) {
                 transaction.value = TransactionTemplate.createNewTransactionTemplate(transaction.value);
@@ -804,7 +786,7 @@ function open(options: TransactionEditOptions): Promise<TransactionEditResponse 
 
             (transaction.value as TransactionTemplate).fillFrom(template);
         } else {
-            setTransaction(null, options, true);
+            setTransactionModel(null, options, true);
         }
 
         loading.value = false;
@@ -827,7 +809,7 @@ function open(options: TransactionEditOptions): Promise<TransactionEditResponse 
     });
 }
 
-function save(): void {
+function save(afterAction: AfterSaveAction): void {
     const problemMessage = inputEmptyProblemMessage.value;
 
     if (problemMessage) {
@@ -846,24 +828,31 @@ function save(): void {
                 clientSessionId: clientSessionId.value
             }).then(() => {
                 submitting.value = false;
-
-                if (resolveFunc) {
-                    if (mode.value === TransactionEditPageMode.Add) {
-                        resolveFunc({
-                            message: 'You have added a new transaction'
-                        });
-                    } else if (mode.value === TransactionEditPageMode.Edit) {
-                        resolveFunc({
-                            message: 'You have saved this transaction'
-                        });
-                    }
-                }
+                submitted.value = true;
 
                 if (mode.value === TransactionEditPageMode.Add && !noTransactionDraft.value && !addByTemplateId.value && !duplicateFromId.value) {
                     transactionsStore.clearTransactionDraft();
                 }
 
-                showState.value = false;
+                if (mode.value === TransactionEditPageMode.Add && (afterAction === AfterSaveAction.StayWithNewTransaction || afterAction === AfterSaveAction.StayWithCurrentTransaction)) {
+                    snackbar.value?.showMessage('You have added a new transaction');
+                    updateTransactionModelByAfterSaveAction(afterAction, initOptions.value);
+                    clientSessionId.value = generateRandomUUID();
+                } else {
+                    if (resolveFunc) {
+                        if (mode.value === TransactionEditPageMode.Add) {
+                            resolveFunc({
+                                message: 'You have added a new transaction'
+                            });
+                        } else if (mode.value === TransactionEditPageMode.Edit) {
+                            resolveFunc({
+                                message: 'You have saved this transaction'
+                            });
+                        }
+                    }
+
+                    showState.value = false;
+                }
             }).catch(error => {
                 submitting.value = false;
 
@@ -939,6 +928,7 @@ function duplicate(withTime?: boolean, withGeoLocation?: boolean): void {
     editId.value = null;
     duplicateFromId.value = transaction.value.id;
     clientSessionId.value = generateRandomUUID();
+    submitted.value = false;
     activeTab.value = 'basicInfo';
     transaction.value.id = '';
 
@@ -994,7 +984,11 @@ function remove(): void {
 
 function cancel(): void {
     const doClose = function () {
-        if (rejectFunc) {
+        if (props.type === TransactionEditPageType.Transaction && mode.value === TransactionEditPageMode.Add && submitted.value && resolveFunc) {
+            resolveFunc({
+                message: 'You have added a new transaction'
+            });
+        } else if (rejectFunc) {
             rejectFunc();
         }
 
@@ -1007,9 +1001,9 @@ function cancel(): void {
     }
 
     if (settingsStore.appSettings.autoSaveTransactionDraft === 'confirmation') {
-        if (transactionsStore.isTransactionDraftModified(transaction.value, initAmount.value, initCategoryId.value, initAccountId.value, initTagIds.value, firstVisibleAccountId.value)) {
+        if (transactionsStore.isTransactionDraftModified(transaction.value, initOptions.value?.amount, initOptions.value?.categoryId, initOptions.value?.accountId, initOptions.value?.tagIds, firstVisibleAccountId.value)) {
             confirmDialog.value?.open('Do you want to save this transaction draft?').then(() => {
-                transactionsStore.saveTransactionDraft(transaction.value, initAmount.value, initCategoryId.value, initAccountId.value, initTagIds.value, firstVisibleAccountId.value);
+                transactionsStore.saveTransactionDraft(transaction.value, initOptions.value?.amount, initOptions.value?.categoryId, initOptions.value?.accountId, initOptions.value?.tagIds, firstVisibleAccountId.value);
                 doClose();
             }).catch(() => {
                 transactionsStore.clearTransactionDraft();
@@ -1020,7 +1014,7 @@ function cancel(): void {
             doClose();
         }
     } else if (settingsStore.appSettings.autoSaveTransactionDraft === 'enabled') {
-        transactionsStore.saveTransactionDraft(transaction.value, initAmount.value, initCategoryId.value, initAccountId.value, initTagIds.value, firstVisibleAccountId.value);
+        transactionsStore.saveTransactionDraft(transaction.value, initOptions.value?.amount, initOptions.value?.categoryId, initOptions.value?.accountId, initOptions.value?.tagIds, firstVisibleAccountId.value);
         doClose();
     } else {
         doClose();
@@ -1212,12 +1206,12 @@ defineExpose({
 
 @media (min-height: 780px) {
     .transaction-edit-map-view {
-        height: 538px;
+        height: 537px;
     }
 
     @media (min-width: 960px) {
         .transaction-pictures {
-            min-height: 562px;
+            min-height: 561px;
         }
     }
 }

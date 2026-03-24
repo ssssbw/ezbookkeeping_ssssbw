@@ -77,6 +77,11 @@
                                              @click="exportReconciliationStatements(KnownFileType.TSV)">
                                     <v-list-item-title>{{ tt('Export to TSV (Tab-separated values) File') }}</v-list-item-title>
                                 </v-list-item>
+                                <v-list-item :prepend-icon="extendMdiSemicolon"
+                                             :disabled="!reconciliationStatements || !reconciliationStatements.transactions || reconciliationStatements.transactions.length < 1"
+                                             @click="exportReconciliationStatements(KnownFileType.SSV)">
+                                    <v-list-item-title>{{ tt('Export to SSV (Semicolon-separated values) File') }}</v-list-item-title>
+                                </v-list-item>
                             </v-list>
                         </v-menu>
                     </v-btn>
@@ -156,7 +161,7 @@
                 >
                     <template #item.time="{ item }">
                         <span>{{ getDisplayDateTime(item) }}</span>
-                        <v-chip class="ms-1" variant="flat" color="secondary" size="x-small"
+                        <v-chip class="ms-1" variant="flat" color="grey" size="x-small"
                                 v-if="!isSameAsDefaultTimezoneOffsetMinutes(item)">{{ getDisplayTimezone(item) }}</v-chip>
                         <v-tooltip activator="parent" v-if="!isSameAsDefaultTimezoneOffsetMinutes(item)">{{ getDisplayTimeInDefaultTimezone(item) }}</v-tooltip>
                     </template>
@@ -302,6 +307,9 @@ import { getCurrentUnixTime } from '@/lib/datetime.ts';
 import { startDownloadFile } from '@/lib/ui/common.ts';
 
 import {
+    extendMdiSemicolon
+} from '@/icons/desktop/extend_mdi_icons.ts';
+import {
     mdiRefresh,
     mdiArrowRight,
     mdiTuneVertical,
@@ -373,6 +381,7 @@ const transactionsStore = useTransactionsStore();
 const chartTypeIconMap = {
     [AccountBalanceTrendChartType.Column.type]: mdiChartBar,
     [AccountBalanceTrendChartType.Area.type]: mdiChartAreasplineVariant,
+    [AccountBalanceTrendChartType.Boxplot.type]: mdiChartWaterfall,
     [AccountBalanceTrendChartType.Candlestick.type]: mdiChartWaterfall,
 };
 

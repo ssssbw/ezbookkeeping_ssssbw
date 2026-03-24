@@ -617,8 +617,8 @@ export default {
     deleteTransaction: (req: TransactionDeleteRequest): ApiResponsePromise<boolean> => {
         return axios.post<ApiResponse<boolean>>('v1/transactions/delete.json', req);
     },
-    parseImportDsvFile: ({ fileType, fileEncoding, importFile }: { fileType: string, fileEncoding?: string, importFile: File }): ApiResponsePromise<string[][]> => {
-        return axios.postForm<ApiResponse<string[][]>>('v1/transactions/parse_dsv_file.json', {
+    parseImportCustomFile: ({ fileType, fileEncoding, importFile }: { fileType: string, fileEncoding?: string, importFile: File }): ApiResponsePromise<string[][]> => {
+        return axios.postForm<ApiResponse<string[][]>>('v1/transactions/parse_custom_file.json', {
             fileType: fileType,
             fileEncoding: fileEncoding,
             file: importFile
@@ -830,6 +830,12 @@ export default {
     },
     generateQrCodeUrl: (qrCodeName: string): string => {
         return `${getBasePath()}${BASE_QRCODE_PATH}/${qrCodeName}.png`;
+    },
+    getMapProxyTileImageAndAnnotationImageUrlPatterns(): string[] {
+        return [
+            `.*${BASE_PROXY_URL_PATH}/map/tile/[^/]+/[^/]+/[^/]+\\.png\\?provider=[^&]+.*$`,
+            `.*${BASE_PROXY_URL_PATH}/map/annotation/[^/]+/[^/]+/[^/]+\\.png\\?provider=[^&]+.*$`
+        ];
     },
     generateMapProxyTileImageUrl: (mapProvider: string, language: string): string => {
         const token = getCurrentToken();
