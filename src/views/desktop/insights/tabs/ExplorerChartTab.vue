@@ -92,7 +92,7 @@
             :show-value="true"
             :show-percent="true"
             :enable-click-item="true"
-            :amount-value="currentExplorer.valueMetric !== TransactionExplorerValueMetric.TransactionCount.value"
+            :amount-value="TransactionExplorerValueMetric.valueOf(currentExplorer.valueMetric)?.isAmount"
             :default-currency="defaultCurrency"
             id-field="id"
             name-field="name"
@@ -120,7 +120,7 @@
             :items="categoryDimensionTransactionExplorerData && categoryDimensionTransactionExplorerData.length ? categoryDimensionTransactionExplorerData : []"
             :show-value="true"
             :show-percent="true"
-            :amount-value="currentExplorer.valueMetric !== TransactionExplorerValueMetric.TransactionCount.value"
+            :amount-value="TransactionExplorerValueMetric.valueOf(currentExplorer.valueMetric)?.isAmount"
             :default-currency="defaultCurrency"
             name-field="name"
             value-field="totalAmount"
@@ -146,12 +146,12 @@
             :one-hundred-percent-stacked="axisChart100PercentStacked"
             :sorting-type="currentExplorer.chartSortingType"
             :show-value="true"
-            :show-total-amount-in-tooltip="true"
+            :show-total-amount-in-tooltip="TransactionExplorerValueMetric.valueOf(currentExplorer.valueMetric)?.supportSum"
             :total-name-in-tooltip="currentExplorer.valueMetric === TransactionExplorerValueMetric.TransactionCount.value ? tt('Total Transactions') : tt('Total Amount')"
             :category-type-name="currentTransactionExplorerCategoryDimensionName"
             :all-category-names="categoriedNamesSortedByDisplayOrder"
             :items="seriesDimensionTransactionExplorerData"
-            :amount-value="currentExplorer.valueMetric !== TransactionExplorerValueMetric.TransactionCount.value"
+            :amount-value="TransactionExplorerValueMetric.valueOf(currentExplorer.valueMetric)?.isAmount"
             :default-currency="defaultCurrency"
             :enable-click-item="true"
             id-field="id"
@@ -183,8 +183,9 @@ import {
 } from '@/stores/explorer.ts';
 
 import { type NameValue, type TypeAndDisplayName } from '@/core/base.ts';
+import { NumeralSystem } from '@/core/numeral.ts';
 import { Month, WeekDay } from '@/core/datetime.ts';
-import { ChartSortingType } from '@/core/statistics.ts';
+import { ChartSortingType, ExportMermaidChartType } from '@/core/statistics.ts';
 import {
     TransactionExplorerChartType,
     TransactionExplorerDataDimensionType,
@@ -244,6 +245,7 @@ const {
     getMonthdayShortName,
     getWeekdayLongName,
     getQuarterName,
+    getCurrencyName,
     formatDateTimeToShortDateTime,
     formatDateTimeToShortDate,
     formatDateTimeToGregorianLikeShortYear,
@@ -264,7 +266,7 @@ const defaultCurrency = computed<string>(() => userStore.currentUserDefaultCurre
 const allTransactionExplorerDataDimensions = computed<NameValue[]>(() => getAllTransactionExplorerDataDimensions());
 const allTransactionExplorerValueMetrics = computed<NameValue[]>(() => getAllTransactionExplorerValueMetrics());
 const allTransactionExplorerChartTypes = computed<NameValue[]>(() => getAllTransactionExplorerChartTypes());
-const allTransactionExplorerChartSortingTypes = computed<TypeAndDisplayName[]>(() => getAllStatisticsSortingTypes());
+const allTransactionExplorerChartSortingTypes = computed<TypeAndDisplayName[]>(() => getAllStatisticsSortingTypes(true));
 const currentTransactionExplorerCategoryDimensionName = computed<string>(() => findNameByValue(allTransactionExplorerDataDimensions.value, currentExplorer.value.categoryDimension) ?? tt('Unknown'));
 
 const currentExplorer = computed<InsightsExplorer>(() => explorersStore.currentInsightsExplorer);
@@ -468,7 +470,8 @@ function getCategoriedDataDisplayName(info: CategoriedInfo | SeriesInfo): string
         const parts = name.split('-');
         const year = parts.length === 2 ? parts[0] : '';
         const quarter = parts.length === 2 ? parseInt(parts[1] as string) : 0;
-        const dateTime = year && quarter ? parseDateTimeFromString(`${year}-${quarter * 3}`, TransactionExplorerDimensionType.YearMonth) : undefined;
+        const quarterLastMonth = quarter * 3;
+        const dateTime = year && quarterLastMonth ? parseDateTimeFromString(`${year}-${quarterLastMonth.toString(10).padStart(2, NumeralSystem.WesternArabicNumerals.digitZero)}`, TransactionExplorerDimensionType.YearMonth) : undefined;
         displayName = dateTime ? formatDateTimeToGregorianLikeYearQuarter(dateTime) : tt('Unknown');
     } else if (dimession === TransactionExplorerDataDimension.DateTimeByYear.value) {
         const dateTime = parseDateTimeFromString(name, dimessionType);
@@ -485,6 +488,10 @@ function getCategoriedDataDisplayName(info: CategoriedInfo | SeriesInfo): string
         displayName = month ? getMonthLongName(month.name) : tt('Unknown');
     } else if (dimession === TransactionExplorerDataDimension.DateTimeByQuarterOfYear.value) {
         displayName = getQuarterName(parseInt(name));
+    } else if (dimession === TransactionExplorerDataDimension.SourceAccountCurrency.value || dimession === TransactionExplorerDataDimension.DestinationAccountCurrency.value) {
+        if (!needI18n) {
+            displayName = getCurrencyName(name);
+        }
     }
 
     if (dimession === TransactionExplorerDataDimension.SourceAmount.value
@@ -532,9 +539,14 @@ function onClickTrendChartItem(itemId: string, categoryIndex: number): void {
     }
 }
 
-function buildExportResults(): { headers: string[], data: string[][] } | undefined {
+function buildExportResults(): { headers: string[], data: string[][], supportedMermaidCharts?: ExportMermaidChartType[] } | undefined {
     if (currentExplorer.value.chartType === TransactionExplorerChartType.Pie.value || currentExplorer.value.chartType === TransactionExplorerChartType.Radar.value) {
         const valueMetric = TransactionExplorerValueMetric.valueOf(currentExplorer.value.valueMetric);
+        let supportedMermaidCharts: ExportMermaidChartType[] | undefined = undefined;
+
+        if (currentExplorer.value.chartType === TransactionExplorerChartType.Pie.value) {
+            supportedMermaidCharts = [ ExportMermaidChartType.PieChart ];
+        }
 
         return {
             headers: [
@@ -544,10 +556,42 @@ function buildExportResults(): { headers: string[], data: string[][] } | undefin
             data: categoryDimensionTransactionExplorerData.value.map(data => [
                 data.name,
                 valueMetric?.isAmount ? formatAmountToWesternArabicNumeralsWithoutDigitGrouping(data.totalAmount) : data.totalAmount.toString(10)
-            ])
+            ]),
+            supportedMermaidCharts: supportedMermaidCharts
         };
     } else if (TransactionExplorerChartType.valueOf(currentExplorer.value.chartType)?.seriesDimensionRequired && axisChartDisplayType.value) {
-        return axisChart.value?.exportData();
+        const results = axisChart.value?.exportData();
+
+        if (!results) {
+            return undefined;
+        }
+
+        let supportedMermaidCharts: ExportMermaidChartType[] | undefined = undefined;
+
+        if (results.headers.length === 2 &&
+            (
+                currentExplorer.value.chartType === TransactionExplorerChartType.ColumnStacked.value ||
+                currentExplorer.value.chartType === TransactionExplorerChartType.Column100PercentStacked.value ||
+                currentExplorer.value.chartType === TransactionExplorerChartType.ColumnGrouped.value
+            )
+        ) {
+            supportedMermaidCharts = [ ExportMermaidChartType.XYChartBar ];
+        } else if (results.headers.length === 2 &&
+            (
+                currentExplorer.value.chartType === TransactionExplorerChartType.AreaStacked.value ||
+                currentExplorer.value.chartType === TransactionExplorerChartType.Area100PercentStacked.value
+            )
+        ) {
+            supportedMermaidCharts = [ ExportMermaidChartType.XYChartLine ];
+        } else if (currentExplorer.value.chartType === TransactionExplorerChartType.LineGrouped.value) {
+            supportedMermaidCharts = [ ExportMermaidChartType.XYChartLine ];
+        }
+
+        return {
+            headers: results.headers,
+            data: results.data,
+            supportedMermaidCharts: supportedMermaidCharts
+        };
     } else {
         return undefined;
     }

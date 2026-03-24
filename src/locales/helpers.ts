@@ -1,7 +1,13 @@
 import { useI18n as useVueI18n } from 'vue-i18n';
 import moment from 'moment-timezone';
 
-import type { NameValue, TypeAndName, TypeAndDisplayName, LocalizedSwitchOption } from '@/core/base.ts';
+import {
+    type NameValue,
+    type TypeAndName,
+    type TypeAndNameWithAlternativeName,
+    type TypeAndDisplayName,
+    type LocalizedSwitchOption
+} from '@/core/base.ts';
 
 import {
     type LanguageInfo,
@@ -61,6 +67,7 @@ import {
     ShortDateFormat,
     LongTimeFormat,
     ShortTimeFormat,
+    DateFormatOrder,
     DateRange,
     DateRangeScene,
     LANGUAGE_DEFAULT_DATE_TIME_FORMAT_VALUE
@@ -121,7 +128,9 @@ import {
 } from '@/core/category.ts';
 
 import {
-    TransactionEditScopeType
+    TransactionEditScopeType,
+    TransactionQuickSaveButtonStyle,
+    TransactionQuickAddButtonActionType
 } from '@/core/transaction.ts';
 
 import {
@@ -549,13 +558,19 @@ export function useI18n() {
         return ret;
     }
 
-    function getLocalizedDisplayNameAndType(typeAndNames: TypeAndName[]): TypeAndDisplayName[] {
+    function getLocalizedDisplayNameAndType(typeAndNames: TypeAndName[] | TypeAndNameWithAlternativeName[], useAlternativeName?: boolean): TypeAndDisplayName[] {
         const ret: TypeAndDisplayName[] = [];
 
         for (const typeAndName of typeAndNames) {
+            let name: string = typeAndName.name;
+
+            if (useAlternativeName && 'alternativeName' in typeAndName && typeAndName.alternativeName) {
+                name = typeAndName.alternativeName;
+            }
+
             ret.push({
                 type: typeAndName.type,
-                displayName: t(typeAndName.name)
+                displayName: t(name)
             });
         }
 
@@ -661,7 +676,7 @@ export function useI18n() {
 
     function getLocalizedDateTimeFormat<T extends DateFormat | TimeFormat>(type: string, allFormatMap: Record<string, T>, allFormatArray: T[], formatTypeValue: number, languageDefaultTypeNameKey: string, systemDefaultFormatType: T): string {
         const formatType = getLocalizedDateTimeType(allFormatMap, allFormatArray, formatTypeValue, languageDefaultTypeNameKey, systemDefaultFormatType);
-        return t(`format.${type}.${formatType.key}`);
+        return t(`format.${type}.${formatType.typeName}`);
     }
 
     function getLocalizedLongDateFormat(): string {
@@ -1078,7 +1093,7 @@ export function useI18n() {
         });
 
         for (const formatType of allFormatArray) {
-            const format = t(`format.${type}.${formatType.key}`);
+            const format = t(`format.${type}.${formatType.typeName}`);
 
             ret.push({
                 type: formatType.type,
@@ -1760,12 +1775,22 @@ export function useI18n() {
         return t(`currency.name.${currencyCode}`);
     }
 
+    function getLongDateFormatOrder(): DateFormatOrder {
+        return getLocalizedDateTimeType(LongDateFormat.all(), LongDateFormat.values(), userStore.currentUserLongDateFormat, 'longDateFormat', LongDateFormat.Default).order;
+    }
+
+    function getShortDateFormatOrder(): DateFormatOrder {
+        return getLocalizedDateTimeType(ShortDateFormat.all(), ShortDateFormat.values(), userStore.currentUserShortDateFormat, 'shortDateFormat', ShortDateFormat.Default).order;
+    }
+
     function isLongDateMonthAfterYear(): boolean {
-        return getLocalizedDateTimeType(LongDateFormat.all(), LongDateFormat.values(), userStore.currentUserLongDateFormat, 'longDateFormat', LongDateFormat.Default).isMonthAfterYear;
+        const order: DateFormatOrder = getLongDateFormatOrder();
+        return order === DateFormatOrder.YMD;
     }
 
     function isShortDateMonthAfterYear(): boolean {
-        return getLocalizedDateTimeType(ShortDateFormat.all(), ShortDateFormat.values(), userStore.currentUserShortDateFormat, 'shortDateFormat', ShortDateFormat.Default).isMonthAfterYear;
+        const order: DateFormatOrder = getShortDateFormatOrder();
+        return order === DateFormatOrder.YMD;
     }
 
     function isLongTime24HourFormat(): boolean {
@@ -2077,6 +2102,31 @@ export function useI18n() {
         return formatPercent(value, precision, lowPrecisionValue, numberFormatOptions);
     }
 
+    function getFormattedVolume(value: number, precision?: number, unit?: 'KiB' | 'MiB'): string {
+        const numberFormatOptions = getNumberFormatOptions({});
+        let displayUnit = unit || 'B';
+
+        if (unit === 'KiB') {
+            value = value / 1024.0;
+        } else if (unit === 'MiB') {
+            value = value / 1024.0 / 1024.0;
+        } else {
+            displayUnit = 'B';
+
+            if (value >= 1024.0) {
+                value = value / 1024.0;
+                displayUnit = 'KiB';
+            }
+
+            if (value >= 1024.0) {
+                value = value / 1024.0;
+                displayUnit = 'MiB';
+            }
+        }
+
+        return formatNumber(value, numberFormatOptions, precision) + ' ' + displayUnit;
+    }
+
     function getFormattedExchangeRateAmount(value: number, numeralSystem?: NumeralSystem): string {
         const numberFormatOptions = getNumberFormatOptions({ numeralSystem });
         return formatExchangeRateAmount(value, numberFormatOptions);
@@ -2381,10 +2431,12 @@ export function useI18n() {
         getAllTrendChartTypes: () => getLocalizedDisplayNameAndType(TrendChartType.values()),
         getAllAccountBalanceTrendChartTypes: () => getLocalizedDisplayNameAndType(AccountBalanceTrendChartType.values()),
         getAllStatisticsChartDataTypes: (analysisType: StatisticsAnalysisType, withDesktopOnlyChart?: boolean) => getLocalizedDisplayNameAndType(ChartDataType.values(analysisType, withDesktopOnlyChart)),
-        getAllStatisticsSortingTypes: () => getLocalizedDisplayNameAndType(ChartSortingType.values()),
+        getAllStatisticsSortingTypes: (useAlternativeName?: boolean) => getLocalizedDisplayNameAndType(ChartSortingType.values(), useAlternativeName),
         getAllStatisticsDateAggregationTypes: (analysisType: StatisticsAnalysisType) => getLocalizedChartDateAggregationTypeAndDisplayName(analysisType, true),
         getAllStatisticsDateAggregationTypesWithShortName: (analysisType: StatisticsAnalysisType) => getLocalizedChartDateAggregationTypeAndDisplayName(analysisType, false),
         getAllTransactionEditScopeTypes: () => getLocalizedDisplayNameAndType(TransactionEditScopeType.values()),
+        getAllTransactionQuickSaveButtonStyles: () => getLocalizedDisplayNameAndType(TransactionQuickSaveButtonStyle.values()),
+        getAllTransactionQuickAddButtonActionTypes: () => getLocalizedDisplayNameAndType(TransactionQuickAddButtonActionType.values()),
         getAllTransactionScheduledFrequencyTypes: () => getLocalizedDisplayNameAndType(ScheduledTemplateFrequencyType.values()),
         getAllImportTransactionColumnTypes: () => getLocalizedDisplayNameAndType(ImportTransactionColumnType.values()),
         getAllTransactionDefaultCategories,
@@ -2422,6 +2474,8 @@ export function useI18n() {
         getCurrentDigitGroupingType,
         getCurrentFiscalYearFormatType,
         getCurrencyName,
+        getLongDateFormatOrder,
+        getShortDateFormatOrder,
         isLongDateMonthAfterYear,
         isShortDateMonthAfterYear,
         isLongTime24HourFormat,
@@ -2480,6 +2534,7 @@ export function useI18n() {
         formatNumberToWesternArabicNumerals: (value: number, precision?: number) => getFormattedNumber(value, NumeralSystem.WesternArabicNumerals, precision),
         formatPercentToLocalizedNumerals: (value: number, precision: number, lowPrecisionValue: string) => getFormattedPercentValue(value, precision, lowPrecisionValue),
         formatPercentToWesternArabicNumerals: (value: number, precision: number, lowPrecisionValue: string) => getFormattedPercentValue(value, precision, lowPrecisionValue, NumeralSystem.WesternArabicNumerals),
+        formatVolumeToLocalizedNumerals: getFormattedVolume,
         formatExchangeRateAmountToWesternArabicNumerals: (value: number) => getFormattedExchangeRateAmount(value, NumeralSystem.WesternArabicNumerals),
         appendDigitGroupingSymbolAndDecimalSeparator: (value: string) => appendDigitGroupingSymbolAndDecimalSeparator(value, getNumberFormatOptions({})),
         getAdaptiveAmountRate,

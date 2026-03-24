@@ -400,6 +400,8 @@
                                             :default-currency="defaultCurrency"
                                             :stacked="showStackedInTrendsChart"
                                             :show-total-amount-in-tooltip="showTotalAmountInTrendsChart"
+                                            :show-year-over-year="true"
+                                            :show-period-over-period="trendDateAggregationType === ChartDateAggregationType.Month.type || trendDateAggregationType === ChartDateAggregationType.Quarter.type"
                                             ref="monthlyTrendsChart"
                                             id-field="id"
                                             name-field="name"
@@ -449,6 +451,8 @@
                                             :default-currency="defaultCurrency"
                                             :stacked="showStackedInTrendsChart"
                                             :show-total-amount-in-tooltip="showTotalAmountInTrendsChart"
+                                            :show-year-over-year="true"
+                                            :show-period-over-period="assetTrendsDateAggregationType === ChartDateAggregationType.Day.type || assetTrendsDateAggregationType === ChartDateAggregationType.Month.type || assetTrendsDateAggregationType === ChartDateAggregationType.Quarter.type"
                                             ref="dailyTrendsChart"
                                             id-field="id"
                                             name-field="name"
@@ -528,9 +532,11 @@ import {
     ChartDataAggregationType,
     StatisticsAnalysisType,
     CategoricalChartType,
+    TrendChartType,
     ChartDataType,
     ChartSortingType,
-    ChartDateAggregationType
+    ChartDateAggregationType,
+    ExportMermaidChartType
 } from '@/core/statistics.ts';
 
 import {
@@ -1243,6 +1249,12 @@ function setKeywordFilter(keyword: string): void {
 
 function exportResults(): void {
     if (analysisType.value === StatisticsAnalysisType.CategoricalAnalysis && categoricalAnalysisData.value && categoricalAnalysisData.value.items) {
+        let supportedMermaidCharts: ExportMermaidChartType[] | undefined = undefined;
+
+        if (query.value.categoricalChartType === CategoricalChartType.Pie.type) {
+            supportedMermaidCharts = [ ExportMermaidChartType.PieChart ];
+        }
+
         exportDialog.value?.open({
             headers: [
                 tt('Name'),
@@ -1255,19 +1267,38 @@ function exportResults(): void {
                     item.name,
                     formatAmountToWesternArabicNumeralsWithoutDigitGrouping(item.totalAmount),
                     item.percent.toFixed(4)
-                ])
+                ]),
+            supportedMermaidCharts: supportedMermaidCharts
         });
     } else if (analysisType.value === StatisticsAnalysisType.TrendAnalysis && trendsAnalysisData.value && trendsAnalysisData.value.items && monthlyTrendsChart.value) {
         const exportData = monthlyTrendsChart.value.exportData();
+        let supportedMermaidCharts: ExportMermaidChartType[] | undefined = undefined;
+
+        if (exportData.headers.length === 2 && query.value.trendChartType === TrendChartType.Column.type) {
+            supportedMermaidCharts = [ ExportMermaidChartType.XYChartBar ];
+        } else if (exportData.headers.length === 2 && query.value.trendChartType === TrendChartType.Area.type) {
+            supportedMermaidCharts = [ ExportMermaidChartType.XYChartLine ];
+        }
+
         exportDialog.value?.open({
             headers: exportData.headers || [],
-            data: exportData.data || []
+            data: exportData.data || [],
+            supportedMermaidCharts: supportedMermaidCharts
         });
     } else if (analysisType.value === StatisticsAnalysisType.AssetTrends && assetTrendsData.value && assetTrendsData.value.items && dailyTrendsChart.value) {
         const exportData = dailyTrendsChart.value.exportData();
+        let supportedMermaidCharts: ExportMermaidChartType[] | undefined = undefined;
+
+        if (exportData.headers.length === 2 && query.value.assetTrendsChartType === TrendChartType.Column.type) {
+            supportedMermaidCharts = [ ExportMermaidChartType.XYChartBar ];
+        } else if (exportData.headers.length === 2 && query.value.assetTrendsChartType === TrendChartType.Area.type) {
+            supportedMermaidCharts = [ ExportMermaidChartType.XYChartLine ];
+        }
+
         exportDialog.value?.open({
             headers: exportData.headers || [],
-            data: exportData.data || []
+            data: exportData.data || [],
+            supportedMermaidCharts: supportedMermaidCharts
         });
     }
 }
