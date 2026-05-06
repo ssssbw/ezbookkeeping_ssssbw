@@ -7,6 +7,8 @@
 *.so
 *.dylib
 ezbookkeeping
+ezbookkeeping.exe
+ezbookkeeping.zip
 
 # generated package
 package/
