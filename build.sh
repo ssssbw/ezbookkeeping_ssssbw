@@ -160,6 +160,12 @@ build_backend() {
         fi
     fi
 
+    ld_static_link_flags=""
+
+    if [ "$(uname -s)" = "Linux" ]; then
+       ld_static_link_flags="-linkmode external -extldflags '-static'"
+    fi
+
     backend_build_extra_arguments="-X main.Version=$VERSION"
     backend_build_extra_arguments="$backend_build_extra_arguments -X main.CommitHash=$COMMIT_HASH"
 
@@ -169,15 +175,7 @@ build_backend() {
 
     echo "Building backend binary file ($RELEASE_TYPE)..."
 
-    # CGO_ENABLED=1 go build -a -v -trimpath -ldflags "-w -s -linkmode external -extldflags '-static' $backend_build_extra_arguments" -o ezbookkeeping ezbookkeeping.go
-    # 修改为 macOS 兼容版本：
-    if [ "$(uname)" = "Darwin" ]; then
-        # macOS 构建（移除静态链接参数）
-        CGO_ENABLED=1 go build -a -v -trimpath -ldflags "-w -s $backend_build_extra_arguments" -o ezbookkeeping ezbookkeeping.go
-    else
-        # Linux 构建（保持静态链接）
-        CGO_ENABLED=1 go build -a -v -trimpath -ldflags "-w -s -linkmode external -extldflags '-static' $backend_build_extra_arguments" -o ezbookkeeping ezbookkeeping.go
-    fi
+    CGO_ENABLED=1 go build -a -v -trimpath -ldflags "-w -s $ld_static_link_flags $backend_build_extra_arguments" -o ezbookkeeping ezbookkeeping.go
     chmod +x ezbookkeeping
 }
 
