@@ -34,7 +34,13 @@
 
 ### 2.2 代码
 
-- 尚未开始编码，目前处于阶段 1 启动前
+| 文件 | 状态 | 说明 |
+|------|------|------|
+| pkg/models/investment_asset.go | ✅ 已完成 | InvestmentAsset struct + Request/Response |
+| pkg/models/investment_transaction.go | ✅ 已完成 | InvestmentTransaction struct + Request/Response |
+| pkg/models/market_data.go | ✅ 已完成 | MarketData struct + Request/Response |
+| cmd/database.go | ✅ 已修改 | 注册 3 张新表（182-206 行） |
+
 - 已有的前端代码：投资 Overview 页面骨架（已有，非本次新增）
 - 已有的路由切换：点击 logo 切换记账/理财模式
 
@@ -144,8 +150,8 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 
 | # | 任务 | 状态 | 参考文件 |
 |---|------|------|---------|
-| 1.1 | 创建 3 个 Model struct | ⬜ 未开始 | pkg/models/transaction_category.go |
-| 1.2 | 在 cmd/database.go 注册 3 张表 | ⬜ 未开始 | cmd/database.go:85 |
+| 1.1 | 创建 3 个 Model struct | ✅ 已完成 | pkg/models/investment_asset.go, investment_transaction.go, market_data.go |
+| 1.2 | 在 cmd/database.go 注册 3 张表 | ✅ 已完成 | cmd/database.go:182-206 |
 | 1.3 | 创建 Service 层 CRUD | ⬜ 未开始 | pkg/services/transaction_categories.go |
 | 1.4 | 创建 API Handler | ⬜ 未开始 | pkg/api/transaction_categories.go |
 | 1.5 | 注册投资路由组 | ⬜ 未开始 | cmd/webserver.go:379 |
@@ -219,22 +225,25 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 
 ---
 
-## 七、当前阻塞 / 待讨论
+## 七、当前状态
 
 - 无阻塞问题
-- 下一步：阶段 1.1 创建 Model 文件
+- 下一步：阶段 1.3 创建 Service 层 CRUD
 - 用户会在两台电脑间切换开发，此文档是 AI 会话的上下文桥梁
+- 构建验证方式：`bash build.sh backend --no-lint --no-test`（不要用 `go build ./...`）
 
 ---
 
 ## 八、Git 提交记录
 
 ```
+73d3d316 docs: add AI session context handoff document
+9d4bcf77 docs: add investment module design notes with data flow verification
 05678984 docs: add ER diagrams for existing and new investment module tables
 4051a995 docs: optimize investment module development plan
 ```
 
-两个提交已在 feature/add_invest_analysis 分支，尚未 push。
+四个提交已在 feature/add_invest_analysis 分支，已 push 到远端。
 
 ---
 
@@ -259,7 +268,19 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
    - 三种收益率（TWR/MWR/累计）
 9. 确认投资模块完全独立于记账系统，出入金走现有转账
 
+### 会话 2（2026-05-14）
+
+完成内容：
+1. 阶段 1.1：创建 3 个 Model struct
+   - `pkg/models/investment_asset.go`
+   - `pkg/models/investment_transaction.go`
+   - `pkg/models/market_data.go`
+2. 阶段 1.2：在 `cmd/database.go` 注册 3 张表（182-206 行）
+3. 构建验证：`bash build.sh backend --no-lint --no-test` 通过
+
 下一个 AI 应该做什么：
 - 读取此文档了解完整上下文
 - 读取 docs/ 下三个文档了解详细设计
-- 从阶段 1.1 开始：创建 Model 文件
+- 从阶段 1.3 开始：创建 Service 层 CRUD
+- 参考文件：`pkg/services/transaction_categories.go`
+- 构建验证方式：`bash build.sh backend --no-lint --no-test`

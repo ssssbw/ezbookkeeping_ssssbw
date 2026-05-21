@@ -369,16 +369,16 @@ Investment OverviewPage 已有 `v-chart` 骨架，遵循该项目使用 ECharts 
 
 ### 阶段 1：数据层（后端）+ 行情基础设施 — 预估 2 周
 
-| 任务 | 详细 |
-|------|------|
-| 1.1 | 创建 `pkg/models/investment_asset.go`、`investment_transaction.go`、`market_data.go` 等 model |
-| 1.2 | 在 `cmd/database.go` 的 `updateAllDatabaseTablesStructure()` 中注册新表 |
-| 1.3 | 创建 `pkg/services/investment_asset.go`、`investment_transaction.go` 业务服务层 |
-| 1.4 | 创建 `pkg/api/investment.go`，实现全部 REST 端点 |
-| 1.5 | 在 `pkg/server/` 中注册投资路由组 |
-| 1.6 | **行情数据 provider**：仿照 `pkg/exchangerates/` 建立 `pkg/marketdata/`，实现 `MarketDataProvider` 接口 + 东方财富 HTTP 数据源 |
-| 1.7 | **Cron 任务**：新增 `FetchFundMarketDataJob`，每日 18:00 自动拉取活跃基金净值写入 `market_data` 表 |
-| 1.8 | 编写单元测试 |
+| 任务 | 详细 | 状态 |
+|------|------|------|
+| 1.1 | 创建 `pkg/models/investment_asset.go`、`investment_transaction.go`、`market_data.go` 等 model | ✅ 已完成 |
+| 1.2 | 在 `cmd/database.go` 的 `updateAllDatabaseTablesStructure()` 中注册新表 | ✅ 已完成 |
+| 1.3 | 创建 `pkg/services/investment_asset.go`、`investment_transaction.go` 业务服务层 | ⬜ 未开始 |
+| 1.4 | 创建 `pkg/api/investment.go`，实现全部 REST 端点 | ⬜ 未开始 |
+| 1.5 | 在 `pkg/server/` 中注册投资路由组 | ⬜ 未开始 |
+| 1.6 | **行情数据 provider**：仿照 `pkg/exchangerates/` 建立 `pkg/marketdata/`，实现 `MarketDataProvider` 接口 + 东方财富 HTTP 数据源 | ⬜ 未开始 |
+| 1.7 | **Cron 任务**：新增 `FetchFundMarketDataJob`，每日 18:00 自动拉取活跃基金净值写入 `market_data` 表 | ⬜ 未开始 |
+| 1.8 | 编写单元测试 | ⬜ 未开始 |
 
 ### 阶段 2：前端 Store + API 层 — 预估 1 周
 
