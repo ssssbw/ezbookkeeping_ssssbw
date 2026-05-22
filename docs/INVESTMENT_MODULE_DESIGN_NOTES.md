@@ -88,8 +88,8 @@ Account(子3):    Name="海外配置",  ParentAccountId=总账户,  Balance=2000
 | Type | string | buy / sell / dividend_cash / dividend_reinvest / split / conversion_out / conversion_in |
 | TradeTime | int64 | 下单时间 |
 | ConfirmTime | int64 | 确认时间（T+N，份额到账日） |
-| Quantity | int64 | 数量（×100000000，8位小数精度） |
-| Price | int64 | 单价（×100000000） |
+| Quantity | int64 | 数量（×10000，4位小数精度） |
+| Price | int64 | 单价（×10000，4位小数精度） |
 | Amount | int64 | 金额（×10000，与现有 Transaction.Amount 精度一致） |
 | Fee | int64 | 手续费（×10000） |
 | RelatedTransactionId | int64 | 配对交易ID（conversion_out ↔ conversion_in 互指） |
@@ -106,7 +106,7 @@ Account(子3):    Name="海外配置",  ParentAccountId=总账户,  Balance=2000
 | DataId | int64 PK | |
 | AssetId | int64 INDEX | FK → InvestmentAsset |
 | Date | int64 UNIQUE(AssetId+Date) | 日期（取 0 点） |
-| Price | int64 | 当日净值/收盘价（×100000000） |
+| Price | int64 | 当日净值/收盘价（×10000，4位小数精度） |
 | Volume | int64 | 成交量（可选） |
 | CreatedUnixTime | int64 | |
 | UpdatedUnixTime | int64 | |

@@ -39,7 +39,17 @@
 | pkg/models/investment_asset.go | ✅ 已完成 | InvestmentAsset struct + Request/Response |
 | pkg/models/investment_transaction.go | ✅ 已完成 | InvestmentTransaction struct + Request/Response |
 | pkg/models/market_data.go | ✅ 已完成 | MarketData struct + Request/Response |
+| pkg/models/investment_consts.go | ✅ 已存在 | InvestmentAssetType/TransactionType/Market 常量定义 |
 | cmd/database.go | ✅ 已修改 | 注册 3 张新表（182-206 行） |
+| pkg/errs/investment_asset.go | ✅ 已完成 | 投资资产相关错误定义 |
+| pkg/errs/investment_transaction.go | ✅ 已完成 | 投资交易相关错误定义 |
+| pkg/errs/market_data.go | ✅ 已完成 | 行情数据相关错误定义 |
+| pkg/uuid/uuid_type.go | ✅ 已修改 | 新增 UUID_TYPE_INVESTMENT_ASSET (11) 和 UUID_TYPE_INVESTMENT_TRANS (12) |
+| pkg/services/investment_asset.go | ✅ 已完成 | InvestmentAssetService CRUD |
+| pkg/services/investment_transaction.go | ✅ 已完成 | InvestmentTransactionService CRUD + Balance 自动维护 |
+| pkg/services/market_data.go | ✅ 已完成 | MarketDataService CRUD |
+| pkg/api/investment.go | ✅ 已完成 | InvestmentApi Handler（资产/交易/行情） |
+| cmd/webserver.go | ✅ 已修改 | 注册 /investment/ 路由组（15 个端点） |
 
 - 已有的前端代码：投资 Overview 页面骨架（已有，非本次新增）
 - 已有的路由切换：点击 logo 切换记账/理财模式
@@ -78,8 +88,9 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 
 | 字段类型 | 精度 | 说明 |
 |---------|------|------|
-| 金额 Amount/Fee | ×10000 | 与现有 Transaction.Amount 一致 |
-| 份额/单价 Quantity/Price | ×100000000 | 8 位小数精度 |
+| 金额 Amount/Fee | ×10000 | 4 位小数，与现有 Transaction.Amount 一致 |
+| 份额 Quantity | ×10000 | 4 位小数，基金净值标准精度 |
+| 净值/单价 Price | ×10000 | 4 位小数，如 1.2345 |
 | 时间 | int64 Unix 时间戳 | 与现有表一致 |
 
 ---
@@ -119,8 +130,8 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 | Type | string | VARCHAR(30) NOT NULL | buy/sell/dividend_cash/dividend_reinvest/split/conversion_out/conversion_in |
 | TradeTime | int64 | NOT NULL | 下单时间 |
 | ConfirmTime | int64 | | 确认时间（T+N） |
-| Quantity | int64 | NOT NULL | 份额 ×100000000 |
-| Price | int64 | NOT NULL | 单价 ×100000000 |
+| Quantity | int64 | NOT NULL | 份额 ×10000 |
+| Price | int64 | NOT NULL | 单价 ×10000 |
 | Amount | int64 | NOT NULL | 金额 ×10000 |
 | Fee | int64 | NOT NULL DEFAULT 0 | 手续费 ×10000 |
 | RelatedTransactionId | int64 | | 配对交易ID（conversion 互指） |
@@ -137,7 +148,7 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 | DataId | int64 | PK | |
 | AssetId | int64 | INDEX UNIQUE(AssetId+Date) | FK → InvestmentAsset |
 | Date | int64 | UNIQUE(AssetId+Date) | 日期 Unix 0点 |
-| Price | int64 | NOT NULL | 净值 ×100000000 |
+| Price | int64 | NOT NULL | 净值 ×10000 |
 | Volume | int64 | | 成交量（可选） |
 | CreatedUnixTime | int64 | | |
 | UpdatedUnixTime | int64 | | |
@@ -152,9 +163,9 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 |---|------|------|---------|
 | 1.1 | 创建 3 个 Model struct | ✅ 已完成 | pkg/models/investment_asset.go, investment_transaction.go, market_data.go |
 | 1.2 | 在 cmd/database.go 注册 3 张表 | ✅ 已完成 | cmd/database.go:182-206 |
-| 1.3 | 创建 Service 层 CRUD | ⬜ 未开始 | pkg/services/transaction_categories.go |
-| 1.4 | 创建 API Handler | ⬜ 未开始 | pkg/api/transaction_categories.go |
-| 1.5 | 注册投资路由组 | ⬜ 未开始 | cmd/webserver.go:379 |
+| 1.3 | 创建 Service 层 CRUD | ✅ 已完成 | pkg/services/investment_asset.go, investment_transaction.go, market_data.go |
+| 1.4 | 创建 API Handler | ✅ 已完成 | pkg/api/investment.go |
+| 1.5 | 注册投资路由组 | ✅ 已完成 | cmd/webserver.go（15 个端点） |
 | 1.6 | 行情数据 Provider（仿 exchange_rates） | ⬜ 未开始 | pkg/exchangerates/ |
 | 1.7 | Cron 任务（每日 18:00 拉净值） | ⬜ 未开始 | pkg/cron/cron_jobs.go |
 | 1.8 | 单元测试 | ⬜ 未开始 | |
@@ -228,7 +239,7 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 ## 七、当前状态
 
 - 无阻塞问题
-- 下一步：阶段 1.3 创建 Service 层 CRUD
+- 下一步：阶段 1.6 行情数据 Provider（仿 exchange_rates）
 - 用户会在两台电脑间切换开发，此文档是 AI 会话的上下文桥梁
 - 构建验证方式：`bash build.sh backend --no-lint --no-test`（不要用 `go build ./...`）
 
@@ -278,9 +289,27 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 2. 阶段 1.2：在 `cmd/database.go` 注册 3 张表（182-206 行）
 3. 构建验证：`bash build.sh backend --no-lint --no-test` 通过
 
+### 会话 3（2026-05-22）
+
+完成内容：
+1. 阶段 1.3：创建 Service 层 CRUD
+   - `pkg/services/investment_asset.go`（InvestmentAssetService）
+   - `pkg/services/investment_transaction.go`（InvestmentTransactionService + Balance 自动维护）
+   - `pkg/services/market_data.go`（MarketDataService）
+2. 阶段 1.4：创建 API Handler + 注册路由
+   - `pkg/api/investment.go`（InvestmentApi，15 个 Handler）
+   - `cmd/webserver.go`（注册 /investment/ 路由组）
+3. 新增错误定义
+   - `pkg/errs/investment_asset.go`
+   - `pkg/errs/investment_transaction.go`
+   - `pkg/errs/market_data.go`
+4. 新增 UUID 类型
+   - `pkg/uuid/uuid_type.go`（UUID_TYPE_INVESTMENT_ASSET=11, UUID_TYPE_INVESTMENT_TRANS=12）
+5. 构建验证：`bash build.sh backend --no-lint --no-test` 通过
+
 下一个 AI 应该做什么：
 - 读取此文档了解完整上下文
 - 读取 docs/ 下三个文档了解详细设计
-- 从阶段 1.3 开始：创建 Service 层 CRUD
-- 参考文件：`pkg/services/transaction_categories.go`
+- 从阶段 1.6 开始：行情数据 Provider（仿 exchange_rates）
+- 参考文件：`pkg/exchangerates/`
 - 构建验证方式：`bash build.sh backend --no-lint --no-test`

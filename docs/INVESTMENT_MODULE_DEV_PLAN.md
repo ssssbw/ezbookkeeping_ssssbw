@@ -373,9 +373,9 @@ Investment OverviewPage 已有 `v-chart` 骨架，遵循该项目使用 ECharts 
 |------|------|------|
 | 1.1 | 创建 `pkg/models/investment_asset.go`、`investment_transaction.go`、`market_data.go` 等 model | ✅ 已完成 |
 | 1.2 | 在 `cmd/database.go` 的 `updateAllDatabaseTablesStructure()` 中注册新表 | ✅ 已完成 |
-| 1.3 | 创建 `pkg/services/investment_asset.go`、`investment_transaction.go` 业务服务层 | ⬜ 未开始 |
-| 1.4 | 创建 `pkg/api/investment.go`，实现全部 REST 端点 | ⬜ 未开始 |
-| 1.5 | 在 `pkg/server/` 中注册投资路由组 | ⬜ 未开始 |
+| 1.3 | 创建 `pkg/services/investment_asset.go`、`investment_transaction.go` 业务服务层 | ✅ 已完成 |
+| 1.4 | 创建 `pkg/api/investment.go`，实现全部 REST 端点 | ✅ 已完成 |
+| 1.5 | 在 `pkg/server/` 中注册投资路由组 | ✅ 已完成 |
 | 1.6 | **行情数据 provider**：仿照 `pkg/exchangerates/` 建立 `pkg/marketdata/`，实现 `MarketDataProvider` 接口 + 东方财富 HTTP 数据源 | ⬜ 未开始 |
 | 1.7 | **Cron 任务**：新增 `FetchFundMarketDataJob`，每日 18:00 自动拉取活跃基金净值写入 `market_data` 表 | ⬜ 未开始 |
 | 1.8 | 编写单元测试 | ⬜ 未开始 |
