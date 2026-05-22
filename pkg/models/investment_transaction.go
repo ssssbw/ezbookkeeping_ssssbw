@@ -2,24 +2,24 @@ package models
 
 // InvestmentTransaction represents investment transaction data stored in database
 type InvestmentTransaction struct {
-	TransactionId        int64                     `xorm:"PK"`
-	Uid                  int64                     `xorm:"INDEX(IDX_invest_trans_uid_deleted_asset_id) INDEX(IDX_invest_trans_uid_deleted_account_id) NOT NULL"`
-	Deleted              bool                      `xorm:"INDEX(IDX_invest_trans_uid_deleted_asset_id) INDEX(IDX_invest_trans_uid_deleted_account_id) NOT NULL"`
-	AssetId              int64                     `xorm:"INDEX(IDX_invest_trans_uid_deleted_asset_id) NOT NULL"`
-	AccountId            int64                     `xorm:"INDEX(IDX_invest_trans_uid_deleted_account_id) NOT NULL"`
-	Type                 InvestmentTransactionType `xorm:"NOT NULL"`
-	TradeTime            int64                     `xorm:"NOT NULL"`
-	ConfirmTime          int64
-	Quantity             int64 `xorm:"NOT NULL"`
-	Price                int64 `xorm:"NOT NULL"`
-	Amount               int64 `xorm:"NOT NULL"`
-	Fee                  int64 `xorm:"NOT NULL DEFAULT 0"`
-	RelatedTransactionId int64
-	TimezoneUtcOffset    int16  `xorm:"NOT NULL"`
-	Comment              string `xorm:"VARCHAR(255) NOT NULL"`
-	CreatedUnixTime      int64
-	UpdatedUnixTime      int64
-	DeletedUnixTime      int64
+	TransactionId        int64                     `xorm:"PK comment('交易ID')"`
+	Uid                  int64                     `xorm:"INDEX(IDX_invest_trans_uid_deleted_asset_id) INDEX(IDX_invest_trans_uid_deleted_account_id) NOT NULL comment('用户ID')"`
+	Deleted              bool                      `xorm:"INDEX(IDX_invest_trans_uid_deleted_asset_id) INDEX(IDX_invest_trans_uid_deleted_account_id) NOT NULL comment('是否删除')"`
+	AssetId              int64                     `xorm:"INDEX(IDX_invest_trans_uid_deleted_asset_id) NOT NULL comment('关联资产ID')"`
+	AccountId            int64                     `xorm:"INDEX(IDX_invest_trans_uid_deleted_account_id) NOT NULL comment('关联投资池账户ID')"`
+	Type                 InvestmentTransactionType `xorm:"NOT NULL comment('交易类型: 1=买入, 2=卖出, 3=现金分红, 4=红利再投, 5=拆分, 6=转出, 7=转入')"`
+	TradeTime            int64                     `xorm:"NOT NULL comment('下单时间')"`
+	ConfirmTime          int64                     `comment('确认时间 T+N')"`
+	Quantity             int64                     `xorm:"NOT NULL comment('份额/数量, 精度 x10000')"`
+	Price                int64                     `xorm:"NOT NULL comment('单价/净值, 精度 x10000')"`
+	Amount               int64                     `xorm:"NOT NULL comment('金额, 精度 x10000')"`
+	Fee                  int64                     `xorm:"NOT NULL DEFAULT 0 comment('手续费, 精度 x10000')"`
+	RelatedTransactionId int64                     `comment('配对交易ID, conversion 互指')"`
+	TimezoneUtcOffset    int16                     `xorm:"NOT NULL comment('时区偏移, 如东八区=480')"`
+	Comment              string                    `xorm:"VARCHAR(255) NOT NULL comment('备注')"`
+	CreatedUnixTime      int64                     `comment('创建时间')"`
+	UpdatedUnixTime      int64                     `comment('更新时间')"`
+	DeletedUnixTime      int64                     `comment('删除时间')"`
 }
 
 // InvestmentTransactionListRequest represents all parameters of investment transaction listing request

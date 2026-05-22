@@ -2,13 +2,13 @@ package models
 
 // MarketData represents market data stored in database
 type MarketData struct {
-	DataId          int64 `xorm:"PK"`
-	AssetId         int64 `xorm:"UNIQUE(UQE_market_data_asset_id_date) INDEX(IDX_market_data_asset_id_date) NOT NULL"`
-	Date            int64 `xorm:"UNIQUE(UQE_market_data_asset_id_date) NOT NULL"`
-	Price           int64 `xorm:"NOT NULL"`
-	Volume          int64
-	CreatedUnixTime int64
-	UpdatedUnixTime int64
+	DataId          int64 `xorm:"PK comment('行情ID')"`
+	AssetId         int64 `xorm:"UNIQUE(UQE_market_data_asset_id_date) INDEX(IDX_market_data_asset_id_date) NOT NULL comment('关联资产ID')"`
+	Date            int64 `xorm:"UNIQUE(UQE_market_data_asset_id_date) NOT NULL comment('日期, Unix时间戳取0点')"`
+	Price           int64 `xorm:"NOT NULL comment('当日净值/收盘价, 精度 x10000')"`
+	Volume          int64 `comment('成交量, ETF/股票有效')"`
+	CreatedUnixTime int64 `comment('创建时间')"`
+	UpdatedUnixTime int64 `comment('更新时间')"`
 }
 
 // MarketDataListRequest represents all parameters of market data listing request
