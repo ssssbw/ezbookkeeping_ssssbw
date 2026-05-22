@@ -479,6 +479,26 @@ func startWebServer(c *core.CliContext) error {
 			apiV1Route.POST("/exchange_rates/user_custom/update.json", bindApi(api.ExchangeRates.UserCustomExchangeRateUpdateHandler))
 			apiV1Route.POST("/exchange_rates/user_custom/delete.json", bindApi(api.ExchangeRates.UserCustomExchangeRateDeleteHandler))
 
+			// Investment Assets
+			apiV1Route.GET("/investment/assets/list.json", bindApi(api.Investment.AssetListHandler))
+			apiV1Route.GET("/investment/assets/get.json", bindApi(api.Investment.AssetGetHandler))
+			apiV1Route.POST("/investment/assets/add.json", bindApi(api.Investment.AssetCreateHandler))
+			apiV1Route.POST("/investment/assets/modify.json", bindApi(api.Investment.AssetModifyHandler))
+			apiV1Route.POST("/investment/assets/delete.json", bindApi(api.Investment.AssetDeleteHandler))
+
+			// Investment Transactions
+			apiV1Route.GET("/investment/transactions/list.json", bindApi(api.Investment.TransactionListHandler))
+			apiV1Route.GET("/investment/transactions/get.json", bindApi(api.Investment.TransactionGetHandler))
+			apiV1Route.POST("/investment/transactions/add.json", bindApi(api.Investment.TransactionCreateHandler))
+			apiV1Route.POST("/investment/transactions/modify.json", bindApi(api.Investment.TransactionModifyHandler))
+			apiV1Route.POST("/investment/transactions/delete.json", bindApi(api.Investment.TransactionDeleteHandler))
+
+			// Investment Market Data
+			apiV1Route.GET("/investment/market_data/latest.json", bindApi(api.Investment.MarketDataLatestHandler))
+			apiV1Route.GET("/investment/market_data/list.json", bindApi(api.Investment.MarketDataListHandler))
+			apiV1Route.POST("/investment/market_data/add.json", bindApi(api.Investment.MarketDataCreateHandler))
+			apiV1Route.POST("/investment/market_data/modify.json", bindApi(api.Investment.MarketDataModifyHandler))
+
 			// System
 			apiV1Route.GET("/systems/version.json", bindApi(api.Systems.VersionHandler))
 		}
