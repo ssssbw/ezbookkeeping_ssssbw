@@ -7,15 +7,15 @@ const TokenMaxUserAgentLength = 255
 
 // TokenRecord represents token data stored in database
 type TokenRecord struct {
-	Uid              int64          `xorm:"PK INDEX(IDX_token_record_uid_type_expired_time) INDEX(IDX_token_record_expired_time)"`
-	UserTokenId      int64          `xorm:"PK"`
-	TokenType        core.TokenType `xorm:"INDEX(IDX_token_record_uid_type_expired_time) TINYINT NOT NULL"`
-	Secret           string         `xorm:"VARCHAR(10) NOT NULL"`
-	UserAgent        string         `xorm:"VARCHAR(255)"`
-	Context          string         `xorm:"BLOB"`
-	CreatedUnixTime  int64          `xorm:"PK"`
-	ExpiredUnixTime  int64          `xorm:"INDEX(IDX_token_record_uid_type_expired_time) INDEX(IDX_token_record_expired_time)"`
-	LastSeenUnixTime int64
+	Uid              int64          `xorm:"PK INDEX(IDX_token_record_uid_type_expired_time) INDEX(IDX_token_record_expired_time) comment('用户ID')"`
+	UserTokenId      int64          `xorm:"PK comment('用户令牌ID')"`
+	TokenType        core.TokenType `xorm:"INDEX(IDX_token_record_uid_type_expired_time) TINYINT NOT NULL comment('令牌类型')"`
+	Secret           string         `xorm:"VARCHAR(10) NOT NULL comment('令牌密钥')"`
+	UserAgent        string         `xorm:"VARCHAR(255) comment('用户代理')"`
+	Context          string         `xorm:"BLOB comment('上下文JSON')"`
+	CreatedUnixTime  int64          `xorm:"PK comment('创建时间')"`
+	ExpiredUnixTime  int64          `xorm:"INDEX(IDX_token_record_uid_type_expired_time) INDEX(IDX_token_record_expired_time) comment('过期时间')"`
+	LastSeenUnixTime int64          `comment('最后访问时间')"`
 }
 
 // OAuth2CallbackTokenContext represents the context data of oauth 2.0 callback token

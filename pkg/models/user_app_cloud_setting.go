@@ -67,9 +67,9 @@ var ALL_ALLOWED_CLOUD_SYNC_APP_SETTING_KEY_TYPES = map[string]UserApplicationClo
 
 // UserApplicationCloudSetting represents user application cloud setting stored in database
 type UserApplicationCloudSetting struct {
-	Uid             int64                        `xorm:"PK"`
-	Settings        ApplicationCloudSettingSlice `xorm:"BLOB"`
-	UpdatedUnixTime int64
+	Uid             int64                        `xorm:"PK comment('用户ID')"`
+	Settings        ApplicationCloudSettingSlice  `xorm:"BLOB comment('应用设置JSON')"`
+	UpdatedUnixTime int64                        `comment('更新时间')"`
 }
 
 // UserApplicationCloudSettingsUpdateRequest represents all parameters of application cloud settings update request

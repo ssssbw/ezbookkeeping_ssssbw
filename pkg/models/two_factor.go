@@ -2,9 +2,9 @@ package models
 
 // TwoFactor represents user 2fa data stored in database
 type TwoFactor struct {
-	Uid             int64  `xorm:"PK"`
-	Secret          string `xorm:"VARCHAR(80) NOT NULL"`
-	CreatedUnixTime int64
+	Uid             int64  `xorm:"PK comment('用户ID')"`
+	Secret          string `xorm:"VARCHAR(80) NOT NULL comment('2FA密钥')"`
+	CreatedUnixTime int64  `comment('创建时间')"`
 }
 
 // TwoFactorLoginRequest represents all parameters of 2fa login request

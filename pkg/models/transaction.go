@@ -121,27 +121,27 @@ const (
 
 // Transaction represents transaction data stored in database
 type Transaction struct {
-	TransactionId        int64             `xorm:"PK"`
-	Uid                  int64             `xorm:"UNIQUE(UQE_transaction_uid_time) INDEX(IDX_transaction_uid_deleted_time) INDEX(IDX_transaction_uid_deleted_type_time) INDEX(IDX_transaction_uid_deleted_type_account_id_time) INDEX(IDX_transaction_uid_deleted_category_id_time) INDEX(IDX_transaction_uid_deleted_account_id_time) INDEX(IDX_transaction_uid_deleted_time_longitude_latitude) NOT NULL"`
-	Deleted              bool              `xorm:"INDEX(IDX_transaction_uid_deleted_time) INDEX(IDX_transaction_uid_deleted_type_time) INDEX(IDX_transaction_uid_deleted_type_account_id_time) INDEX(IDX_transaction_uid_deleted_category_id_time) INDEX(IDX_transaction_uid_deleted_account_id_time) INDEX(IDX_transaction_uid_deleted_time_longitude_latitude) NOT NULL"`
-	Type                 TransactionDbType `xorm:"INDEX(IDX_transaction_uid_deleted_type_time) INDEX(IDX_transaction_uid_deleted_type_account_id_time) NOT NULL"`
-	CategoryId           int64             `xorm:"INDEX(IDX_transaction_uid_deleted_category_id_time) NOT NULL"`
-	AccountId            int64             `xorm:"INDEX(IDX_transaction_uid_deleted_account_id_time) INDEX(IDX_transaction_uid_deleted_type_account_id_time) NOT NULL"`
-	TransactionTime      int64             `xorm:"UNIQUE(UQE_transaction_uid_time) INDEX(IDX_transaction_uid_deleted_time) INDEX(IDX_transaction_uid_deleted_type_time) INDEX(IDX_transaction_uid_deleted_type_account_id_time) INDEX(IDX_transaction_uid_deleted_category_id_time) INDEX(IDX_transaction_uid_deleted_account_id_time) NOT NULL"`
-	TimezoneUtcOffset    int16             `xorm:"NOT NULL"`
-	Amount               int64             `xorm:"NOT NULL"`
-	RelatedId            int64             `xorm:"NOT NULL"`
-	RelatedAccountId     int64             `xorm:"NOT NULL"`
-	RelatedAccountAmount int64             `xorm:"NOT NULL"`
-	HideAmount           bool              `xorm:"NOT NULL"`
-	Comment              string            `xorm:"VARCHAR(255) NOT NULL"`
-	GeoLongitude         float64           `xorm:"INDEX(IDX_transaction_uid_deleted_time_longitude_latitude)"`
-	GeoLatitude          float64           `xorm:"INDEX(IDX_transaction_uid_deleted_time_longitude_latitude)"`
-	CreatedIp            string            `xorm:"VARCHAR(39)"`
-	ScheduledCreated     bool
-	CreatedUnixTime      int64
-	UpdatedUnixTime      int64
-	DeletedUnixTime      int64
+	TransactionId        int64             `xorm:"PK comment('交易ID')"`
+	Uid                  int64             `xorm:"UNIQUE(UQE_transaction_uid_time) INDEX(IDX_transaction_uid_deleted_time) INDEX(IDX_transaction_uid_deleted_type_time) INDEX(IDX_transaction_uid_deleted_type_account_id_time) INDEX(IDX_transaction_uid_deleted_category_id_time) INDEX(IDX_transaction_uid_deleted_account_id_time) INDEX(IDX_transaction_uid_deleted_time_longitude_latitude) NOT NULL comment('用户ID')"`
+	Deleted              bool              `xorm:"INDEX(IDX_transaction_uid_deleted_time) INDEX(IDX_transaction_uid_deleted_type_time) INDEX(IDX_transaction_uid_deleted_type_account_id_time) INDEX(IDX_transaction_uid_deleted_category_id_time) INDEX(IDX_transaction_uid_deleted_account_id_time) INDEX(IDX_transaction_uid_deleted_time_longitude_latitude) NOT NULL comment('是否删除')"`
+	Type                 TransactionDbType `xorm:"INDEX(IDX_transaction_uid_deleted_type_time) INDEX(IDX_transaction_uid_deleted_type_account_id_time) NOT NULL comment('交易类型: 0=余额调整, 1=支出, 2=收入, 3=转账出, 4=转账入')"`
+	CategoryId           int64             `xorm:"INDEX(IDX_transaction_uid_deleted_category_id_time) NOT NULL comment('分类ID')"`
+	AccountId            int64             `xorm:"INDEX(IDX_transaction_uid_deleted_account_id_time) INDEX(IDX_transaction_uid_deleted_type_account_id_time) NOT NULL comment('账户ID')"`
+	TransactionTime      int64             `xorm:"UNIQUE(UQE_transaction_uid_time) INDEX(IDX_transaction_uid_deleted_time) INDEX(IDX_transaction_uid_deleted_type_time) INDEX(IDX_transaction_uid_deleted_type_account_id_time) INDEX(IDX_transaction_uid_deleted_category_id_time) INDEX(IDX_transaction_uid_deleted_account_id_time) NOT NULL comment('交易时间')"`
+	TimezoneUtcOffset    int16             `xorm:"NOT NULL comment('时区偏移(分钟)')"`
+	Amount               int64             `xorm:"NOT NULL comment('金额, 精度 x10000')"`
+	RelatedId            int64             `xorm:"NOT NULL comment('关联交易ID, 转账时配对')"`
+	RelatedAccountId     int64             `xorm:"NOT NULL comment('关联账户ID')"`
+	RelatedAccountAmount int64             `xorm:"NOT NULL comment('关联账户金额')"`
+	HideAmount           bool              `xorm:"NOT NULL comment('是否隐藏金额')"`
+	Comment              string            `xorm:"VARCHAR(255) NOT NULL comment('备注')"`
+	GeoLongitude         float64           `xorm:"INDEX(IDX_transaction_uid_deleted_time_longitude_latitude) comment('经度')"`
+	GeoLatitude          float64           `xorm:"INDEX(IDX_transaction_uid_deleted_time_longitude_latitude) comment('纬度')"`
+	CreatedIp            string            `xorm:"VARCHAR(39) comment('创建IP')"`
+	ScheduledCreated     bool              `comment('是否定时创建')"`
+	CreatedUnixTime      int64             `comment('创建时间')"`
+	UpdatedUnixTime      int64             `comment('更新时间')"`
+	DeletedUnixTime      int64             `comment('删除时间')"`
 }
 
 // TransactionWithAccountBalance represents a transaction item with account balance

@@ -85,43 +85,43 @@ func (s AmountColorType) String() string {
 
 // User represents user data stored in database
 type User struct {
-	Uid                   int64  `xorm:"PK"`
-	Username              string `xorm:"VARCHAR(32) UNIQUE NOT NULL"`
-	Email                 string `xorm:"VARCHAR(100) UNIQUE NOT NULL"`
-	Nickname              string `xorm:"VARCHAR(64) NOT NULL"`
-	Password              string `xorm:"VARCHAR(64) NOT NULL"`
-	Salt                  string `xorm:"VARCHAR(10) NOT NULL"`
-	CustomAvatarType      string `xorm:"VARCHAR(10)"`
-	DefaultAccountId      int64
-	UseLastReconciledTime bool
-	TransactionEditScope  TransactionEditScope       `xorm:"TINYINT NOT NULL"`
-	Language              string                     `xorm:"VARCHAR(10)"`
-	DefaultCurrency       string                     `xorm:"VARCHAR(3) NOT NULL"`
-	FirstDayOfWeek        core.WeekDay               `xorm:"TINYINT NOT NULL"`
-	FiscalYearStart       core.FiscalYearStart       `xorm:"SMALLINT"`
-	CalendarDisplayType   core.CalendarDisplayType   `xorm:"TINYINT"`
-	DateDisplayType       core.DateDisplayType       `xorm:"TINYINT"`
-	LongDateFormat        core.LongDateFormat        `xorm:"TINYINT"`
-	ShortDateFormat       core.ShortDateFormat       `xorm:"TINYINT"`
-	LongTimeFormat        core.LongTimeFormat        `xorm:"TINYINT"`
-	ShortTimeFormat       core.ShortTimeFormat       `xorm:"TINYINT"`
-	FiscalYearFormat      core.FiscalYearFormat      `xorm:"TINYINT"`
-	CurrencyDisplayType   core.CurrencyDisplayType   `xorm:"TINYINT"`
-	NumeralSystem         core.NumeralSystem         `xorm:"TINYINT"`
-	DecimalSeparator      core.DecimalSeparator      `xorm:"TINYINT"`
-	DigitGroupingSymbol   core.DigitGroupingSymbol   `xorm:"TINYINT"`
-	DigitGrouping         core.DigitGroupingType     `xorm:"TINYINT"`
-	CoordinateDisplayType core.CoordinateDisplayType `xorm:"TINYINT"`
-	ExpenseAmountColor    AmountColorType            `xorm:"TINYINT"`
-	IncomeAmountColor     AmountColorType            `xorm:"TINYINT"`
-	FeatureRestriction    core.UserFeatureRestrictions
-	Disabled              bool
-	Deleted               bool `xorm:"NOT NULL"`
-	EmailVerified         bool `xorm:"NOT NULL"`
-	CreatedUnixTime       int64
-	UpdatedUnixTime       int64
-	DeletedUnixTime       int64
-	LastLoginUnixTime     int64
+	Uid                   int64                      `xorm:"PK comment('用户ID')"`
+	Username              string                     `xorm:"VARCHAR(32) UNIQUE NOT NULL comment('用户名')"`
+	Email                 string                     `xorm:"VARCHAR(100) UNIQUE NOT NULL comment('邮箱')"`
+	Nickname              string                     `xorm:"VARCHAR(64) NOT NULL comment('昵称')"`
+	Password              string                     `xorm:"VARCHAR(64) NOT NULL comment('密码哈希')"`
+	Salt                  string                     `xorm:"VARCHAR(10) NOT NULL comment('密码盐')"`
+	CustomAvatarType      string                     `xorm:"VARCHAR(10) comment('自定义头像类型')"`
+	DefaultAccountId      int64                      `comment('默认账户ID')"`
+	UseLastReconciledTime bool                       `comment('使用上次对账时间')"`
+	TransactionEditScope  TransactionEditScope       `xorm:"TINYINT NOT NULL comment('交易编辑范围: 0=无, 1=全部, 2=今天及以后, 3=24小时内及以后, 4=本周及以后, 5=本月及以后, 6=本年及以后')"`
+	Language              string                     `xorm:"VARCHAR(10) comment('语言, 如 zh-Hans')"`
+	DefaultCurrency       string                     `xorm:"VARCHAR(3) NOT NULL comment('默认货币')"`
+	FirstDayOfWeek        core.WeekDay               `xorm:"TINYINT NOT NULL comment('每周第一天')"`
+	FiscalYearStart       core.FiscalYearStart       `xorm:"SMALLINT comment('财年起始月份')"`
+	CalendarDisplayType   core.CalendarDisplayType   `xorm:"TINYINT comment('日历显示类型')"`
+	DateDisplayType       core.DateDisplayType       `xorm:"TINYINT comment('日期显示类型')"`
+	LongDateFormat        core.LongDateFormat        `xorm:"TINYINT comment('长日期格式')"`
+	ShortDateFormat       core.ShortDateFormat       `xorm:"TINYINT comment('短日期格式')"`
+	LongTimeFormat        core.LongTimeFormat        `xorm:"TINYINT comment('长时间格式')"`
+	ShortTimeFormat       core.ShortTimeFormat       `xorm:"TINYINT comment('短时间格式')"`
+	FiscalYearFormat      core.FiscalYearFormat      `xorm:"TINYINT comment('财年格式')"`
+	CurrencyDisplayType   core.CurrencyDisplayType   `xorm:"TINYINT comment('货币显示类型')"`
+	NumeralSystem         core.NumeralSystem         `xorm:"TINYINT comment('数字系统')"`
+	DecimalSeparator      core.DecimalSeparator      `xorm:"TINYINT comment('小数分隔符')"`
+	DigitGroupingSymbol   core.DigitGroupingSymbol   `xorm:"TINYINT comment('千位分隔符')"`
+	DigitGrouping         core.DigitGroupingType     `xorm:"TINYINT comment('数字分组方式')"`
+	CoordinateDisplayType core.CoordinateDisplayType `xorm:"TINYINT comment('坐标显示类型')"`
+	ExpenseAmountColor    AmountColorType            `xorm:"TINYINT comment('支出金额颜色: 0=默认, 1=绿, 2=红, 3=黄, 4=黑白')"`
+	IncomeAmountColor     AmountColorType            `xorm:"TINYINT comment('收入金额颜色: 0=默认, 1=绿, 2=红, 3=黄, 4=黑白')"`
+	FeatureRestriction    core.UserFeatureRestrictions `comment('功能限制位掩码')"`
+	Disabled              bool                       `comment('是否禁用')"`
+	Deleted               bool                       `xorm:"NOT NULL comment('是否删除')"`
+	EmailVerified         bool                       `xorm:"NOT NULL comment('邮箱是否验证')"`
+	CreatedUnixTime       int64                      `comment('创建时间')"`
+	UpdatedUnixTime       int64                      `comment('更新时间')"`
+	DeletedUnixTime       int64                      `comment('删除时间')"`
+	LastLoginUnixTime     int64                      `comment('最后登录时间')"`
 }
 
 // UserBasicInfo represents a view-object of user basic info

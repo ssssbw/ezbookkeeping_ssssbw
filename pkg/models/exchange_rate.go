@@ -10,12 +10,12 @@ const UserCustomExchangeRateFactorInDatabase = int64(100000000)
 
 // UserCustomExchangeRate represents user custom exchange rate data
 type UserCustomExchangeRate struct {
-	Uid             int64  `xorm:"PK NOT NULL"`
-	DeletedUnixTime int64  `xorm:"PK NOT NULL"`
-	Currency        string `xorm:"PK VARCHAR(3) NOT NULL"`
-	Rate            int64  `xorm:"NOT NULL"`
-	CreatedUnixTime int64
-	UpdatedUnixTime int64
+	Uid             int64  `xorm:"PK NOT NULL comment('用户ID')"`
+	DeletedUnixTime int64  `xorm:"PK NOT NULL comment('删除时间, 用于软删除')"`
+	Currency        string `xorm:"PK VARCHAR(3) NOT NULL comment('货币代码')"`
+	Rate            int64  `xorm:"NOT NULL comment('汇率, 精度 x100000000')"`
+	CreatedUnixTime int64  `comment('创建时间')"`
+	UpdatedUnixTime int64  `comment('更新时间')"`
 }
 
 // UserCustomExchangeRateUpdateRequest represents all parameters of user custom exchange rate data updating request

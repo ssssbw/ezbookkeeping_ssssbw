@@ -4,16 +4,16 @@ import "encoding/json"
 
 // InsightsExplorer represents a saved insights explorer configuration
 type InsightsExplorer struct {
-	ExplorerId      int64  `xorm:"PK"`
-	Uid             int64  `xorm:"INDEX(IDX_insights_explorer_uid_deleted_order) NOT NULL"`
-	Deleted         bool   `xorm:"INDEX(IDX_insights_explorer_uid_deleted_order) NOT NULL"`
-	Name            string `xorm:"VARCHAR(64) NOT NULL"`
-	DisplayOrder    int32  `xorm:"INDEX(IDX_insights_explorer_uid_deleted_order) NOT NULL"`
-	Data            string `xorm:"MEDIUMBLOB"`
-	Hidden          bool   `xorm:"NOT NULL"`
-	CreatedUnixTime int64
-	UpdatedUnixTime int64
-	DeletedUnixTime int64
+	ExplorerId      int64  `xorm:"PK comment('探索器ID')"`
+	Uid             int64  `xorm:"INDEX(IDX_insights_explorer_uid_deleted_order) NOT NULL comment('用户ID')"`
+	Deleted         bool   `xorm:"INDEX(IDX_insights_explorer_uid_deleted_order) NOT NULL comment('是否删除')"`
+	Name            string `xorm:"VARCHAR(64) NOT NULL comment('探索器名称')"`
+	DisplayOrder    int32  `xorm:"INDEX(IDX_insights_explorer_uid_deleted_order) NOT NULL comment('显示排序')"`
+	Data            string `xorm:"MEDIUMBLOB comment('配置数据JSON')"`
+	Hidden          bool   `xorm:"NOT NULL comment('是否隐藏')"`
+	CreatedUnixTime int64  `comment('创建时间')"`
+	UpdatedUnixTime int64  `comment('更新时间')"`
+	DeletedUnixTime int64  `comment('删除时间')"`
 }
 
 // InsightsExplorerCreateRequest represents all parameters of insights explorer creation request

@@ -68,24 +68,24 @@ var defaultCreditCardAccountStatementDate = 0
 
 // Account represents account data stored in database
 type Account struct {
-	AccountId       int64           `xorm:"PK"`
-	Uid             int64           `xorm:"INDEX(IDX_account_uid_deleted_parent_account_id_order) NOT NULL"`
-	Deleted         bool            `xorm:"INDEX(IDX_account_uid_deleted_parent_account_id_order) NOT NULL"`
-	Category        AccountCategory `xorm:"NOT NULL"`
-	Type            AccountType     `xorm:"NOT NULL"`
-	ParentAccountId int64           `xorm:"INDEX(IDX_account_uid_deleted_parent_account_id_order) NOT NULL"`
-	Name            string          `xorm:"VARCHAR(64) NOT NULL"`
-	DisplayOrder    int32           `xorm:"INDEX(IDX_account_uid_deleted_parent_account_id_order) NOT NULL"`
-	Icon            int64           `xorm:"NOT NULL"`
-	Color           string          `xorm:"VARCHAR(6) NOT NULL"`
-	Currency        string          `xorm:"VARCHAR(3) NOT NULL"`
-	Balance         int64           `xorm:"NOT NULL"`
-	Comment         string          `xorm:"VARCHAR(255) NOT NULL"`
-	Extend          *AccountExtend  `xorm:"BLOB"`
-	Hidden          bool            `xorm:"NOT NULL"`
-	CreatedUnixTime int64
-	UpdatedUnixTime int64
-	DeletedUnixTime int64
+	AccountId       int64           `xorm:"PK comment('账户ID')"`
+	Uid             int64           `xorm:"INDEX(IDX_account_uid_deleted_type) NOT NULL comment('用户ID')"`
+	Deleted         bool            `xorm:"INDEX(IDX_account_uid_deleted_type) NOT NULL comment('是否删除')"`
+	Type            AccountType     `xorm:"INDEX(IDX_account_uid_deleted_type) NOT NULL comment('账户类型: 1=单账户, 2=多子账户')"`
+	Category        AccountCategory `xorm:"NOT NULL comment('账户类别: 1=现金, 2=支票, 3=信用卡, 4=虚拟, 5=负债, 6=应收, 7=投资, 8=储蓄, 9=定期')"`
+	Name            string          `xorm:"VARCHAR(64) NOT NULL comment('账户名称')"`
+	ParentAccountId int64           `xorm:"NOT NULL comment('父账户ID, 0=顶级账户')"`
+	Icon            int64           `xorm:"NOT NULL comment('图标ID')"`
+	Color           string          `xorm:"VARCHAR(6) NOT NULL comment('颜色, HEX格式')"`
+	Currency        string          `xorm:"VARCHAR(3) NOT NULL comment('货币代码, 如 CNY')"`
+	Balance         int64           `xorm:"NOT NULL comment('余额, 精度 x10000')"`
+	Comment         string          `xorm:"VARCHAR(255) NOT NULL comment('备注')"`
+	Extend          *AccountExtend  `xorm:"BLOB comment('扩展信息JSON')"`
+	DisplayOrder    int32           `xorm:"NOT NULL comment('显示排序')"`
+	Hidden          bool            `xorm:"NOT NULL comment('是否隐藏')"`
+	CreatedUnixTime int64           `comment('创建时间')"`
+	UpdatedUnixTime int64           `comment('更新时间')"`
+	DeletedUnixTime int64           `comment('删除时间')"`
 }
 
 // AccountExtend represents account extend data stored in database

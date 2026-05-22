@@ -4,15 +4,15 @@ const TransactionPictureNewPictureTransactionId = int64(0)
 
 // TransactionPictureInfo represents transaction picture file info stored in database
 type TransactionPictureInfo struct {
-	Uid              int64  `xorm:"INDEX(IDX_transaction_picture_uid_deleted_transaction_id_picture_id) INDEX(IDX_transaction_picture_uid_deleted_picture_id) NOT NULL"`
-	Deleted          bool   `xorm:"INDEX(IDX_transaction_picture_uid_deleted_transaction_id_picture_id) INDEX(IDX_transaction_picture_uid_deleted_picture_id) NOT NULL"`
-	TransactionId    int64  `xorm:"INDEX(IDX_transaction_picture_uid_deleted_transaction_id_picture_id) NOT NULL"`
-	PictureId        int64  `xorm:"PK INDEX(IDX_transaction_picture_uid_deleted_transaction_id_picture_id) INDEX(IDX_transaction_picture_uid_deleted_picture_id)"`
-	PictureExtension string `xorm:"VARCHAR(10) NOT NULL"`
-	CreatedIp        string `xorm:"VARCHAR(39)"`
-	CreatedUnixTime  int64
-	UpdatedUnixTime  int64
-	DeletedUnixTime  int64
+	Uid              int64  `xorm:"INDEX(IDX_transaction_picture_uid_deleted_transaction_id_picture_id) INDEX(IDX_transaction_picture_uid_deleted_picture_id) NOT NULL comment('用户ID')"`
+	Deleted          bool   `xorm:"INDEX(IDX_transaction_picture_uid_deleted_transaction_id_picture_id) INDEX(IDX_transaction_picture_uid_deleted_picture_id) NOT NULL comment('是否删除')"`
+	TransactionId    int64  `xorm:"INDEX(IDX_transaction_picture_uid_deleted_transaction_id_picture_id) NOT NULL comment('交易ID')"`
+	PictureId        int64  `xorm:"PK INDEX(IDX_transaction_picture_uid_deleted_transaction_id_picture_id) INDEX(IDX_transaction_picture_uid_deleted_picture_id) comment('图片ID')"`
+	PictureExtension string `xorm:"VARCHAR(10) NOT NULL comment('图片扩展名')"`
+	CreatedIp        string `xorm:"VARCHAR(39) comment('创建IP')"`
+	CreatedUnixTime  int64  `comment('创建时间')"`
+	UpdatedUnixTime  int64  `comment('更新时间')"`
+	DeletedUnixTime  int64  `comment('删除时间')"`
 }
 
 // TransactionPictureUnusedDeleteRequest represents all parameters of unused transaction picture deleting request

@@ -30,31 +30,31 @@ const (
 
 // TransactionTemplate represents transaction template stored in database
 type TransactionTemplate struct {
-	TemplateId                 int64                            `xorm:"PK"`
-	Uid                        int64                            `xorm:"INDEX(IDX_transaction_template_uid_deleted_template_type_order) NOT NULL"`
-	Deleted                    bool                             `xorm:"INDEX(IDX_transaction_template_uid_deleted_template_type_order) INDEX(IDX_transaction_template_deleted_type_freqtype_scheduled_time) NOT NULL"`
-	TemplateType               TransactionTemplateType          `xorm:"INDEX(IDX_transaction_template_uid_deleted_template_type_order) INDEX(IDX_transaction_template_deleted_type_freqtype_scheduled_time) NOT NULL"`
-	Name                       string                           `xorm:"VARCHAR(64) NOT NULL"`
-	Type                       TransactionType                  `xorm:"NOT NULL"`
-	CategoryId                 int64                            `xorm:"NOT NULL"`
-	AccountId                  int64                            `xorm:"NOT NULL"`
-	ScheduledFrequencyType     TransactionScheduleFrequencyType `xorm:"INDEX(IDX_transaction_template_deleted_type_freqtype_scheduled_time)"`
-	ScheduledFrequency         string                           `xorm:"VARCHAR(100)"`
-	ScheduledStartTime         *int64                           `xorm:"INDEX(IDX_transaction_template_deleted_type_freqtype_scheduled_time)"`
-	ScheduledEndTime           *int64                           `xorm:"INDEX(IDX_transaction_template_deleted_type_freqtype_scheduled_time)"`
-	ScheduledAt                int16                            `xorm:"INDEX(IDX_transaction_template_deleted_type_freqtype_scheduled_time)"`
-	ScheduledTimezoneUtcOffset int16
-	TagIds                     string `xorm:"VARCHAR(255) NOT NULL"`
-	Amount                     int64  `xorm:"NOT NULL"`
-	RelatedAccountId           int64  `xorm:"NOT NULL"`
-	RelatedAccountAmount       int64  `xorm:"NOT NULL"`
-	HideAmount                 bool   `xorm:"NOT NULL"`
-	Comment                    string `xorm:"VARCHAR(255) NOT NULL"`
-	DisplayOrder               int32  `xorm:"INDEX(IDX_transaction_template_uid_deleted_template_type_order) NOT NULL"`
-	Hidden                     bool   `xorm:"NOT NULL"`
-	CreatedUnixTime            int64
-	UpdatedUnixTime            int64
-	DeletedUnixTime            int64
+	TemplateId                 int64                            `xorm:"PK comment('模板ID')"`
+	Uid                        int64                            `xorm:"INDEX(IDX_transaction_template_uid_deleted_template_type_order) NOT NULL comment('用户ID')"`
+	Deleted                    bool                             `xorm:"INDEX(IDX_transaction_template_uid_deleted_template_type_order) INDEX(IDX_transaction_template_deleted_type_freqtype_scheduled_time) NOT NULL comment('是否删除')"`
+	TemplateType               TransactionTemplateType          `xorm:"INDEX(IDX_transaction_template_uid_deleted_template_type_order) INDEX(IDX_transaction_template_deleted_type_freqtype_scheduled_time) NOT NULL comment('模板类型: 1=普通, 2=定时')"`
+	Name                       string                           `xorm:"VARCHAR(64) NOT NULL comment('模板名称')"`
+	Type                       TransactionType                  `xorm:"NOT NULL comment('交易类型: 1=支出, 2=收入, 3=转账')"`
+	CategoryId                 int64                            `xorm:"NOT NULL comment('分类ID')"`
+	AccountId                  int64                            `xorm:"NOT NULL comment('账户ID')"`
+	ScheduledFrequencyType     TransactionScheduleFrequencyType `xorm:"INDEX(IDX_transaction_template_deleted_type_freqtype_scheduled_time) comment('定时频率类型: 0=禁用, 1=每周, 2=每月')"`
+	ScheduledFrequency         string                           `xorm:"VARCHAR(100) comment('定时频率值, 逗号分隔')"`
+	ScheduledStartTime         *int64                           `xorm:"INDEX(IDX_transaction_template_deleted_type_freqtype_scheduled_time) comment('定时开始时间')"`
+	ScheduledEndTime           *int64                           `xorm:"INDEX(IDX_transaction_template_deleted_type_freqtype_scheduled_time) comment('定时结束时间')"`
+	ScheduledAt                int16                            `xorm:"INDEX(IDX_transaction_template_deleted_type_freqtype_scheduled_time) comment('定时时刻')"`
+	ScheduledTimezoneUtcOffset int16                            `comment('定时时区偏移(分钟)')"`
+	TagIds                     string                           `xorm:"VARCHAR(255) NOT NULL comment('标签ID列表, 逗号分隔')"`
+	Amount                     int64                            `xorm:"NOT NULL comment('金额, 精度 x10000')"`
+	RelatedAccountId           int64                            `xorm:"NOT NULL comment('关联账户ID')"`
+	RelatedAccountAmount       int64                            `xorm:"NOT NULL comment('关联账户金额')"`
+	HideAmount                 bool                             `xorm:"NOT NULL comment('是否隐藏金额')"`
+	Comment                    string                           `xorm:"VARCHAR(255) NOT NULL comment('备注')"`
+	DisplayOrder               int32                            `xorm:"INDEX(IDX_transaction_template_uid_deleted_template_type_order) NOT NULL comment('显示排序')"`
+	Hidden                     bool                             `xorm:"NOT NULL comment('是否隐藏')"`
+	CreatedUnixTime            int64                            `comment('创建时间')"`
+	UpdatedUnixTime            int64                            `comment('更新时间')"`
+	DeletedUnixTime            int64                            `comment('删除时间')"`
 }
 
 // TransactionTemplateListRequest represents all parameters of transaction template list request

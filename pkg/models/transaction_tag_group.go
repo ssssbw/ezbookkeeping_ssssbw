@@ -2,14 +2,14 @@ package models
 
 // TransactionTagGroup represents transaction tag group data stored in database
 type TransactionTagGroup struct {
-	TagGroupId      int64  `xorm:"PK"`
-	Uid             int64  `xorm:"INDEX(IDX_tag_group_uid_deleted_order) NOT NULL"`
-	Deleted         bool   `xorm:"INDEX(IDX_tag_group_uid_deleted_order) NOT NULL"`
-	Name            string `xorm:"VARCHAR(64) NOT NULL"`
-	DisplayOrder    int32  `xorm:"INDEX(IDX_tag_group_uid_deleted_order) NOT NULL"`
-	CreatedUnixTime int64
-	UpdatedUnixTime int64
-	DeletedUnixTime int64
+	TagGroupId      int64  `xorm:"PK comment('标签组ID')"`
+	Uid             int64  `xorm:"INDEX(IDX_tag_group_uid_deleted_order) NOT NULL comment('用户ID')"`
+	Deleted         bool   `xorm:"INDEX(IDX_tag_group_uid_deleted_order) NOT NULL comment('是否删除')"`
+	Name            string `xorm:"VARCHAR(64) NOT NULL comment('标签组名称')"`
+	DisplayOrder    int32  `xorm:"INDEX(IDX_tag_group_uid_deleted_order) NOT NULL comment('显示排序')"`
+	CreatedUnixTime int64  `comment('创建时间')"`
+	UpdatedUnixTime int64  `comment('更新时间')"`
+	DeletedUnixTime int64  `comment('删除时间')"`
 }
 
 // TransactionTagGroupGetRequest represents all parameters of transaction tag group getting request
