@@ -241,7 +241,7 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 - 无阻塞问题
 - 下一步：阶段 1.6 行情数据 Provider（仿 exchange_rates）
 - 用户会在两台电脑间切换开发，此文档是 AI 会话的上下文桥梁
-- 构建验证方式：`bash build.sh backend --no-lint --no-test`（不要用 `go build ./...`）
+- 构建验证方式：`.\build.bat backend --no-lint --no-test`（Windows）/ `bash build.sh backend --no-lint --no-test`（macOS/Linux）（不要用 `go build ./...`）
 
 ---
 
@@ -287,7 +287,7 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
    - `pkg/models/investment_transaction.go`
    - `pkg/models/market_data.go`
 2. 阶段 1.2：在 `cmd/database.go` 注册 3 张表（182-206 行）
-3. 构建验证：`bash build.sh backend --no-lint --no-test` 通过
+3. 构建验证：`.\build.bat backend --no-lint --no-test` 通过
 
 ### 会话 3（2026-05-22）
 
@@ -305,11 +305,11 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
    - `pkg/errs/market_data.go`
 4. 新增 UUID 类型
    - `pkg/uuid/uuid_type.go`（UUID_TYPE_INVESTMENT_ASSET=11, UUID_TYPE_INVESTMENT_TRANS=12）
-5. 构建验证：`bash build.sh backend --no-lint --no-test` 通过
+5. 构建验证：`.\build.bat backend --no-lint --no-test` 通过
 
 下一个 AI 应该做什么：
 - 读取此文档了解完整上下文
 - 读取 docs/ 下三个文档了解详细设计
 - 从阶段 1.6 开始：行情数据 Provider（仿 exchange_rates）
 - 参考文件：`pkg/exchangerates/`
-- 构建验证方式：`bash build.sh backend --no-lint --no-test`
+- 构建验证方式：`.\build.bat backend --no-lint --no-test`（Windows）/ `bash build.sh backend --no-lint --no-test`（macOS/Linux）
