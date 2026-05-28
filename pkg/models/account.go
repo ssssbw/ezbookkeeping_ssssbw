@@ -69,9 +69,9 @@ var defaultCreditCardAccountStatementDate = 0
 // Account represents account data stored in database
 type Account struct {
 	AccountId       int64           `xorm:"PK comment('账户ID')"`
-	Uid             int64           `xorm:"INDEX(IDX_account_uid_deleted_type) NOT NULL comment('用户ID')"`
-	Deleted         bool            `xorm:"INDEX(IDX_account_uid_deleted_type) NOT NULL comment('是否删除')"`
-	Type            AccountType     `xorm:"INDEX(IDX_account_uid_deleted_type) NOT NULL comment('账户类型: 1=单账户, 2=多子账户')"`
+	Uid             int64           `xorm:"INDEX(IDX_account_uid_deleted_parent_account_id_order) NOT NULL comment('用户ID')"`
+	Deleted         bool            `xorm:"INDEX(IDX_account_uid_deleted_parent_account_id_order) NOT NULL comment('是否删除')"`
+	Type            AccountType     `xorm:"NOT NULL comment('账户类型: 1=单账户, 2=多子账户')"`
 	Category        AccountCategory `xorm:"NOT NULL comment('账户类别: 1=现金, 2=支票, 3=信用卡, 4=虚拟, 5=负债, 6=应收, 7=投资, 8=储蓄, 9=定期')"`
 	Name            string          `xorm:"VARCHAR(64) NOT NULL comment('账户名称')"`
 	ParentAccountId int64           `xorm:"NOT NULL comment('父账户ID, 0=顶级账户')"`

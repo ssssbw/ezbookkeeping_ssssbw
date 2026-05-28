@@ -38,7 +38,7 @@ CONFIG = {
     "api_base": "http://localhost:8080/api/v1",
 
     # JWT Token（登录后从浏览器或 API 获取）
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyVG9rZW5JZCI6IjI5NDI5OTc0OTIwMjMyNDgwNTciLCJqdGkiOiIzNzcyNTE3NDk3MDM5NzQ5MTIwIiwidXNlcm5hbWUiOiJ0ZXN0IiwidHlwZSI6MSwiaWF0IjoxNzc5OTU3OTI1LCJleHAiOjE3ODI1NDk5MjV9.MYJAlbkDyHZEf_LHkI5TUGu0QLP25rSGDa8Hf4kSMKU",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyVG9rZW5JZCI6IjIwMDI4NDU0NzA1OTQ0ODkwOTciLCJqdGkiOiIzNzcyNTE3NDk3MDM5NzQ5MTIwIiwidXNlcm5hbWUiOiJ0ZXN0IiwidHlwZSI6MSwiaWF0IjoxNzc5OTgyNjg1LCJleHAiOjE3ODI1NzQ2ODV9.JYIKjoApyHpX8CUEWDzFolD09UjA70DaIIfb18RTziU",
 
     # 输入 CSV 文件（相对于脚本所在目录）
     "input_csv": "../test_data.csv",
@@ -618,9 +618,11 @@ def _create_transaction(idx, tx, code_to_id, base, token, tx_id_map):
         print(f"  ⚠ 跳过交易 {idx}: 资产 {code} 未创建")
         return None
 
+    # assetId 和 accountId 的 Go tag 是 json:"...,string"，
+    # 要求 JSON 值必须是带引号的字符串，不能是数字
     payload = {
-        "assetId": asset_id,
-        "accountId": tx["accountId"],
+        "assetId": str(asset_id),
+        "accountId": str(tx["accountId"]),
         "type": tx["type"],
         "tradeTime": tx["tradeTime"],
         "confirmTime": tx["confirmTime"],
@@ -632,7 +634,7 @@ def _create_transaction(idx, tx, code_to_id, base, token, tx_id_map):
         "comment": tx.get("comment", ""),
     }
     if tx.get("relatedTransactionId"):
-        payload["relatedTransactionId"] = tx["relatedTransactionId"]
+        payload["relatedTransactionId"] = str(tx["relatedTransactionId"])
 
     type_cn = TYPE_LABELS_CN.get(tx["type"], "?")
     amt = tx["amount"] / 10000
