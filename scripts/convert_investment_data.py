@@ -32,13 +32,13 @@ from collections import defaultdict, OrderedDict
 
 CONFIG = {
     # 投资池子账户 ID（通过 Account API 创建后填入）
-    "account_id": "REPLACE_WITH_YOUR_INVESTMENT_POOL_ACCOUNT_ID",
+    "account_id": 3822427607018766337,
 
     # API 基础地址
     "api_base": "http://localhost:8080/api/v1",
 
     # JWT Token（登录后从浏览器或 API 获取）
-    "token": "REPLACE_WITH_YOUR_JWT_TOKEN",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyVG9rZW5JZCI6IjI5NDI5OTc0OTIwMjMyNDgwNTciLCJqdGkiOiIzNzcyNTE3NDk3MDM5NzQ5MTIwIiwidXNlcm5hbWUiOiJ0ZXN0IiwidHlwZSI6MSwiaWF0IjoxNzc5OTU3OTI1LCJleHAiOjE3ODI1NDk5MjV9.MYJAlbkDyHZEf_LHkI5TUGu0QLP25rSGDa8Hf4kSMKU",
 
     # 输入 CSV 文件（相对于脚本所在目录）
     "input_csv": "../test_data.csv",
@@ -533,10 +533,10 @@ def do_import(assets, transactions, conv_pairs):
     token = CONFIG["token"]
     base = CONFIG["api_base"]
 
-    if "REPLACE" in token:
+    if "REPLACE" in str(token):
         print("❌ 请先在 CONFIG 中填入有效的 JWT Token")
         sys.exit(1)
-    if "REPLACE" in CONFIG["account_id"]:
+    if "REPLACE" in str(CONFIG["account_id"]):
         print("❌ 请先在 CONFIG 中填入投资池 AccountId")
         sys.exit(1)
 
@@ -558,8 +558,14 @@ def do_import(assets, transactions, conv_pairs):
         }
         print(f"  创建: [{a['code']}] {a['name']}...", end=" ")
         result = post_json(None, f"{base}/investment/assets/add.json", payload, token)
-        if result and result.get("data", {}).get("id"):
-            asset_id = str(result["data"]["id"])
+        # 响应格式: {"result": {"id": "..."}, "success": true} 或 {"result": {"id": "...", "data": {...}}, "success": true}
+        asset_id = None
+        if result and result.get("success"):
+            # 尝试从 result.result.id 或 result.data.id 获取
+            inner = result.get("result", {})
+            asset_id = inner.get("id") or inner.get("data", {}).get("id")
+        if asset_id:
+            asset_id = str(asset_id)
             code_to_id[a["code"]] = asset_id
             print(f"✅ id={asset_id}")
         else:
@@ -633,8 +639,12 @@ def _create_transaction(idx, tx, code_to_id, base, token, tx_id_map):
     print(f"  [{idx + 1:3d}] {type_cn:6s} {code} {amt:>10,.2f} CNY ...", end=" ")
 
     result = post_json(None, f"{base}/investment/transactions/add.json", payload, token)
-    if result and result.get("data", {}).get("id"):
-        created_id = str(result["data"]["id"])
+    created_id = None
+    if result and result.get("success"):
+        inner = result.get("result", {})
+        created_id = inner.get("id") or inner.get("data", {}).get("id")
+    if created_id:
+        created_id = str(created_id)
         tx_id_map[idx] = created_id
         print(f"✅ id={created_id}")
         return created_id

@@ -191,6 +191,8 @@ import { useI18n } from '@/locales/helpers.ts';
 
 import { ThemeType } from '@/core/theme.ts';
 
+import * as echarts from 'echarts/core';
+
 import {
     mdiRefresh,
     mdiCheckboxMarkedCircle,
@@ -483,9 +485,9 @@ const monthlyPerformanceChartOptions = computed(() => {
 
 function getReturnColorClass(returnValue: string, isChip: boolean = false): string {
     if (returnValue.startsWith('+')) {
-        return 'text-success';
+        return isChip ? 'success' : 'text-success';
     } else if (returnValue.startsWith('-')) {
-        return 'text-error';
+        return isChip ? 'error' : 'text-error';
     }
     return '';
 }

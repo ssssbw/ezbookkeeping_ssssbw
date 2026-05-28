@@ -166,5 +166,13 @@
     "name": "汇添富恒生科技ETF联接(QDII)C",
     "currency": "CNY",
     "comment": ""
+  },
+  {
+    "type": 4,
+    "market": 1,
+    "code": "016644",
+    "name": "国泰瑞悦 3 个月持有期债券(FOF)",
+    "currency": "CNY",
+    "comment": ""
   }
 ]

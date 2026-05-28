@@ -43,9 +43,9 @@ type InvestmentTransactionCreateRequest struct {
 	Type                 InvestmentTransactionType `json:"type" binding:"required,min=1"`
 	TradeTime            int64                     `json:"tradeTime" binding:"required,min=1"`
 	ConfirmTime          int64                     `json:"confirmTime"`
-	Quantity             int64                     `json:"quantity" binding:"required,min=1"`
-	Price                int64                     `json:"price" binding:"required,min=1"`
-	Amount               int64                     `json:"amount" binding:"required,min=1"`
+	Quantity             int64                     `json:"quantity" binding:"min=0"`
+	Price                int64                     `json:"price" binding:"min=0"`
+	Amount               int64                     `json:"amount" binding:"required,min=0"`
 	Fee                  int64                     `json:"fee" binding:"min=0"`
 	RelatedTransactionId int64                     `json:"relatedTransactionId,string"`
 	TimezoneUtcOffset    int16                     `json:"utcOffset" binding:"min=-720,max=840"`

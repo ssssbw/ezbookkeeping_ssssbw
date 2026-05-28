@@ -1,0 +1,649 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ezBookkeeping 投资模块 API",
+    "description": "投资资产管理、交易记录、行情数据接口",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080/api/v1",
+      "description": "本地开发服务器"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/investment/assets/list.json": {
+      "get": {
+        "tags": ["资产管理"],
+        "summary": "获取资产列表",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "description": "资产类型: 1=基金, 2=股票, 3=ETF, 4=债券, 5=加密货币",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "market",
+            "in": "query",
+            "description": "市场: 1=中国, 2=香港, 3=美国",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "is_active",
+            "in": "query",
+            "description": "是否活跃",
+            "schema": { "type": "boolean" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "result": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/AssetInfo" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/investment/assets/get.json": {
+      "get": {
+        "tags": ["资产管理"],
+        "summary": "获取资产详情",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "资产ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "result": { "$ref": "#/components/schemas/AssetInfo" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/investment/assets/add.json": {
+      "post": {
+        "tags": ["资产管理"],
+        "summary": "创建资产",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AssetCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "result": { "$ref": "#/components/schemas/AssetInfo" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/investment/assets/modify.json": {
+      "post": {
+        "tags": ["资产管理"],
+        "summary": "修改资产",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AssetModifyRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "result": { "$ref": "#/components/schemas/AssetInfo" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/investment/assets/delete.json": {
+      "post": {
+        "tags": ["资产管理"],
+        "summary": "删除资产",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string", "description": "资产ID" }
+                },
+                "required": ["id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/investment/transactions/list.json": {
+      "get": {
+        "tags": ["交易管理"],
+        "summary": "获取交易列表",
+        "parameters": [
+          {
+            "name": "asset_id",
+            "in": "query",
+            "description": "资产ID",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "account_id",
+            "in": "query",
+            "description": "投资池账户ID",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "交易类型: 1=买入, 2=卖出, 3=现金分红, 4=红利再投, 5=拆分, 6=转出, 7=转入",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "start_time",
+            "in": "query",
+            "description": "开始时间(Unix时间戳)",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "end_time",
+            "in": "query",
+            "description": "结束时间(Unix时间戳)",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "result": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/TransactionInfo" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/investment/transactions/get.json": {
+      "get": {
+        "tags": ["交易管理"],
+        "summary": "获取交易详情",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "description": "交易ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "result": { "$ref": "#/components/schemas/TransactionInfo" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/investment/transactions/add.json": {
+      "post": {
+        "tags": ["交易管理"],
+        "summary": "创建交易",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TransactionCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "result": { "$ref": "#/components/schemas/TransactionInfo" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/investment/transactions/modify.json": {
+      "post": {
+        "tags": ["交易管理"],
+        "summary": "修改交易",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TransactionModifyRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "result": { "$ref": "#/components/schemas/TransactionInfo" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/investment/transactions/delete.json": {
+      "post": {
+        "tags": ["交易管理"],
+        "summary": "删除交易",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "string", "description": "交易ID" }
+                },
+                "required": ["id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/investment/market_data/latest.json": {
+      "get": {
+        "tags": ["行情数据"],
+        "summary": "获取最新行情",
+        "parameters": [
+          {
+            "name": "asset_id",
+            "in": "query",
+            "required": true,
+            "description": "资产ID",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "result": { "$ref": "#/components/schemas/MarketDataInfo" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/investment/market_data/list.json": {
+      "get": {
+        "tags": ["行情数据"],
+        "summary": "获取历史行情",
+        "parameters": [
+          {
+            "name": "asset_id",
+            "in": "query",
+            "required": true,
+            "description": "资产ID",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "start_time",
+            "in": "query",
+            "description": "开始时间(Unix时间戳)",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "end_time",
+            "in": "query",
+            "description": "结束时间(Unix时间戳)",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "result": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/MarketDataInfo" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/investment/market_data/add.json": {
+      "post": {
+        "tags": ["行情数据"],
+        "summary": "创建行情",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MarketDataCreateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "result": { "$ref": "#/components/schemas/MarketDataInfo" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/investment/market_data/modify.json": {
+      "post": {
+        "tags": ["行情数据"],
+        "summary": "修改行情",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MarketDataModifyRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "result": { "$ref": "#/components/schemas/MarketDataInfo" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "AssetInfo": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "资产ID" },
+          "type": { "type": "integer", "description": "资产类型: 1=基金, 2=股票, 3=ETF, 4=债券, 5=加密货币" },
+          "market": { "type": "integer", "description": "市场: 1=中国, 2=香港, 3=美国" },
+          "code": { "type": "string", "description": "资产代码" },
+          "name": { "type": "string", "description": "资产名称" },
+          "currency": { "type": "string", "description": "货币" },
+          "isActive": { "type": "boolean", "description": "是否活跃" },
+          "extraInfo": { "type": "string", "description": "扩展信息JSON" },
+          "comment": { "type": "string", "description": "备注" }
+        }
+      },
+      "AssetCreateRequest": {
+        "type": "object",
+        "required": ["type", "market", "code", "name", "currency"],
+        "properties": {
+          "type": { "type": "integer", "description": "资产类型" },
+          "market": { "type": "integer", "description": "市场" },
+          "code": { "type": "string", "description": "资产代码" },
+          "name": { "type": "string", "description": "资产名称" },
+          "currency": { "type": "string", "description": "货币" },
+          "extraInfo": { "type": "string", "description": "扩展信息JSON" },
+          "comment": { "type": "string", "description": "备注" }
+        }
+      },
+      "AssetModifyRequest": {
+        "type": "object",
+        "required": ["id", "type", "market", "code", "name", "currency"],
+        "properties": {
+          "id": { "type": "string", "description": "资产ID" },
+          "type": { "type": "integer", "description": "资产类型" },
+          "market": { "type": "integer", "description": "市场" },
+          "code": { "type": "string", "description": "资产代码" },
+          "name": { "type": "string", "description": "资产名称" },
+          "currency": { "type": "string", "description": "货币" },
+          "isActive": { "type": "boolean", "description": "是否活跃" },
+          "extraInfo": { "type": "string", "description": "扩展信息JSON" },
+          "comment": { "type": "string", "description": "备注" }
+        }
+      },
+      "TransactionInfo": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "交易ID" },
+          "assetId": { "type": "string", "description": "资产ID" },
+          "accountId": { "type": "string", "description": "投资池账户ID" },
+          "type": { "type": "integer", "description": "交易类型" },
+          "tradeTime": { "type": "integer", "description": "下单时间" },
+          "confirmTime": { "type": "integer", "description": "确认时间" },
+          "quantity": { "type": "integer", "description": "份额 (×10000)" },
+          "price": { "type": "integer", "description": "净值 (×10000)" },
+          "amount": { "type": "integer", "description": "金额 (×10000)" },
+          "fee": { "type": "integer", "description": "手续费 (×10000)" },
+          "relatedTransactionId": { "type": "string", "description": "配对交易ID" },
+          "utcOffset": { "type": "integer", "description": "时区偏移" },
+          "comment": { "type": "string", "description": "备注" }
+        }
+      },
+      "TransactionCreateRequest": {
+        "type": "object",
+        "required": ["assetId", "accountId", "type", "tradeTime", "amount"],
+        "properties": {
+          "assetId": { "type": "string", "description": "资产ID" },
+          "accountId": { "type": "string", "description": "投资池账户ID" },
+          "type": { "type": "integer", "description": "交易类型: 1=买入, 2=卖出, 3=现金分红, 4=红利再投, 5=拆分, 6=转出, 7=转入" },
+          "tradeTime": { "type": "integer", "description": "下单时间(Unix时间戳)" },
+          "confirmTime": { "type": "integer", "description": "确认时间(Unix时间戳)" },
+          "quantity": { "type": "integer", "description": "份额 (×10000)" },
+          "price": { "type": "integer", "description": "净值 (×10000)" },
+          "amount": { "type": "integer", "description": "金额 (×10000)" },
+          "fee": { "type": "integer", "description": "手续费 (×10000)" },
+          "relatedTransactionId": { "type": "string", "description": "配对交易ID" },
+          "utcOffset": { "type": "integer", "description": "时区偏移(如东八区=480)" },
+          "comment": { "type": "string", "description": "备注" }
+        }
+      },
+      "TransactionModifyRequest": {
+        "type": "object",
+        "required": ["id", "assetId", "accountId", "type", "tradeTime", "quantity", "price", "amount"],
+        "properties": {
+          "id": { "type": "string", "description": "交易ID" },
+          "assetId": { "type": "string", "description": "资产ID" },
+          "accountId": { "type": "string", "description": "投资池账户ID" },
+          "type": { "type": "integer", "description": "交易类型" },
+          "tradeTime": { "type": "integer", "description": "下单时间" },
+          "confirmTime": { "type": "integer", "description": "确认时间" },
+          "quantity": { "type": "integer", "description": "份额" },
+          "price": { "type": "integer", "description": "净值" },
+          "amount": { "type": "integer", "description": "金额" },
+          "fee": { "type": "integer", "description": "手续费" },
+          "relatedTransactionId": { "type": "string", "description": "配对交易ID" },
+          "utcOffset": { "type": "integer", "description": "时区偏移" },
+          "comment": { "type": "string", "description": "备注" }
+        }
+      },
+      "MarketDataInfo": {
+        "type": "object",
+        "properties": {
+          "assetId": { "type": "string", "description": "资产ID" },
+          "date": { "type": "integer", "description": "日期(Unix时间戳)" },
+          "price": { "type": "integer", "description": "净值 (×10000)" },
+          "volume": { "type": "integer", "description": "成交量" }
+        }
+      },
+      "MarketDataCreateRequest": {
+        "type": "object",
+        "required": ["assetId", "date", "price"],
+        "properties": {
+          "assetId": { "type": "string", "description": "资产ID" },
+          "date": { "type": "integer", "description": "日期(Unix时间戳)" },
+          "price": { "type": "integer", "description": "净值 (×10000)" },
+          "volume": { "type": "integer", "description": "成交量" }
+        }
+      },
+      "MarketDataModifyRequest": {
+        "type": "object",
+        "required": ["assetId", "date", "price"],
+        "properties": {
+          "assetId": { "type": "string", "description": "资产ID" },
+          "date": { "type": "integer", "description": "日期(Unix时间戳)" },
+          "price": { "type": "integer", "description": "净值 (×10000)" },
+          "volume": { "type": "integer", "description": "成交量" }
+        }
+      }
+    }
+  }
+}
