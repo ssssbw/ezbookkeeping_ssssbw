@@ -451,3 +451,18 @@ func (a *InvestmentApi) MarketDataModifyHandler(c *core.WebContext) (any, *errs.
 
 	return data.ToMarketDataInfoResponse(), nil
 }
+
+func (a *InvestmentApi) MarketDataRefreshHandler(c *core.WebContext) (any, *errs.Error) {
+	uid := c.GetCurrentUid()
+
+	err := a.marketData.FetchAllActiveAssetsMarketData(c)
+
+	if err != nil {
+		log.Errorf(c, "[investment.MarketDataRefreshHandler] failed to refresh market data for user \"uid:%d\", because %s", uid, err.Error())
+		return nil, errs.Or(err, errs.ErrOperationFailed)
+	}
+
+	log.Infof(c, "[investment.MarketDataRefreshHandler] user \"uid:%d\" has refreshed market data successfully", uid)
+
+	return "ok", nil
+}

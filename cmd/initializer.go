@@ -17,6 +17,7 @@ import (
 	"github.com/mayswind/ezbookkeeping/pkg/llm"
 	"github.com/mayswind/ezbookkeeping/pkg/log"
 	"github.com/mayswind/ezbookkeeping/pkg/mail"
+	"github.com/mayswind/ezbookkeeping/pkg/marketdata"
 	"github.com/mayswind/ezbookkeeping/pkg/settings"
 	"github.com/mayswind/ezbookkeeping/pkg/storage"
 	"github.com/mayswind/ezbookkeeping/pkg/utils"
@@ -146,6 +147,15 @@ func initializeSystem(c *core.CliContext) (*settings.Config, error) {
 	if err != nil {
 		if !isDisableBootLog {
 			log.BootErrorf(c, "[initializer.initializeSystem] initializes exchange rates data source failed, because %s", err.Error())
+		}
+		return nil, err
+	}
+
+	err = marketdata.InitializeMarketDataSource(config)
+
+	if err != nil {
+		if !isDisableBootLog {
+			log.BootErrorf(c, "[initializer.initializeSystem] initializes market data source failed, because %s", err.Error())
 		}
 		return nil, err
 	}

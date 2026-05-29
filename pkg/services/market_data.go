@@ -125,3 +125,7 @@ func (s *MarketDataService) ModifyMarketData(c core.Context, uid int64, data *mo
 		return nil
 	})
 }
+
+func (s *MarketDataService) FetchAllActiveAssetsMarketData(c core.Context) error {
+	return nil
+}

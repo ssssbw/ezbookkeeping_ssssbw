@@ -498,6 +498,7 @@ func startWebServer(c *core.CliContext) error {
 			apiV1Route.GET("/investment/market_data/list.json", bindApi(api.Investment.MarketDataListHandler))
 			apiV1Route.POST("/investment/market_data/add.json", bindApi(api.Investment.MarketDataCreateHandler))
 			apiV1Route.POST("/investment/market_data/modify.json", bindApi(api.Investment.MarketDataModifyHandler))
+			apiV1Route.POST("/investment/market_data/refresh.json", bindApi(api.Investment.MarketDataRefreshHandler))
 
 			// System
 			apiV1Route.GET("/systems/version.json", bindApi(api.Systems.VersionHandler))

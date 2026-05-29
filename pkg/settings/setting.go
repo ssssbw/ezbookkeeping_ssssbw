@@ -147,6 +147,12 @@ const (
 	UserCustomExchangeRatesDataSource  string = "user_custom"
 )
 
+// Market data source types
+const (
+	AkshareMarketDataSource   string = "akshare"
+	EastMoneyMarketDataSource string = "eastmoney"
+)
+
 const (
 	defaultHttpAddr string = "0.0.0.0"
 	defaultHttpPort uint16 = 8080
@@ -446,6 +452,9 @@ type Config struct {
 	ExchangeRatesRequestTimeoutExceedDefaultValue bool
 	ExchangeRatesProxy                            string
 	ExchangeRatesSkipTLSVerify                    bool
+
+	// Market Data
+	MarketDataSource string
 }
 
 // LoadConfiguration loads setting config from given config file path
@@ -582,6 +591,12 @@ func LoadConfiguration(configFilePath string) (*Config, error) {
 	}
 
 	err = loadExchangeRatesConfiguration(config, cfgFile, "exchange_rates")
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = loadMarketDataConfiguration(config, cfgFile, "market_data")
 
 	if err != nil {
 		return nil, err
@@ -1220,6 +1235,19 @@ func loadExchangeRatesConfiguration(config *Config, configFile *ini.File, sectio
 	}
 
 	config.ExchangeRatesSkipTLSVerify = getConfigItemBoolValue(configFile, sectionName, "skip_tls_verify", false)
+
+	return nil
+}
+
+func loadMarketDataConfiguration(config *Config, configFile *ini.File, sectionName string) error {
+	dataSource := getConfigItemStringValue(configFile, sectionName, "data_source")
+
+	if dataSource == AkshareMarketDataSource ||
+		dataSource == EastMoneyMarketDataSource {
+		config.MarketDataSource = dataSource
+	} else {
+		config.MarketDataSource = AkshareMarketDataSource
+	}
 
 	return nil
 }

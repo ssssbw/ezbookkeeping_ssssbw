@@ -30,3 +30,15 @@ var CreateScheduledTransactionJob = &CronJob{
 		return services.Transactions.CreateScheduledTransactions(c, time.Now().Unix(), c.GetInterval())
 	},
 }
+
+// FetchMarketDataJob represents the cron job which periodically fetch market data for active investment assets
+var FetchMarketDataJob = &CronJob{
+	Name:        "FetchMarketData",
+	Description: "Daily fetch market data for active investment assets.",
+	Period: CronJobFixedHourPeriod{
+		Hour: 18,
+	},
+	Run: func(c *core.CronContext) error {
+		return services.MarketData.FetchAllActiveAssetsMarketData(c)
+	},
+}

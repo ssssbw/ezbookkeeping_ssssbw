@@ -1,7 +1,7 @@
 # AI 会话上下文交接文档
 
 > 每次会话结束后更新此文件，确保下一个 AI 会话能无缝接续。
-> 最后更新：2026-05-09
+> 最后更新：2026-05-29
 
 ---
 
@@ -31,6 +31,7 @@
 | INVESTMENT_MODULE_DEV_PLAN.md | ✅ 已完成 | 开发计划（含阶段划分、技术栈、学习指南） |
 | ER_DIAGRAM.md | ✅ 已完成 | 现有 16 张表 + 新增投资模块 ER 图 |
 | INVESTMENT_MODULE_DESIGN_NOTES.md | ✅ 已完成 | 设计决策笔记（三层资金流、自洽性验证、交易类型定义） |
+| AI_CONTEXT_HANDOFF.md | ✅ 已完成 | AI 会话上下文交接文档 |
 
 ### 2.2 代码
 
@@ -44,12 +45,23 @@
 | pkg/errs/investment_asset.go | ✅ 已完成 | 投资资产相关错误定义 |
 | pkg/errs/investment_transaction.go | ✅ 已完成 | 投资交易相关错误定义 |
 | pkg/errs/market_data.go | ✅ 已完成 | 行情数据相关错误定义 |
+| pkg/errs/setting.go | ✅ 已修改 | 新增 ErrInvalidMarketDataSource |
 | pkg/uuid/uuid_type.go | ✅ 已修改 | 新增 UUID_TYPE_INVESTMENT_ASSET (11) 和 UUID_TYPE_INVESTMENT_TRANS (12) |
 | pkg/services/investment_asset.go | ✅ 已完成 | InvestmentAssetService CRUD |
 | pkg/services/investment_transaction.go | ✅ 已完成 | InvestmentTransactionService CRUD + Balance 自动维护 |
-| pkg/services/market_data.go | ✅ 已完成 | MarketDataService CRUD |
-| pkg/api/investment.go | ✅ 已完成 | InvestmentApi Handler（资产/交易/行情） |
-| cmd/webserver.go | ✅ 已修改 | 注册 /investment/ 路由组（15 个端点） |
+| pkg/services/market_data.go | ✅ 已完成 | MarketDataService CRUD + FetchAllActiveAssetsMarketData |
+| pkg/api/investment.go | ✅ 已完成 | InvestmentApi Handler（资产/交易/行情 + 手动刷新） |
+| cmd/webserver.go | ✅ 已修改 | 注册 /investment/ 路由组（16 个端点） |
+| pkg/marketdata/market_data_provider.go | ✅ 已完成 | MarketDataProvider 接口定义 |
+| pkg/marketdata/akshare_market_data_provider.go | ✅ 已完成 | akshare 数据源实现（主力） |
+| pkg/marketdata/eastmoney_market_data_provider.go | ✅ 已完成 | 东方财富数据源实现（备选） |
+| pkg/marketdata/market_data_provider_container.go | ✅ 已完成 | 容器 + 配置切换 |
+| pkg/settings/setting.go | ✅ 已修改 | 新增 MarketDataSource 配置项 |
+| pkg/cron/cron_jobs.go | ✅ 已修改 | 新增 FetchMarketDataJob（每日 18:00） |
+| pkg/cron/cron_container.go | ✅ 已修改 | 注册 FetchMarketDataJob |
+| cmd/initializer.go | ✅ 已修改 | 初始化 MarketDataSource |
+| .air.toml | ✅ 已完成 | 热重载配置 |
+| go.mod | ✅ 已修改 | 引入 akshare 依赖 |
 
 - 已有的前端代码：投资 Overview 页面骨架（已有，非本次新增）
 - 已有的路由切换：点击 logo 切换记账/理财模式
@@ -80,9 +92,10 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 
 ### 3.4 行情数据源
 
-- 方案 A：东方财富免费 HTTP API（主力，仿照现有 exchange_rates Provider 模式）
-- 方案 B：BlakeLiAFK/akshare Go 库（高级数据，持仓/分红等）
-- 数据源可切换（策略模式），加一个 Provider 实现改配置即可
+- **主力**：BlakeLiAFK/akshare Go 库（71 个基金接口）
+- **备选**：东方财富免费 HTTP API
+- 数据源可切换（策略模式），改配置 `market_data_source` 即可
+- 更新策略：Cron 定时（每日 18:00）+ 手动刷新 API
 
 ### 3.5 精度约定
 
@@ -95,7 +108,7 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 
 ---
 
-## 四、数据库设计（待实现）
+## 四、数据库设计（已实现）
 
 ### 新增三张表
 
@@ -165,9 +178,9 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 | 1.2 | 在 cmd/database.go 注册 3 张表 | ✅ 已完成 | cmd/database.go:182-206 |
 | 1.3 | 创建 Service 层 CRUD | ✅ 已完成 | pkg/services/investment_asset.go, investment_transaction.go, market_data.go |
 | 1.4 | 创建 API Handler | ✅ 已完成 | pkg/api/investment.go |
-| 1.5 | 注册投资路由组 | ✅ 已完成 | cmd/webserver.go（15 个端点） |
-| 1.6 | 行情数据 Provider（仿 exchange_rates） | ⬜ 未开始 | pkg/exchangerates/ |
-| 1.7 | Cron 任务（每日 18:00 拉净值） | ⬜ 未开始 | pkg/cron/cron_jobs.go |
+| 1.5 | 注册投资路由组 | ✅ 已完成 | cmd/webserver.go（16 个端点） |
+| 1.6 | 行情数据 Provider（akshare + 东方财富） | ✅ 已完成 | pkg/marketdata/ |
+| 1.7 | Cron 任务（每日 18:00 拉净值） | ✅ 已完成 | pkg/cron/cron_jobs.go |
 | 1.8 | 单元测试 | ⬜ 未开始 | |
 
 ### 阶段 2：前端 Store + API 层 — 预估 1 周
@@ -204,7 +217,7 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 |---|------|------|
 | 4.1 | 导入时自动创建缺失账户/分类/标签 | ⬜ |
 | 4.2 | 投资数据导入 CSV/JSON | ⬜ |
-| 4.3 | 引入 BlakeLiAFK/akshare Go 库 | ⬜ |
+| 4.3 | 引入 BlakeLiAFK/akshare Go 库 | ✅ 已完成 |
 
 ### 阶段 5：打磨 & 测试 — 预估 1 周
 
@@ -229,6 +242,7 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 | API Handler | pkg/api/transaction_categories.go | 42-60 |
 | 路由注册 | cmd/webserver.go | 379-425 |
 | Provider 模式 | pkg/exchangerates/exchange_rates_data_provider.go | 10-12 |
+| MarketData Provider | pkg/marketdata/market_data_provider.go | — |
 | Cron Job | pkg/cron/cron_jobs.go | — |
 | Pinia Store | src/stores/account.ts | 26-34 |
 | API 调用 | src/lib/services.ts | 490-510 |
@@ -239,22 +253,22 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 ## 七、当前状态
 
 - 无阻塞问题
-- 下一步：阶段 1.6 行情数据 Provider（仿 exchange_rates）
+- 下一步：阶段 2 前端 Store + API 层
 - 用户会在两台电脑间切换开发，此文档是 AI 会话的上下文桥梁
 - 构建验证方式：`.\build.bat backend --no-lint --no-test`（Windows）/ `bash build.sh backend --no-lint --no-test`（macOS/Linux）（不要用 `go build ./...`）
+- 热重载：`air`（配置文件：`.air.toml`）
 
 ---
 
 ## 八、Git 提交记录
 
 ```
+0067d4f4 fix: 修复 market_data 复合索引重复创建问题 + 添加 air 热重载配置
 73d3d316 docs: add AI session context handoff document
 9d4bcf77 docs: add investment module design notes with data flow verification
 05678984 docs: add ER diagrams for existing and new investment module tables
 4051a995 docs: optimize investment module development plan
 ```
-
-四个提交已在 feature/add_invest_analysis 分支，已 push 到远端。
 
 ---
 
@@ -307,9 +321,34 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
    - `pkg/uuid/uuid_type.go`（UUID_TYPE_INVESTMENT_ASSET=11, UUID_TYPE_INVESTMENT_TRANS=12）
 5. 构建验证：`.\build.bat backend --no-lint --no-test` 通过
 
+### 会话 4（2026-05-29）
+
+完成内容：
+1. 阶段 1.6：行情数据 Provider
+   - `pkg/marketdata/market_data_provider.go`（接口定义）
+   - `pkg/marketdata/akshare_market_data_provider.go`（akshare 数据源，主力）
+   - `pkg/marketdata/eastmoney_market_data_provider.go`（东方财富数据源，备选）
+   - `pkg/marketdata/market_data_provider_container.go`（容器 + 配置切换）
+2. 配置项添加
+   - `pkg/settings/setting.go`（新增 MarketDataSource 配置）
+   - `pkg/errs/setting.go`（新增 ErrInvalidMarketDataSource）
+3. Cron 任务
+   - `pkg/cron/cron_jobs.go`（新增 FetchMarketDataJob）
+   - `pkg/cron/cron_container.go`（注册任务）
+4. 手动刷新 API
+   - `pkg/api/investment.go`（新增 MarketDataRefreshHandler）
+   - `cmd/webserver.go`（注册 /investment/market_data/refresh.json）
+5. 依赖引入
+   - `go.mod`（引入 BlakeLiAFK/akshare）
+6. 开发工具
+   - `.air.toml`（热重载配置）
+7. 构建验证：`bash build.sh backend --no-lint --no-test` 通过
+8. 接口测试：通过 Apifox 测试资产/交易/行情 CRUD 接口
+9. 数据导入：使用 `scripts/convert_investment_data.py` 导入测试数据
+
 下一个 AI 应该做什么：
 - 读取此文档了解完整上下文
 - 读取 docs/ 下三个文档了解详细设计
-- 从阶段 1.6 开始：行情数据 Provider（仿 exchange_rates）
-- 参考文件：`pkg/exchangerates/`
+- 从阶段 2 开始：前端 Store + API 层
+- 参考文件：`src/stores/account.ts`、`src/lib/services.ts`、`src/models/account.ts`
 - 构建验证方式：`.\build.bat backend --no-lint --no-test`（Windows）/ `bash build.sh backend --no-lint --no-test`（macOS/Linux）
