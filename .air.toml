@@ -1,0 +1,19 @@
+[build]
+  cmd = "CGO_ENABLED=1 go build -o ezbookkeeping ."
+  bin = "./ezbookkeeping"
+  full_bin = "cd package && ../ezbookkeeping server run"
+  include_ext = ["go", "toml", "ini"]
+  exclude_dir = [
+    "tmp", "vendor", "node_modules", "scripts", "docs", ".git", "data", "package",
+    "venv", "src", "dist", "public", "storage", "log", "etc", "testdata",
+    ".github", ".gitea", ".spec-workflow", ".trae", ".claude", "docker", "skills"
+  ]
+  delay = 1000
+  stop_on_error = true
+  log = "build-errors.log"
+
+[log]
+  time = false
+
+[misc]
+  clean_on_exit = true

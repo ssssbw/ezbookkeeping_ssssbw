@@ -3,7 +3,7 @@ package models
 // MarketData represents market data stored in database
 type MarketData struct {
 	DataId          int64 `xorm:"PK comment('行情ID')"`
-	AssetId         int64 `xorm:"UNIQUE(UQE_market_data_asset_id_date) INDEX(IDX_market_data_asset_id_date) NOT NULL comment('关联资产ID')"`
+	AssetId         int64 `xorm:"UNIQUE(UQE_market_data_asset_id_date) NOT NULL comment('关联资产ID')"`
 	Date            int64 `xorm:"UNIQUE(UQE_market_data_asset_id_date) NOT NULL comment('日期, Unix时间戳取0点')"`
 	Price           int64 `xorm:"NOT NULL comment('当日净值/收盘价, 精度 x10000')"`
 	Volume          int64 `comment('成交量, ETF/股票有效')"`
