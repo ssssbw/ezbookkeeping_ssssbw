@@ -371,22 +371,23 @@ Investment OverviewPage 已有 `v-chart` 骨架，遵循该项目使用 ECharts 
 
 | 任务 | 详细 | 状态 |
 |------|------|------|
-| 1.1 | 创建 `pkg/models/investment_asset.go`、`investment_transaction.go`、`market_data.go` 等 model | ✅ 已完成 |
+| 1.1 | 创建 `pkg/models/asset.go`、`user_asset.go`、`investment_transaction.go`、`market_data.go` 等 model | ✅ 已完成 |
 | 1.2 | 在 `cmd/database.go` 的 `updateAllDatabaseTablesStructure()` 中注册新表 | ✅ 已完成 |
-| 1.3 | 创建 `pkg/services/investment_asset.go`、`investment_transaction.go` 业务服务层 | ✅ 已完成 |
-| 1.4 | 创建 `pkg/api/investment.go`，实现全部 REST 端点 | ✅ 已完成 |
-| 1.5 | 在 `pkg/server/` 中注册投资路由组 | ✅ 已完成 |
-| 1.6 | **行情数据 provider**：仿照 `pkg/exchangerates/` 建立 `pkg/marketdata/`，实现 `MarketDataProvider` 接口 + 东方财富 HTTP 数据源 | ⬜ 未开始 |
-| 1.7 | **Cron 任务**：新增 `FetchFundMarketDataJob`，每日 18:00 自动拉取活跃基金净值写入 `market_data` 表 | ⬜ 未开始 |
-| 1.8 | 编写单元测试 | ⬜ 未开始 |
+| 1.3 | 创建 `pkg/services/asset.go`、`user_asset.go`、`investment_transaction.go` 业务服务层 | ✅ 已完成 |
+| 1.4 | 创建 `pkg/api/investment.go`，实现全部 REST 端点（25+ 个） | ✅ 已完成 |
+| 1.5 | 在 `cmd/webserver.go` 中注册投资路由组 | ✅ 已完成 |
+| 1.6 | **行情数据 provider**：仿照 `pkg/exchangerates/` 建立 `pkg/marketdata/`，实现 `MarketDataProvider` 接口 + 东方财富 HTTP 数据源 + akshare 备选 | ✅ 已完成 |
+| 1.7 | **Cron 任务**：新增 `FetchFundMarketDataJob`，每日 18:00 自动拉取活跃基金净值写入 `market_data` 表 | ✅ 已完成 |
+| 1.8 | **数据迁移脚本**：从 InvestmentAsset 迁移到 Asset + UserAsset | ✅ 已完成 |
+| 1.9 | 编写单元测试 | ⬜ 未开始 |
 
 ### 阶段 2：前端 Store + API 层 — 预估 1 周
 
 | 任务 | 详细 |
 |------|------|
-| 2.1 | 创建 `src/models/investment_asset.ts`、`investment_transaction.ts` 类型定义 |
-| 2.2 | 创建 `src/stores/investmentAsset.ts`、`investmentTransaction.ts`、`investmentAnalysis.ts` |
-| 2.3 | 在 `src/lib/services.ts` 中新增投资 API 方法 |
+| 2.1 | 创建 `src/models/asset.ts`、`user_asset.ts`、`investment_transaction.ts`、`market_data.ts` 类型定义 |
+| 2.2 | 创建 `src/stores/asset.ts`、`userAsset.ts`、`investmentTransaction.ts`、`marketData.ts` |
+| 2.3 | 在 `src/lib/services.ts` 中新增投资 API 方法（全局资产/用户持仓/交易/行情） |
 | 2.4 | 在 `src/stores/index.ts`（rootStore）中集成新 store |
 
 ### 阶段 2.5：API 契约检查（前后对接验证）

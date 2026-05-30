@@ -20,6 +20,8 @@ type InvestmentApi struct {
 	assets       *services.InvestmentAssetService
 	transactions *services.InvestmentTransactionService
 	marketData   *services.MarketDataService
+	globalAssets *services.AssetService
+	userAssets   *services.UserAssetService
 }
 
 var Investment = &InvestmentApi{
@@ -35,6 +37,8 @@ var Investment = &InvestmentApi{
 	assets:       services.InvestmentAssets,
 	transactions: services.InvestmentTransactions,
 	marketData:   services.MarketData,
+	globalAssets: services.Assets,
+	userAssets:   services.UserAssets,
 }
 
 // Asset handlers
@@ -538,3 +542,156 @@ func (a *InvestmentApi) MarketDataEstimateHandler(c *core.WebContext) (any, *err
 
 	return marketData.ToMarketDataInfoResponse(), nil
 }
+
+// Global Asset handlers
+
+func (a *InvestmentApi) AssetSearchHandler(c *core.WebContext) (any, *errs.Error) {
+	var req models.AssetSearchRequest
+	err := c.ShouldBindQuery(&req)
+
+	if err != nil {
+		log.Warnf(c, "[investment.AssetSearchHandler] parse request failed, because %s", err.Error())
+		return nil, errs.NewIncompleteOrIncorrectSubmissionError(err)
+	}
+
+	assets, err := a.globalAssets.SearchAssets(c, req.Keyword, req.Limit)
+	if err != nil {
+		log.Errorf(c, "[investment.AssetSearchHandler] failed to search assets, because %s", err.Error())
+		return nil, errs.Or(err, errs.ErrOperationFailed)
+	}
+
+	var response []*models.AssetInfoResponse
+	for _, asset := range assets {
+		response = append(response, asset.ToAssetInfoResponse())
+	}
+
+	return response, nil
+}
+
+func (a *InvestmentApi) GlobalAssetGetHandler(c *core.WebContext) (any, *errs.Error) {
+	var req models.AssetGetRequest
+	err := c.ShouldBindQuery(&req)
+
+	if err != nil {
+		log.Warnf(c, "[investment.GlobalAssetGetHandler] parse request failed, because %s", err.Error())
+		return nil, errs.NewIncompleteOrIncorrectSubmissionError(err)
+	}
+
+	asset, err := a.globalAssets.GetAssetByAssetId(c, req.Id)
+	if err != nil {
+		log.Errorf(c, "[investment.GlobalAssetGetHandler] failed to get asset, because %s", err.Error())
+		return nil, errs.Or(err, errs.ErrOperationFailed)
+	}
+
+	return asset.ToAssetInfoResponse(), nil
+}
+
+func (a *InvestmentApi) GlobalAssetCreateHandler(c *core.WebContext) (any, *errs.Error) {
+	var req models.AssetCreateRequest
+	err := c.ShouldBindJSON(&req)
+
+	if err != nil {
+		log.Warnf(c, "[investment.GlobalAssetCreateHandler] parse request failed, because %s", err.Error())
+		return nil, errs.NewIncompleteOrIncorrectSubmissionError(err)
+	}
+
+	asset := &models.Asset{
+		Code:     req.Code,
+		Market:   req.Market,
+		Name:     req.Name,
+		Category: req.Category,
+		Currency: req.Currency,
+		Industry: req.Industry,
+		Tags:     req.Tags,
+		ExtraInfo: req.ExtraInfo,
+	}
+
+	err = a.globalAssets.CreateAsset(c, asset)
+	if err != nil {
+		log.Errorf(c, "[investment.AssetCreateHandler] failed to create asset, because %s", err.Error())
+		return nil, errs.Or(err, errs.ErrOperationFailed)
+	}
+
+	log.Infof(c, "[investment.AssetCreateHandler] asset \"%s\" has been created successfully", asset.Code)
+
+	return asset.ToAssetInfoResponse(), nil
+}
+
+// User Asset handlers
+
+func (a *InvestmentApi) UserAssetListHandler(c *core.WebContext) (any, *errs.Error) {
+	var req models.UserAssetListRequest
+	err := c.ShouldBindQuery(&req)
+
+	if err != nil {
+		log.Warnf(c, "[investment.UserAssetListHandler] parse request failed, because %s", err.Error())
+		return nil, errs.NewIncompleteOrIncorrectSubmissionError(err)
+	}
+
+	uid := c.GetCurrentUid()
+
+	userAssets, err := a.userAssets.GetUserAssetsByUid(c, uid, req.IsActive)
+	if err != nil {
+		log.Errorf(c, "[investment.UserAssetListHandler] failed to get user assets, because %s", err.Error())
+		return nil, errs.Or(err, errs.ErrOperationFailed)
+	}
+
+	var response []*models.UserAssetInfoResponse
+	for _, ua := range userAssets {
+		resp := ua.ToUserAssetInfoResponse()
+
+		asset, err := a.globalAssets.GetAssetByAssetId(c, ua.AssetId)
+		if err == nil {
+			resp.Asset = asset.ToAssetInfoResponse()
+		}
+
+		response = append(response, resp)
+	}
+
+	return response, nil
+}
+
+func (a *InvestmentApi) UserAssetAddHandler(c *core.WebContext) (any, *errs.Error) {
+	var req models.UserAssetAddRequest
+	err := c.ShouldBindJSON(&req)
+
+	if err != nil {
+		log.Warnf(c, "[investment.UserAssetAddHandler] parse request failed, because %s", err.Error())
+		return nil, errs.NewIncompleteOrIncorrectSubmissionError(err)
+	}
+
+	uid := c.GetCurrentUid()
+
+	err = a.userAssets.AddUserAsset(c, uid, req.AssetId)
+	if err != nil {
+		log.Errorf(c, "[investment.UserAssetAddHandler] failed to add user asset, because %s", err.Error())
+		return nil, errs.Or(err, errs.ErrOperationFailed)
+	}
+
+	log.Infof(c, "[investment.UserAssetAddHandler] user \"uid:%d\" has added asset \"id:%d\" successfully", uid, req.AssetId)
+
+	return "ok", nil
+}
+
+func (a *InvestmentApi) UserAssetRemoveHandler(c *core.WebContext) (any, *errs.Error) {
+	var req models.UserAssetRemoveRequest
+	err := c.ShouldBindJSON(&req)
+
+	if err != nil {
+		log.Warnf(c, "[investment.UserAssetRemoveHandler] parse request failed, because %s", err.Error())
+		return nil, errs.NewIncompleteOrIncorrectSubmissionError(err)
+	}
+
+	uid := c.GetCurrentUid()
+
+	err = a.userAssets.RemoveUserAsset(c, uid, req.AssetId)
+	if err != nil {
+		log.Errorf(c, "[investment.UserAssetRemoveHandler] failed to remove user asset, because %s", err.Error())
+		return nil, errs.Or(err, errs.ErrOperationFailed)
+	}
+
+	log.Infof(c, "[investment.UserAssetRemoveHandler] user \"uid:%d\" has removed asset \"id:%d\" successfully", uid, req.AssetId)
+
+	return "ok", nil
+}
+

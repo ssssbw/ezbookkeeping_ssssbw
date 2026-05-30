@@ -202,5 +202,21 @@ func updateAllDatabaseTablesStructure(c *core.CliContext) error {
 
 	log.BootInfof(c, "[database.updateAllDatabaseTablesStructure] market data table maintained successfully")
 
+	err = datastore.Container.UserDataStore.SyncStructs(new(models.Asset))
+
+	if err != nil {
+		return err
+	}
+
+	log.BootInfof(c, "[database.updateAllDatabaseTablesStructure] asset table maintained successfully")
+
+	err = datastore.Container.UserDataStore.SyncStructs(new(models.UserAsset))
+
+	if err != nil {
+		return err
+	}
+
+	log.BootInfof(c, "[database.updateAllDatabaseTablesStructure] user asset table maintained successfully")
+
 	return nil
 }
