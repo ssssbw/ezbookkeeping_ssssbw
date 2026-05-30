@@ -8,6 +8,8 @@ import (
 	"github.com/mayswind/ezbookkeeping/pkg/core"
 	"github.com/mayswind/ezbookkeeping/pkg/datastore"
 	"github.com/mayswind/ezbookkeeping/pkg/errs"
+	"github.com/mayswind/ezbookkeeping/pkg/log"
+	"github.com/mayswind/ezbookkeeping/pkg/marketdata"
 	"github.com/mayswind/ezbookkeeping/pkg/models"
 )
 
@@ -127,5 +129,89 @@ func (s *MarketDataService) ModifyMarketData(c core.Context, uid int64, data *mo
 }
 
 func (s *MarketDataService) FetchAllActiveAssetsMarketData(c core.Context) error {
+	for i := 0; i < s.UserDataDBCount(); i++ {
+		var assets []*models.InvestmentAsset
+		err := s.UserDataDBByIndex(i).NewSession(c).Where("deleted=? AND is_active=?", false, true).Find(&assets)
+		if err != nil {
+			log.Errorf(c, "[marketdata.FetchAllActiveAssetsMarketData] failed to query assets: %s", err.Error())
+			continue
+		}
+
+		for _, asset := range assets {
+			s.fetchAssetMarketData(c, asset)
+		}
+	}
+
 	return nil
+}
+
+func (s *MarketDataService) fetchAssetMarketData(c core.Context, asset *models.InvestmentAsset) {
+	result, err := marketdata.Container.GetLatestPrice(asset.Code, string(asset.Market))
+	if err != nil {
+		log.Errorf(c, "[marketdata.fetchAssetMarketData] failed to fetch price for asset %s: %s", asset.Code, err.Error())
+		return
+	}
+
+	marketData, ok := result.Data.(*models.MarketData)
+	if !ok {
+		log.Errorf(c, "[marketdata.fetchAssetMarketData] invalid data type for asset %s", asset.Code)
+		return
+	}
+
+	marketData.AssetId = asset.AssetId
+
+	err = s.CreateMarketData(c, asset.Uid, marketData)
+	if err != nil {
+		log.Errorf(c, "[marketdata.fetchAssetMarketData] failed to save market data for asset %s: %s", asset.Code, err.Error())
+		return
+	}
+
+	log.Infof(c, "[marketdata.fetchAssetMarketData] updated price for asset %s: %d", asset.Code, marketData.Price)
+}
+
+func (s *MarketDataService) InitAssetMarketData(c core.Context, uid int64, assetId int64, assetCode string, market string, tradeTime int64) (int, error) {
+	if uid <= 0 {
+		return 0, errs.ErrUserIdInvalid
+	}
+
+	if assetId <= 0 {
+		return 0, errs.ErrMarketDataAssetIdInvalid
+	}
+
+	now := time.Now().Unix()
+	thirtyDaysAgo := now - 30*24*3600
+
+	var startTime, endTime int64
+	if tradeTime > thirtyDaysAgo {
+		startTime = thirtyDaysAgo
+	} else {
+		startTime = tradeTime
+	}
+	endTime = now
+
+	results, err := marketdata.Container.GetHistoricalPrices(assetCode, market, startTime, endTime)
+	if err != nil {
+		return 0, err
+	}
+
+	count := 0
+	for _, result := range results {
+		marketData, ok := result.Data.(*models.MarketData)
+		if !ok {
+			continue
+		}
+
+		marketData.AssetId = assetId
+
+		err = s.CreateMarketData(c, uid, marketData)
+		if err != nil {
+			log.Errorf(c, "[marketdata.InitAssetMarketData] failed to save market data for asset %s: %s", assetCode, err.Error())
+			continue
+		}
+
+		count++
+	}
+
+	log.Infof(c, "[marketdata.InitAssetMarketData] initialized %d records for asset %s", count, assetCode)
+	return count, nil
 }

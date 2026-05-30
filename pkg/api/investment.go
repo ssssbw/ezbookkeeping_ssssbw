@@ -1,10 +1,13 @@
 package api
 
 import (
+	"time"
+
 	"github.com/mayswind/ezbookkeeping/pkg/core"
 	"github.com/mayswind/ezbookkeeping/pkg/duplicatechecker"
 	"github.com/mayswind/ezbookkeeping/pkg/errs"
 	"github.com/mayswind/ezbookkeeping/pkg/log"
+	"github.com/mayswind/ezbookkeeping/pkg/marketdata"
 	"github.com/mayswind/ezbookkeeping/pkg/models"
 	"github.com/mayswind/ezbookkeeping/pkg/services"
 	"github.com/mayswind/ezbookkeeping/pkg/settings"
@@ -465,4 +468,73 @@ func (a *InvestmentApi) MarketDataRefreshHandler(c *core.WebContext) (any, *errs
 	log.Infof(c, "[investment.MarketDataRefreshHandler] user \"uid:%d\" has refreshed market data successfully", uid)
 
 	return "ok", nil
+}
+
+func (a *InvestmentApi) MarketDataInitHandler(c *core.WebContext) (any, *errs.Error) {
+	var req models.MarketDataInitRequest
+	err := c.ShouldBindJSON(&req)
+
+	if err != nil {
+		log.Warnf(c, "[investment.MarketDataInitHandler] parse request failed, because %s", err.Error())
+		return nil, errs.NewIncompleteOrIncorrectSubmissionError(err)
+	}
+
+	uid := c.GetCurrentUid()
+
+	asset, err := a.assets.GetAssetByAssetCode(c, uid, req.AssetCode)
+	if err != nil {
+		log.Errorf(c, "[investment.MarketDataInitHandler] failed to get asset for user \"uid:%d\", code \"%s\", because %s", uid, req.AssetCode, err.Error())
+		return nil, errs.Or(err, errs.ErrOperationFailed)
+	}
+
+	count, err := a.marketData.InitAssetMarketData(c, uid, asset.AssetId, asset.Code, string(asset.Market), req.TradeTime)
+	if err != nil {
+		log.Errorf(c, "[investment.MarketDataInitHandler] failed to init market data for user \"uid:%d\", asset \"%s\", because %s", uid, req.AssetCode, err.Error())
+		return nil, errs.Or(err, errs.ErrOperationFailed)
+	}
+
+	log.Infof(c, "[investment.MarketDataInitHandler] user \"uid:%d\" has initialized %d market data records for asset \"%s\" successfully", uid, count, req.AssetCode)
+
+	return &models.MarketDataInitResponse{
+		Count:     count,
+		StartTime: req.TradeTime,
+		EndTime:   time.Now().Unix(),
+	}, nil
+}
+
+func (a *InvestmentApi) MarketDataEstimateHandler(c *core.WebContext) (any, *errs.Error) {
+	var req models.MarketDataEstimateRequest
+	err := c.ShouldBindQuery(&req)
+
+	if err != nil {
+		log.Warnf(c, "[investment.MarketDataEstimateHandler] parse request failed, because %s", err.Error())
+		return nil, errs.NewIncompleteOrIncorrectSubmissionError(err)
+	}
+
+	uid := c.GetCurrentUid()
+
+	asset, err := a.assets.GetAssetByAssetCode(c, uid, req.AssetCode)
+	if err != nil {
+		log.Errorf(c, "[investment.MarketDataEstimateHandler] failed to get asset for user \"uid:%d\", code \"%s\", because %s", uid, req.AssetCode, err.Error())
+		return nil, errs.Or(err, errs.ErrOperationFailed)
+	}
+
+	result, err := marketdata.Container.GetRealtimeEstimate(asset.Code, string(asset.Market))
+	if err != nil {
+		log.Errorf(c, "[investment.MarketDataEstimateHandler] failed to get estimate for user \"uid:%d\", asset \"%s\", because %s", uid, req.AssetCode, err.Error())
+		return nil, errs.Or(err, errs.ErrOperationFailed)
+	}
+
+	if result == nil {
+		return nil, nil
+	}
+
+	marketData, ok := result.Data.(*models.MarketData)
+	if !ok {
+		return nil, nil
+	}
+
+	log.Infof(c, "[investment.MarketDataEstimateHandler] user \"uid:%d\" got estimate for asset \"%s\": %d", uid, req.AssetCode, marketData.Price)
+
+	return marketData.ToMarketDataInfoResponse(), nil
 }

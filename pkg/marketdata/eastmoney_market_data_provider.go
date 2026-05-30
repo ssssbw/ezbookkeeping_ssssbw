@@ -19,12 +19,71 @@ type EastMoneyMarketDataProvider struct {
 	httpClient *http.Client
 }
 
+func (p *EastMoneyMarketDataProvider) GetDataSourceName() string {
+	return "eastmoney"
+}
+
 func NewEastMoneyMarketDataProvider() *EastMoneyMarketDataProvider {
 	return &EastMoneyMarketDataProvider{
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
 	}
+}
+
+func (p *EastMoneyMarketDataProvider) GetRealtimeEstimate(c core.Context, assetCode string, market string) (*models.MarketData, error) {
+	url := fmt.Sprintf("https://fundgz.1234567.com.cn/js/%s.js", assetCode)
+
+	resp, err := p.httpClient.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	jsonStr := strings.TrimPrefix(string(body), "jsonpgz(")
+	jsonStr = strings.TrimSuffix(jsonStr, ");")
+
+	if jsonStr == "" || jsonStr == "null" {
+		return nil, nil
+	}
+
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(jsonStr), &data); err != nil {
+		return nil, nil
+	}
+
+	gsz, ok := data["gsz"].(string)
+	if !ok || gsz == "" {
+		return nil, nil
+	}
+
+	price, err := strconv.ParseFloat(gsz, 64)
+	if err != nil {
+		return nil, nil
+	}
+
+	gztime, _ := data["gztime"].(string)
+	var estimateTime int64
+	if gztime != "" {
+		if t, err := time.ParseInLocation("2006-01-02 15:04", gztime, time.Local); err == nil {
+			estimateTime = t.Unix()
+		}
+	}
+
+	if estimateTime == 0 {
+		estimateTime = time.Now().Unix()
+	}
+
+	return &models.MarketData{
+		AssetId: 0,
+		Date:    estimateTime,
+		Price:   int64(price * 10000),
+	}, nil
 }
 
 func (p *EastMoneyMarketDataProvider) GetLatestPrice(c core.Context, assetCode string, market string) (*models.MarketData, error) {
@@ -45,9 +104,13 @@ func (p *EastMoneyMarketDataProvider) GetLatestPrice(c core.Context, assetCode s
 	jsonStr := strings.TrimPrefix(string(body), "jsonpgz(")
 	jsonStr = strings.TrimSuffix(jsonStr, ");")
 
+	if jsonStr == "" || jsonStr == "null" {
+		return nil, fmt.Errorf("no data available for asset %s (possibly QDII or special fund)", assetCode)
+	}
+
 	var data map[string]interface{}
 	if err := json.Unmarshal([]byte(jsonStr), &data); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse response for asset %s: %s", assetCode, err.Error())
 	}
 
 	dateStr, ok := data["jzrq"].(string)

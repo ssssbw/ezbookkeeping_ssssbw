@@ -7,8 +7,12 @@ import (
 
 // MarketDataProvider defines the structure of market data provider
 type MarketDataProvider interface {
-	// GetLatestPrice returns the latest price for a specific asset
+	GetDataSourceName() string
+	// GetLatestPrice returns the latest confirmed price for a specific asset
 	GetLatestPrice(c core.Context, assetCode string, market string) (*models.MarketData, error)
+
+	// GetRealtimeEstimate returns the realtime estimated price (nil if not available, e.g. QDII)
+	GetRealtimeEstimate(c core.Context, assetCode string, market string) (*models.MarketData, error)
 
 	// GetHistoricalPrices returns historical prices for a specific asset
 	GetHistoricalPrices(c core.Context, assetCode string, market string, startTime int64, endTime int64) ([]*models.MarketData, error)

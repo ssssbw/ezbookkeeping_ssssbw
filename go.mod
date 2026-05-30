@@ -6,6 +6,7 @@ require (
 	github.com/BlakeLiAFK/akshare v0.0.0-20260122163716-937f0340f4b5
 	github.com/boombuler/barcode v1.1.0
 	github.com/coreos/go-oidc/v3 v3.18.0
+	github.com/dop251/goja v0.0.0-20260106131823-651366fbe6e3
 	github.com/extrame/xls v0.0.2-0.20200426124601-4a6cf263071b
 	github.com/gin-contrib/cache v1.4.4
 	github.com/gin-contrib/gzip v1.2.6
@@ -53,7 +54,6 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.11.4 // indirect
-	github.com/dop251/goja v0.0.0-20260106131823-651366fbe6e3 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/extrame/goyymmdd v0.0.0-20210114090516-7cc815f00d1a // indirect
 	github.com/extrame/ole2 v0.0.0-20160812065207-d69429661ad7 // indirect

@@ -1246,7 +1246,7 @@ func loadMarketDataConfiguration(config *Config, configFile *ini.File, sectionNa
 		dataSource == EastMoneyMarketDataSource {
 		config.MarketDataSource = dataSource
 	} else {
-		config.MarketDataSource = AkshareMarketDataSource
+		config.MarketDataSource = EastMoneyMarketDataSource
 	}
 
 	return nil

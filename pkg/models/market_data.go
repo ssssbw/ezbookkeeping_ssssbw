@@ -2,7 +2,7 @@ package models
 
 // MarketData represents market data stored in database
 type MarketData struct {
-	DataId          int64 `xorm:"PK comment('行情ID')"`
+	DataId          int64 `xorm:"PK autoincr comment('行情ID')"`
 	AssetId         int64 `xorm:"UNIQUE(UQE_market_data_asset_id_date) NOT NULL comment('关联资产ID')"`
 	Date            int64 `xorm:"UNIQUE(UQE_market_data_asset_id_date) NOT NULL comment('日期, Unix时间戳取0点')"`
 	Price           int64 `xorm:"NOT NULL comment('当日净值/收盘价, 精度 x10000')"`
@@ -44,6 +44,24 @@ type MarketDataModifyRequest struct {
 type MarketDataDeleteRequest struct {
 	AssetId int64 `json:"assetId,string" binding:"required,min=1"`
 	Date    int64 `json:"date" binding:"required,min=1"`
+}
+
+// MarketDataInitRequest represents all parameters of market data initialization request
+type MarketDataInitRequest struct {
+	AssetCode string `json:"assetCode" binding:"required"`
+	TradeTime int64  `json:"tradeTime" binding:"required,min=1"`
+}
+
+// MarketDataInitResponse represents the response of market data initialization
+type MarketDataInitResponse struct {
+	Count     int   `json:"count"`
+	StartTime int64 `json:"startTime"`
+	EndTime   int64 `json:"endTime"`
+}
+
+// MarketDataEstimateRequest represents all parameters of market data estimate request
+type MarketDataEstimateRequest struct {
+	AssetCode string `form:"assetCode" binding:"required"`
 }
 
 // MarketDataInfoResponse represents a view-object of market data

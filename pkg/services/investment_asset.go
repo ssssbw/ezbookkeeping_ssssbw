@@ -73,6 +73,27 @@ func (s *InvestmentAssetService) GetAssetByAssetId(c core.Context, uid int64, as
 	return asset, nil
 }
 
+func (s *InvestmentAssetService) GetAssetByAssetCode(c core.Context, uid int64, assetCode string) (*models.InvestmentAsset, error) {
+	if uid <= 0 {
+		return nil, errs.ErrUserIdInvalid
+	}
+
+	if assetCode == "" {
+		return nil, errs.ErrInvestmentAssetIdInvalid
+	}
+
+	asset := &models.InvestmentAsset{}
+	has, err := s.UserDataDB(uid).NewSession(c).Where("uid=? AND deleted=? AND code=?", uid, false, assetCode).Get(asset)
+
+	if err != nil {
+		return nil, err
+	} else if !has {
+		return nil, errs.ErrInvestmentAssetNotFound
+	}
+
+	return asset, nil
+}
+
 func (s *InvestmentAssetService) GetAssetsByAssetIds(c core.Context, uid int64, assetIds []int64) (map[int64]*models.InvestmentAsset, error) {
 	if uid <= 0 {
 		return nil, errs.ErrUserIdInvalid
