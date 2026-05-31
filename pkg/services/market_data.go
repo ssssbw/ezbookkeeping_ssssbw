@@ -130,22 +130,29 @@ func (s *MarketDataService) ModifyMarketData(c core.Context, uid int64, data *mo
 
 func (s *MarketDataService) FetchAllActiveAssetsMarketData(c core.Context) error {
 	for i := 0; i < s.UserDataDBCount(); i++ {
-		var assets []*models.InvestmentAsset
-		err := s.UserDataDBByIndex(i).NewSession(c).Where("deleted=? AND is_active=?", false, true).Find(&assets)
+		var userAssets []*models.UserAsset
+		err := s.UserDataDBByIndex(i).NewSession(c).Where("deleted=? AND is_active=?", false, true).Find(&userAssets)
 		if err != nil {
-			log.Errorf(c, "[marketdata.FetchAllActiveAssetsMarketData] failed to query assets: %s", err.Error())
+			log.Errorf(c, "[marketdata.FetchAllActiveAssetsMarketData] failed to query user assets: %s", err.Error())
 			continue
 		}
 
-		for _, asset := range assets {
-			s.fetchAssetMarketData(c, asset)
+		for _, ua := range userAssets {
+			var asset models.Asset
+			has, err := s.UserDataDBByIndex(i).NewSession(c).ID(ua.AssetId).Get(&asset)
+			if err != nil || !has {
+				log.Errorf(c, "[marketdata.FetchAllActiveAssetsMarketData] failed to get asset %d: %s", ua.AssetId, err)
+				continue
+			}
+
+			s.fetchAssetMarketData(c, &asset, ua.Uid)
 		}
 	}
 
 	return nil
 }
 
-func (s *MarketDataService) fetchAssetMarketData(c core.Context, asset *models.InvestmentAsset) {
+func (s *MarketDataService) fetchAssetMarketData(c core.Context, asset *models.Asset, uid int64) {
 	result, err := marketdata.Container.GetLatestPrice(asset.Code, string(asset.Market))
 	if err != nil {
 		log.Errorf(c, "[marketdata.fetchAssetMarketData] failed to fetch price for asset %s: %s", asset.Code, err.Error())
@@ -160,7 +167,7 @@ func (s *MarketDataService) fetchAssetMarketData(c core.Context, asset *models.I
 
 	marketData.AssetId = asset.AssetId
 
-	err = s.CreateMarketData(c, asset.Uid, marketData)
+	err = s.CreateMarketData(c, uid, marketData)
 	if err != nil {
 		log.Errorf(c, "[marketdata.fetchAssetMarketData] failed to save market data for asset %s: %s", asset.Code, err.Error())
 		return

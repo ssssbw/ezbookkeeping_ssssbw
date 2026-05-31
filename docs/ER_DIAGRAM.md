@@ -196,7 +196,7 @@ erDiagram
 
 ---
 
-## 二、新增投资模块 ER 图（阶段 1 完成后）
+## 二、新增投资模块 ER 图（当前实现）
 
 ```mermaid
 erDiagram
@@ -216,94 +216,68 @@ erDiagram
         bool Deleted
     }
 
-    InvestmentAsset {
-        int64 AssetId PK "资产ID"
-        int64 Uid FK "关联User"
-        bool Deleted "已删除"
-        string Type "资产类型(fund/stock/bond/EIF/crypto...)"
+    Asset {
+        int64 AssetId PK "全局资产ID"
+        string Code UK "资产代码, 如005827"
+        InvestmentMarket Market UK "市场: 1=中国, 2=香港, 3=美国"
         string Name "资产名称"
-        string Code "基金/股票代码"
-        string Currency "货币"
-        int64 CurrentPrice "最新单价(×10000)"
-        int64 CostBasis "成本(×10000)"
-        int64 Quantity "持有数量(×10000)"
+        AssetCategory Category "equity/fixed_income/commodity/digital"
+        string Currency "CNY/USD/HKD"
+        string Industry "行业分类"
+        string Tags "标签JSON数组"
+        string ExtraInfo "扩展信息JSON"
+    }
+
+    UserAsset {
+        int64 Id PK "记录ID"
+        int64 Uid FK "关联User"
+        int64 AssetId FK "关联Asset"
+        bool Deleted "是否删除"
         bool IsActive "是否活跃"
-        text ExtraInfo "扩展信息(JSON,不同类型特有字段)"
         string Comment "备注"
     }
 
     InvestmentTransaction {
         int64 TransactionId PK "交易ID"
         int64 Uid FK "关联User"
-        bool Deleted "已删除"
-        int64 AssetId FK "关联InvestmentAsset"
-        int64 AccountId FK "关联Account(资金账户)"
-        string Type "交易类型(buy/sell/dividend/split/interest)"
-        int64 Quantity "数量(×10000)"
-        int64 Price "单价(×10000)"
-        int64 Amount "交易总金额(×10000)"
-        int64 Fee "手续费(×10000)"
-        int64 TransactionTime "交易时间"
+        bool Deleted "是否删除"
+        int64 AssetId FK "关联Asset"
+        int64 AccountId FK "关联Account(策略池子账户)"
+        InvestmentTransactionType Type "buy/sell/dividend_cash/dividend_reinvest/split/conversion_out/conversion_in"
+        int64 TradeTime "下单时间"
+        int64 ConfirmTime "确认时间(T+N)"
+        int64 Quantity "份额 x10000"
+        int64 Price "单价 x10000"
+        int64 Amount "金额 x10000"
+        int64 Fee "手续费 x10000"
+        int64 RelatedTransactionId "配对交易ID"
         int16 TimezoneUtcOffset "时区偏移"
         string Comment "备注"
     }
 
     MarketData {
-        int64 DataId PK "行情ID"
-        int64 AssetId FK "关联InvestmentAsset"
-        int64 Date UK "日期(unix,取0点)"
-        int64 Price "当日净值/收盘价(×10000)"
-        int64 Volume "成交量(可选)"
-    }
-
-    InvestmentPortfolio {
-        int64 PortfolioId PK "组合ID"
-        int64 Uid FK "关联User"
-        bool Deleted "已删除"
-        string Name "组合名称"
-        string Comment "备注"
-    }
-
-    PortfolioAsset {
-        int64 Id PK "关联ID"
-        int64 PortfolioId FK "关联InvestmentPortfolio"
-        int64 AssetId FK "关联InvestmentAsset"
-        int64 Weight "权重(×10000)"
-        int64 TargetWeight "目标权重(×10000)"
-    }
-
-    InvestmentStrategy {
-        int64 StrategyId PK "策略ID"
-        int64 Uid FK "关联User"
-        bool Deleted "已删除"
-        string Name "策略名称"
-        string TriggerCondition "触发条件"
-        string Action "动作"
-        bool IsEnabled "是否启用"
-    }
-
-    InvestmentAlert {
-        int64 AlertId PK "提醒ID"
-        int64 Uid FK "关联User"
-        bool Deleted "已删除"
-        int64 StrategyId FK "关联InvestmentStrategy"
-        string AlertType "提醒类型"
-        string Content "提醒内容"
-        bool IsRead "已读"
+        int64 DataId PK "自增主键"
+        int64 AssetId FK "关联Asset"
+        int64 Date UK "日期(Unix 0点)"
+        int64 Price "净值/收盘价 x10000"
+        int64 Volume "成交量"
     }
 
     User ||--o{ Account : "拥有"
-    User ||--o{ InvestmentAsset : "拥有"
-    User ||--o{ InvestmentPortfolio : "拥有"
-    User ||--o{ InvestmentStrategy : "拥有"
+    User ||--o{ UserAsset : "关注"
+    User ||--o{ InvestmentTransaction : "拥有"
 
-    InvestmentAsset ||--o{ InvestmentTransaction : "交易记录"
-    InvestmentAsset ||--o{ MarketData : "历史行情"
+    Asset ||--o{ UserAsset : "被关注"
+    Asset ||--o{ InvestmentTransaction : "交易记录"
+    Asset ||--o{ MarketData : "历史行情"
     Account ||--o{ InvestmentTransaction : "资金账户"
-    InvestmentPortfolio ||--o{ PortfolioAsset : "包含"
-    InvestmentAsset ||--o{ PortfolioAsset : "属于"
-    InvestmentStrategy ||--o{ InvestmentAlert : "产生"
 ```
+
+> **设计说明**：
+> - `Asset` 是全局资产表（无 Uid），同一基金/股票只存一份
+> - `UserAsset` 是用户持仓关联表（含软删除），记录用户关注的资产
+> - `InvestmentAsset` 旧表仍保留但已废弃，数据已迁移到 Asset + UserAsset
+> - `InvestmentTransaction` 通过 AccountId 关联投资池（Account.Category=7）
 
 > **图例**：`×10000` 表示金额/数量/价格均以 10000 倍整数存储，与现有 `Transaction.Amount` 精度一致。
 
@@ -328,51 +302,62 @@ erDiagram
         int64 AccountId FK "关联Account"
     }
 
-    InvestmentAsset {
-        int64 AssetId PK "资产ID"
-        int64 Uid FK
-        string Type "fund/stock/bond..."
-        string Code "代码"
+    Asset {
+        int64 AssetId PK "全局资产(无Uid)"
+        string Code UK "代码"
+        InvestmentMarket Market UK "市场"
+    }
+
+    UserAsset {
+        int64 Id PK
+        int64 Uid FK "关联User"
+        int64 AssetId FK "关联Asset"
     }
 
     InvestmentTransaction {
         int64 TransactionId PK
-        int64 AssetId FK "关联InvestmentAsset"
-        int64 AccountId FK "关联Account(资金流转)"
-        string Type "buy/sell/dividend/split"
+        int64 AssetId FK "关联Asset"
+        int64 AccountId FK "关联Account(策略池)"
+        InvestmentTransactionType Type "buy/sell/dividend/..."
     }
 
     MarketData {
-        int64 AssetId FK "关联InvestmentAsset"
+        int64 AssetId FK "关联Asset"
         int64 Date UK
         int64 Price
     }
 
     User ||--o{ Account : "拥有"
-    User ||--o{ InvestmentAsset : "拥有"
+    User ||--o{ UserAsset : "关注"
     User ||--o{ Transaction : "拥有"
+    User ||--o{ InvestmentTransaction : "拥有"
 
+    Asset ||--o{ UserAsset : "被关注"
+    Asset ||--o{ InvestmentTransaction : "投资交易"
+    Asset ||--o{ MarketData : "行情数据"
     Account ||--o{ Transaction : "记账交易"
     Account ||--o{ InvestmentTransaction : "投资资金流转"
-    InvestmentAsset ||--o{ InvestmentTransaction : "投资交易"
-    InvestmentAsset ||--o{ MarketData : "行情数据"
 
     Transaction }o--o| InvestmentTransaction : "独立(通过Account间接关联)"
 ```
 
 ### 关键设计决策
 
-1. **Transaction 和 InvestmentTransaction 完全独立**，不共用表
-   - 字段结构完全不同（投资需要数量、单价、手续费、基金代码等）
+1. **Asset 是全局表**（无 Uid），同一基金/股票只存一份
+   - Code + Market 唯一约束，防止重复创建
+   - UserAsset 记录用户和资产的关联关系（含软删除）
+
+2. **Transaction 和 InvestmentTransaction 完全独立**，不共用表
+   - 字段结构完全不同（投资需要数量、单价、手续费、确认时间等）
    - 查询模式不同（投资按产品聚合，记账按分类聚合）
    - 通过 `Account` 表在资金层面间接关联
 
-2. **MarketData 与 InvestmentAsset 关联**
+3. **MarketData 与 Asset 关联**
    - 每日 cron 拉取行情 → 写入 market_data
    - API 失效后历史数据仍在本地，不影响计算和图表
 
-3. **复用现有基础设施**
+4. **复用现有基础设施**
    - User 认证 → JWT 中间件
-   - Account 体系 → 复用投资账户概念
+   - Account 体系 → 复用投资账户概念（Category=7）
    - 货币/汇率 → 复用现有 exchange_rates 模块
    - 时区 → 复用现有时区处理

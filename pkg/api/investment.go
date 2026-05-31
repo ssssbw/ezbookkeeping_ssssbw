@@ -11,13 +11,11 @@ import (
 	"github.com/mayswind/ezbookkeeping/pkg/models"
 	"github.com/mayswind/ezbookkeeping/pkg/services"
 	"github.com/mayswind/ezbookkeeping/pkg/settings"
-	"github.com/mayswind/ezbookkeeping/pkg/utils"
 )
 
 type InvestmentApi struct {
 	ApiUsingConfig
 	ApiUsingDuplicateChecker
-	assets       *services.InvestmentAssetService
 	transactions *services.InvestmentTransactionService
 	marketData   *services.MarketDataService
 	globalAssets *services.AssetService
@@ -34,173 +32,10 @@ var Investment = &InvestmentApi{
 		},
 		container: duplicatechecker.Container,
 	},
-	assets:       services.InvestmentAssets,
 	transactions: services.InvestmentTransactions,
 	marketData:   services.MarketData,
 	globalAssets: services.Assets,
 	userAssets:   services.UserAssets,
-}
-
-// Asset handlers
-
-func (a *InvestmentApi) AssetListHandler(c *core.WebContext) (any, *errs.Error) {
-	var req models.InvestmentAssetListRequest
-	err := c.ShouldBindQuery(&req)
-
-	if err != nil {
-		log.Warnf(c, "[investment.AssetListHandler] parse request failed, because %s", err.Error())
-		return nil, errs.NewIncompleteOrIncorrectSubmissionError(err)
-	}
-
-	uid := c.GetCurrentUid()
-	assets, err := a.assets.GetAllAssetsByUid(c, uid, req.Type, req.Market)
-
-	if err != nil {
-		log.Errorf(c, "[investment.AssetListHandler] failed to get assets for user \"uid:%d\", because %s", uid, err.Error())
-		return nil, errs.Or(err, errs.ErrOperationFailed)
-	}
-
-	assetResps := make([]*models.InvestmentAssetInfoResponse, len(assets))
-	for i, asset := range assets {
-		assetResps[i] = asset.ToInvestmentAssetInfoResponse()
-	}
-
-	return assetResps, nil
-}
-
-func (a *InvestmentApi) AssetGetHandler(c *core.WebContext) (any, *errs.Error) {
-	var req models.InvestmentAssetGetRequest
-	err := c.ShouldBindQuery(&req)
-
-	if err != nil {
-		log.Warnf(c, "[investment.AssetGetHandler] parse request failed, because %s", err.Error())
-		return nil, errs.NewIncompleteOrIncorrectSubmissionError(err)
-	}
-
-	uid := c.GetCurrentUid()
-	asset, err := a.assets.GetAssetByAssetId(c, uid, req.Id)
-
-	if err != nil {
-		log.Errorf(c, "[investment.AssetGetHandler] failed to get asset \"id:%d\" for user \"uid:%d\", because %s", req.Id, uid, err.Error())
-		return nil, errs.Or(err, errs.ErrOperationFailed)
-	}
-
-	return asset.ToInvestmentAssetInfoResponse(), nil
-}
-
-func (a *InvestmentApi) AssetCreateHandler(c *core.WebContext) (any, *errs.Error) {
-	var req models.InvestmentAssetCreateRequest
-	err := c.ShouldBindJSON(&req)
-
-	if err != nil {
-		log.Warnf(c, "[investment.AssetCreateHandler] parse request failed, because %s", err.Error())
-		return nil, errs.NewIncompleteOrIncorrectSubmissionError(err)
-	}
-
-	uid := c.GetCurrentUid()
-
-	asset := &models.InvestmentAsset{
-		Uid:       uid,
-		Type:      req.Type,
-		Market:    req.Market,
-		Code:      req.Code,
-		Name:      req.Name,
-		Currency:  req.Currency,
-		ExtraInfo: req.ExtraInfo,
-		Comment:   req.Comment,
-	}
-
-	if a.CurrentConfig().EnableDuplicateSubmissionsCheck && req.ClientSessionId != "" {
-		found, remark := a.GetSubmissionRemark(duplicatechecker.DUPLICATE_CHECKER_TYPE_NEW_TRANSACTION, uid, req.ClientSessionId)
-
-		if found {
-			log.Infof(c, "[investment.AssetCreateHandler] another asset \"id:%s\" has been created for user \"uid:%d\"", remark, uid)
-			assetId, err := utils.StringToInt64(remark)
-
-			if err == nil {
-				asset, err = a.assets.GetAssetByAssetId(c, uid, assetId)
-
-				if err != nil {
-					log.Errorf(c, "[investment.AssetCreateHandler] failed to get existed asset \"id:%d\" for user \"uid:%d\", because %s", assetId, uid, err.Error())
-					return nil, errs.Or(err, errs.ErrOperationFailed)
-				}
-
-				return asset.ToInvestmentAssetInfoResponse(), nil
-			}
-		}
-	}
-
-	err = a.assets.CreateAsset(c, asset)
-
-	if err != nil {
-		log.Errorf(c, "[investment.AssetCreateHandler] failed to create asset for user \"uid:%d\", because %s", uid, err.Error())
-		return nil, errs.Or(err, errs.ErrOperationFailed)
-	}
-
-	log.Infof(c, "[investment.AssetCreateHandler] user \"uid:%d\" has created a new asset \"id:%d\" successfully", uid, asset.AssetId)
-
-	a.SetSubmissionRemarkIfEnable(duplicatechecker.DUPLICATE_CHECKER_TYPE_NEW_TRANSACTION, uid, req.ClientSessionId, utils.Int64ToString(asset.AssetId))
-
-	return asset.ToInvestmentAssetInfoResponse(), nil
-}
-
-func (a *InvestmentApi) AssetModifyHandler(c *core.WebContext) (any, *errs.Error) {
-	var req models.InvestmentAssetModifyRequest
-	err := c.ShouldBindJSON(&req)
-
-	if err != nil {
-		log.Warnf(c, "[investment.AssetModifyHandler] parse request failed, because %s", err.Error())
-		return nil, errs.NewIncompleteOrIncorrectSubmissionError(err)
-	}
-
-	uid := c.GetCurrentUid()
-	asset, err := a.assets.GetAssetByAssetId(c, uid, req.Id)
-
-	if err != nil {
-		log.Errorf(c, "[investment.AssetModifyHandler] failed to get asset \"id:%d\" for user \"uid:%d\", because %s", req.Id, uid, err.Error())
-		return nil, errs.Or(err, errs.ErrOperationFailed)
-	}
-
-	asset.Type = req.Type
-	asset.Market = req.Market
-	asset.Code = req.Code
-	asset.Name = req.Name
-	asset.Currency = req.Currency
-	asset.IsActive = req.IsActive
-	asset.ExtraInfo = req.ExtraInfo
-	asset.Comment = req.Comment
-
-	err = a.assets.ModifyAsset(c, asset)
-
-	if err != nil {
-		log.Errorf(c, "[investment.AssetModifyHandler] failed to update asset \"id:%d\" for user \"uid:%d\", because %s", asset.AssetId, uid, err.Error())
-		return nil, errs.Or(err, errs.ErrOperationFailed)
-	}
-
-	log.Infof(c, "[investment.AssetModifyHandler] user \"uid:%d\" has updated asset \"id:%d\" successfully", uid, asset.AssetId)
-
-	return asset.ToInvestmentAssetInfoResponse(), nil
-}
-
-func (a *InvestmentApi) AssetDeleteHandler(c *core.WebContext) (any, *errs.Error) {
-	var req models.InvestmentAssetDeleteRequest
-	err := c.ShouldBindJSON(&req)
-
-	if err != nil {
-		log.Warnf(c, "[investment.AssetDeleteHandler] parse request failed, because %s", err.Error())
-		return nil, errs.NewIncompleteOrIncorrectSubmissionError(err)
-	}
-
-	uid := c.GetCurrentUid()
-	err = a.assets.DeleteAsset(c, uid, req.Id)
-
-	if err != nil {
-		log.Errorf(c, "[investment.AssetDeleteHandler] failed to delete asset \"id:%d\" for user \"uid:%d\", because %s", req.Id, uid, err.Error())
-		return nil, errs.Or(err, errs.ErrOperationFailed)
-	}
-
-	log.Infof(c, "[investment.AssetDeleteHandler] user \"uid:%d\" has deleted asset \"id:%d\"", uid, req.Id)
-	return true, nil
 }
 
 // Transaction handlers
@@ -485,7 +320,7 @@ func (a *InvestmentApi) MarketDataInitHandler(c *core.WebContext) (any, *errs.Er
 
 	uid := c.GetCurrentUid()
 
-	asset, err := a.assets.GetAssetByAssetCode(c, uid, req.AssetCode)
+	asset, err := a.globalAssets.GetAssetByCodeAndMarket(c, req.AssetCode, models.INVESTMENT_MARKET_CN)
 	if err != nil {
 		log.Errorf(c, "[investment.MarketDataInitHandler] failed to get asset for user \"uid:%d\", code \"%s\", because %s", uid, req.AssetCode, err.Error())
 		return nil, errs.Or(err, errs.ErrOperationFailed)
@@ -517,7 +352,7 @@ func (a *InvestmentApi) MarketDataEstimateHandler(c *core.WebContext) (any, *err
 
 	uid := c.GetCurrentUid()
 
-	asset, err := a.assets.GetAssetByAssetCode(c, uid, req.AssetCode)
+	asset, err := a.globalAssets.GetAssetByCodeAndMarket(c, req.AssetCode, models.INVESTMENT_MARKET_CN)
 	if err != nil {
 		log.Errorf(c, "[investment.MarketDataEstimateHandler] failed to get asset for user \"uid:%d\", code \"%s\", because %s", uid, req.AssetCode, err.Error())
 		return nil, errs.Or(err, errs.ErrOperationFailed)

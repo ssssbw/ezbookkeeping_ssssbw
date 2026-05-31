@@ -31,7 +31,7 @@ func (s *UserAssetService) GetUserAssetsByUid(c core.Context, uid int64, isActiv
 		return nil, errs.ErrUserIdInvalid
 	}
 
-	condition := "uid=?"
+	condition := "uid=? AND deleted=0"
 	conditionParams := make([]any, 0, 2)
 	conditionParams = append(conditionParams, uid)
 
@@ -41,7 +41,7 @@ func (s *UserAssetService) GetUserAssetsByUid(c core.Context, uid int64, isActiv
 	}
 
 	var userAssets []*models.UserAsset
-	err := s.UserDataDB(uid).NewSession(c).Where(condition, conditionParams...).OrderBy("added_unix_time desc").Find(&userAssets)
+	err := s.UserDataDB(uid).NewSession(c).Where(condition, conditionParams...).OrderBy("created_unix_time desc").Find(&userAssets)
 
 	return userAssets, err
 }
@@ -56,7 +56,7 @@ func (s *UserAssetService) GetUserAssetByAssetId(c core.Context, uid int64, asse
 	}
 
 	userAsset := &models.UserAsset{}
-	has, err := s.UserDataDB(uid).NewSession(c).Where("uid=? AND asset_id=?", uid, assetId).Get(userAsset)
+	has, err := s.UserDataDB(uid).NewSession(c).Where("uid=? AND asset_id=? AND deleted=0", uid, assetId).Get(userAsset)
 
 	if err != nil {
 		return nil, err
@@ -77,7 +77,7 @@ func (s *UserAssetService) AddUserAsset(c core.Context, uid int64, assetId int64
 	}
 
 	existing := &models.UserAsset{}
-	has, err := s.UserDataDB(uid).NewSession(c).Where("uid=? AND asset_id=?", uid, assetId).Get(existing)
+	has, err := s.UserDataDB(uid).NewSession(c).Where("uid=? AND asset_id=? AND deleted=0", uid, assetId).Get(existing)
 	if err != nil {
 		return err
 	}
@@ -86,10 +86,10 @@ func (s *UserAssetService) AddUserAsset(c core.Context, uid int64, assetId int64
 	}
 
 	userAsset := &models.UserAsset{
-		Uid:           uid,
-		AssetId:       assetId,
-		IsActive:      true,
-		AddedUnixTime: time.Now().Unix(),
+		Uid:             uid,
+		AssetId:         assetId,
+		IsActive:        true,
+		CreatedUnixTime: time.Now().Unix(),
 	}
 
 	userAsset.Id = s.GenerateUuid(uuid.UUID_TYPE_USER_ASSET)
@@ -113,11 +113,12 @@ func (s *UserAssetService) RemoveUserAsset(c core.Context, uid int64, assetId in
 	}
 
 	return s.UserDataDB(uid).DoTransaction(c, func(sess *xorm.Session) error {
-		deletedRows, err := sess.Where("uid=? AND asset_id=?", uid, assetId).Delete(&models.UserAsset{})
+		now := time.Now().Unix()
+		updatedRows, err := sess.Where("uid=? AND asset_id=? AND deleted=0", uid, assetId).Cols("deleted", "deleted_unix_time").Update(&models.UserAsset{Deleted: true, DeletedUnixTime: now})
 		if err != nil {
 			return err
 		}
-		if deletedRows < 1 {
+		if updatedRows < 1 {
 			return errs.ErrInvestmentAssetNotFound
 		}
 		return nil
@@ -134,7 +135,8 @@ func (s *UserAssetService) SetUserAssetActive(c core.Context, uid int64, assetId
 	}
 
 	return s.UserDataDB(uid).DoTransaction(c, func(sess *xorm.Session) error {
-		updatedRows, err := sess.Where("uid=? AND asset_id=?", uid, assetId).Cols("is_active").Update(&models.UserAsset{IsActive: isActive})
+		now := time.Now().Unix()
+		updatedRows, err := sess.Where("uid=? AND asset_id=? AND deleted=0", uid, assetId).Cols("is_active", "updated_unix_time").Update(&models.UserAsset{IsActive: isActive, UpdatedUnixTime: now})
 		if err != nil {
 			return err
 		}

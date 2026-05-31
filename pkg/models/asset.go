@@ -13,8 +13,8 @@ const (
 // Asset represents a global asset stored in database
 type Asset struct {
 	AssetId         int64         `xorm:"PK comment('资产ID')"`
-	Code            string        `xorm:"INDEX(IDX_asset_code_market) NOT NULL comment('资产代码, 如 005827')"`
-	Market          InvestmentMarket `xorm:"INDEX(IDX_asset_code_market) NOT NULL comment('市场: 1=中国, 2=香港, 3=美国')"`
+	Code            string        `xorm:"UNIQUE(UQE_asset_code_market) NOT NULL comment('资产代码, 如 005827')"`
+	Market          InvestmentMarket `xorm:"UNIQUE(UQE_asset_code_market) NOT NULL comment('市场: 1=中国, 2=香港, 3=美国')"`
 	Name            string        `xorm:"NOT NULL comment('资产名称')"`
 	Category        AssetCategory `xorm:"INDEX NOT NULL comment('类别: equity/fixed_income/commodity/digital')"`
 	Currency        string        `xorm:"NOT NULL comment('计价货币: CNY/USD/HKD')"`

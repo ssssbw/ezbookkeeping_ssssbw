@@ -3,12 +3,12 @@ package models
 // InvestmentTransaction represents investment transaction data stored in database
 type InvestmentTransaction struct {
 	TransactionId        int64                     `xorm:"PK comment('交易ID')"`
-	Uid                  int64                     `xorm:"INDEX(IDX_invest_trans_uid_deleted_asset_id) INDEX(IDX_invest_trans_uid_deleted_account_id) NOT NULL comment('用户ID')"`
-	Deleted              bool                      `xorm:"INDEX(IDX_invest_trans_uid_deleted_asset_id) INDEX(IDX_invest_trans_uid_deleted_account_id) NOT NULL comment('是否删除')"`
+	Uid                  int64                     `xorm:"INDEX(IDX_invest_trans_uid_deleted_asset_id) INDEX(IDX_invest_trans_uid_deleted_account_id) INDEX(IDX_invest_trans_uid_deleted_trade_time) NOT NULL comment('用户ID')"`
+	Deleted              bool                      `xorm:"INDEX(IDX_invest_trans_uid_deleted_asset_id) INDEX(IDX_invest_trans_uid_deleted_account_id) INDEX(IDX_invest_trans_uid_deleted_trade_time) NOT NULL comment('是否删除')"`
 	AssetId              int64                     `xorm:"INDEX(IDX_invest_trans_uid_deleted_asset_id) NOT NULL comment('关联资产ID')"`
 	AccountId            int64                     `xorm:"INDEX(IDX_invest_trans_uid_deleted_account_id) NOT NULL comment('关联投资池账户ID')"`
 	Type                 InvestmentTransactionType `xorm:"NOT NULL comment('交易类型: 1=买入, 2=卖出, 3=现金分红, 4=红利再投, 5=拆分, 6=转出, 7=转入')"`
-	TradeTime            int64                     `xorm:"NOT NULL comment('下单时间')"`
+	TradeTime            int64                     `xorm:"INDEX(IDX_invest_trans_uid_deleted_trade_time) NOT NULL comment('下单时间')"`
 	ConfirmTime          int64                     `comment('确认时间 T+N')"`
 	Quantity             int64                     `xorm:"NOT NULL comment('份额/数量, 精度 x10000')"`
 	Price                int64                     `xorm:"NOT NULL comment('单价/净值, 精度 x10000')"`
