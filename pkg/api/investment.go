@@ -20,6 +20,7 @@ type InvestmentApi struct {
 	marketData   *services.MarketDataService
 	globalAssets *services.AssetService
 	userAssets   *services.UserAssetService
+	analysis     *services.InvestmentAnalysisService
 }
 
 var Investment = &InvestmentApi{
@@ -36,6 +37,7 @@ var Investment = &InvestmentApi{
 	marketData:   services.MarketData,
 	globalAssets: services.Assets,
 	userAssets:   services.UserAssets,
+	analysis:     services.InvestmentAnalysis,
 }
 
 // Transaction handlers
@@ -57,9 +59,49 @@ func (a *InvestmentApi) TransactionListHandler(c *core.WebContext) (any, *errs.E
 		return nil, errs.Or(err, errs.ErrOperationFailed)
 	}
 
+	// Collect unique assetIds and accountIds for batch lookup
+	assetIdSet := make(map[int64]bool)
+	accountIdSet := make(map[int64]bool)
+	for _, tx := range transactions {
+		assetIdSet[tx.AssetId] = true
+		accountIdSet[tx.AccountId] = true
+	}
+
+	// Batch load assets
+	assetMap := make(map[int64]*models.Asset)
+	for assetId := range assetIdSet {
+		asset, err := a.globalAssets.GetAssetByAssetId(c, assetId)
+		if err == nil && asset != nil {
+			assetMap[assetId] = asset
+		}
+	}
+
+	// Batch load accounts
+	accountMap := make(map[int64]string)
+	if len(accountIdSet) > 0 {
+		ids := make([]int64, 0, len(accountIdSet))
+		for id := range accountIdSet {
+			ids = append(ids, id)
+		}
+		var accounts []*models.Account
+		err := a.transactions.UserDataDB(uid).NewSession(c).In("account_id", ids).Where("uid=? AND deleted=?", uid, false).Find(&accounts)
+		if err == nil {
+			for _, acc := range accounts {
+				accountMap[acc.AccountId] = acc.Name
+			}
+		}
+	}
+
+	// Build response with embedded info
 	txResps := make([]*models.InvestmentTransactionInfoResponse, len(transactions))
 	for i, tx := range transactions {
-		txResps[i] = tx.ToInvestmentTransactionInfoResponse()
+		var assetName, assetCode string
+		if asset, ok := assetMap[tx.AssetId]; ok {
+			assetName = asset.Name
+			assetCode = asset.Code
+		}
+		accountName := accountMap[tx.AccountId]
+		txResps[i] = tx.ToInvestmentTransactionInfoResponseWithInfo(assetName, assetCode, accountName)
 	}
 
 	return txResps, nil
@@ -528,5 +570,31 @@ func (a *InvestmentApi) UserAssetRemoveHandler(c *core.WebContext) (any, *errs.E
 	log.Infof(c, "[investment.UserAssetRemoveHandler] user \"uid:%d\" has removed asset \"id:%d\" successfully", uid, req.AssetId)
 
 	return "ok", nil
+}
+
+// HoldingsHandler returns computed holding info for all active user assets
+func (a *InvestmentApi) HoldingsHandler(c *core.WebContext) (any, *errs.Error) {
+	uid := c.GetCurrentUid()
+	holdings, err := a.analysis.GetHoldings(c, uid)
+
+	if err != nil {
+		log.Errorf(c, "[investment.HoldingsHandler] failed to get holdings for user \"uid:%d\", because %s", uid, err.Error())
+		return nil, errs.Or(err, errs.ErrOperationFailed)
+	}
+
+	return holdings, nil
+}
+
+// OverviewHandler returns aggregated portfolio summary
+func (a *InvestmentApi) OverviewHandler(c *core.WebContext) (any, *errs.Error) {
+	uid := c.GetCurrentUid()
+	overview, err := a.analysis.GetOverview(c, uid)
+
+	if err != nil {
+		log.Errorf(c, "[investment.OverviewHandler] failed to get overview for user \"uid:%d\", because %s", uid, err.Error())
+		return nil, errs.Or(err, errs.ErrOperationFailed)
+	}
+
+	return overview, nil
 }
 

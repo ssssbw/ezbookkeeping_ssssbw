@@ -90,6 +90,9 @@ type InvestmentTransactionInfoResponse struct {
 	RelatedTransactionId int64                     `json:"relatedTransactionId,string,omitempty"`
 	TimezoneUtcOffset    int16                     `json:"utcOffset"`
 	Comment              string                    `json:"comment"`
+	AssetName            string                    `json:"assetName,omitempty"`
+	AssetCode            string                    `json:"assetCode,omitempty"`
+	AccountName          string                    `json:"accountName,omitempty"`
 }
 
 // ToInvestmentTransactionInfoResponse returns a view-object according to database model
@@ -109,4 +112,13 @@ func (t *InvestmentTransaction) ToInvestmentTransactionInfoResponse() *Investmen
 		TimezoneUtcOffset:    t.TimezoneUtcOffset,
 		Comment:              t.Comment,
 	}
+}
+
+// ToInvestmentTransactionInfoResponseWithInfo returns a view-object with additional display info
+func (t *InvestmentTransaction) ToInvestmentTransactionInfoResponseWithInfo(assetName, assetCode, accountName string) *InvestmentTransactionInfoResponse {
+	resp := t.ToInvestmentTransactionInfoResponse()
+	resp.AssetName = assetName
+	resp.AssetCode = assetCode
+	resp.AccountName = accountName
+	return resp
 }

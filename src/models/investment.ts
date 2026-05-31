@@ -87,6 +87,9 @@ export interface InvestmentTransactionInfoResponse {
     readonly relatedTransactionId?: string;
     readonly utcOffset: number;
     readonly comment: string;
+    readonly assetName?: string;
+    readonly assetCode?: string;
+    readonly accountName?: string;
 }
 
 export interface InvestmentTransactionListRequest {
@@ -258,6 +261,9 @@ export class InvestmentTransactionItem {
     public relatedTransactionId?: string;
     public utcOffset: number;
     public comment: string;
+    public assetName: string;
+    public assetCode: string;
+    public accountName: string;
 
     constructor(id: string, assetId: string, accountId: string, type: number, tradeTime: number, amount: number) {
         this.id = id;
@@ -271,6 +277,9 @@ export class InvestmentTransactionItem {
         this.fee = 0;
         this.utcOffset = 0;
         this.comment = '';
+        this.assetName = '';
+        this.assetCode = '';
+        this.accountName = '';
     }
 
     public static of(response: InvestmentTransactionInfoResponse): InvestmentTransactionItem {
@@ -282,6 +291,9 @@ export class InvestmentTransactionItem {
         item.relatedTransactionId = response.relatedTransactionId;
         item.utcOffset = response.utcOffset;
         item.comment = response.comment;
+        item.assetName = response.assetName || '';
+        item.assetCode = response.assetCode || '';
+        item.accountName = response.accountName || '';
         return item;
     }
 
@@ -345,5 +357,115 @@ export class InvestmentMarketDataItem {
 
     public static ofMulti(responses: MarketDataInfoResponse[]): InvestmentMarketDataItem[] {
         return responses.map(response => InvestmentMarketDataItem.of(response));
+    }
+}
+
+// === Analysis Types ===
+
+export interface InvestmentHoldingResponse {
+    readonly assetId: string;
+    readonly assetCode: string;
+    readonly assetName: string;
+    readonly category: string;
+    readonly currency: string;
+    readonly market: number;
+    readonly accountId: string;
+    readonly quantity: number;
+    readonly avgCostPrice: number;
+    readonly totalCost: number;
+    readonly currentPrice: number;
+    readonly marketValue: number;
+    readonly unrealizedPnl: number;
+    readonly returnRate: number;
+}
+
+export interface InvestmentOverviewResponse {
+    readonly totalInvestment: number;
+    readonly totalMarketValue: number;
+    readonly totalUnrealizedPnl: number;
+    readonly totalReturnRate: number;
+    readonly allocations: InvestmentAllocationItem[];
+}
+
+export interface InvestmentAllocationItem {
+    readonly category: string;
+    readonly value: number;
+    readonly percentage: number;
+}
+
+export class InvestmentHolding {
+    public assetId: string;
+    public assetCode: string;
+    public assetName: string;
+    public category: string;
+    public currency: string;
+    public market: number;
+    public accountId: string;
+    public quantity: number;
+    public avgCostPrice: number;
+    public totalCost: number;
+    public currentPrice: number;
+    public marketValue: number;
+    public unrealizedPnl: number;
+    public returnRate: number;
+
+    constructor(assetId: string, assetCode: string, assetName: string, category: string, currency: string, market: number) {
+        this.assetId = assetId;
+        this.assetCode = assetCode;
+        this.assetName = assetName;
+        this.category = category;
+        this.currency = currency;
+        this.market = market;
+        this.accountId = '';
+        this.quantity = 0;
+        this.avgCostPrice = 0;
+        this.totalCost = 0;
+        this.currentPrice = 0;
+        this.marketValue = 0;
+        this.unrealizedPnl = 0;
+        this.returnRate = 0;
+    }
+
+    public static of(response: InvestmentHoldingResponse): InvestmentHolding {
+        const holding = new InvestmentHolding(response.assetId, response.assetCode, response.assetName, response.category, response.currency, response.market);
+        holding.accountId = response.accountId;
+        holding.quantity = response.quantity;
+        holding.avgCostPrice = response.avgCostPrice;
+        holding.totalCost = response.totalCost;
+        holding.currentPrice = response.currentPrice;
+        holding.marketValue = response.marketValue;
+        holding.unrealizedPnl = response.unrealizedPnl;
+        holding.returnRate = response.returnRate;
+        return holding;
+    }
+
+    public static ofMulti(responses: InvestmentHoldingResponse[]): InvestmentHolding[] {
+        return responses.map(response => InvestmentHolding.of(response));
+    }
+}
+
+export class InvestmentOverview {
+    public totalInvestment: number;
+    public totalMarketValue: number;
+    public totalUnrealizedPnl: number;
+    public totalReturnRate: number;
+    public allocations: InvestmentAllocationItem[];
+
+    constructor() {
+        this.totalInvestment = 0;
+        this.totalMarketValue = 0;
+        this.totalUnrealizedPnl = 0;
+        this.totalReturnRate = 0;
+        this.allocations = [];
+    }
+
+    public static of(response: InvestmentOverviewResponse): InvestmentOverview {
+        const overview = new InvestmentOverview();
+        overview.totalInvestment = response.totalInvestment;
+        overview.totalMarketValue = response.totalMarketValue;
+        overview.totalUnrealizedPnl = response.totalUnrealizedPnl;
+        overview.totalReturnRate = response.totalReturnRate;
+        overview.allocations = response.allocations || [];
+        return overview;
     }
 }

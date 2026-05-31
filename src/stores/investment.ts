@@ -5,6 +5,8 @@ import {
     InvestmentUserAsset,
     InvestmentTransactionItem,
     InvestmentMarketDataItem,
+    InvestmentHolding,
+    InvestmentOverview,
     type MarketDataInitResponse
 } from '@/models/investment.ts';
 
@@ -21,12 +23,23 @@ export const useInvestmentStore = defineStore('investment', () => {
 
     const latestMarketDataMap = ref<Record<string, InvestmentMarketDataItem>>({});
 
+    const holdings = ref<InvestmentHolding[]>([]);
+    const holdingsMap = ref<Record<string, InvestmentHolding>>({});
+    const holdingsStateInvalid = ref<boolean>(true);
+
+    const overview = ref<InvestmentOverview | null>(null);
+    const overviewStateInvalid = ref<boolean>(true);
+
     const activeUserAssets = computed<InvestmentUserAsset[]>(() => {
         return userAssets.value.filter(ua => ua.isActive);
     });
 
     const userAssetsCount = computed<number>(() => {
         return userAssets.value.length;
+    });
+
+    const holdingsCount = computed<number>(() => {
+        return holdings.value.length;
     });
 
     function loadUserAssets({ force }: { force: boolean }): Promise<InvestmentUserAsset[]> {
@@ -309,6 +322,84 @@ export const useInvestmentStore = defineStore('investment', () => {
         });
     }
 
+    function loadHoldings({ force }: { force: boolean }): Promise<InvestmentHolding[]> {
+        if (!force && !holdingsStateInvalid.value) {
+            return new Promise((resolve) => { resolve(holdings.value); });
+        }
+
+        return new Promise((resolve, reject) => {
+            services.getInvestmentHoldings().then(response => {
+                const data = response.data;
+
+                if (!data || !data.success || !data.result) {
+                    reject({ message: 'Unable to retrieve investment holdings' });
+                    return;
+                }
+
+                if (holdingsStateInvalid.value) {
+                    holdingsStateInvalid.value = false;
+                }
+
+                const list = InvestmentHolding.ofMulti(data.result);
+                holdings.value = list;
+
+                const map: Record<string, InvestmentHolding> = {};
+                for (const h of list) {
+                    map[h.assetId] = h;
+                }
+                holdingsMap.value = map;
+
+                resolve(list);
+            }).catch(error => {
+                logger.error('failed to load investment holdings', error);
+
+                if (error.response && error.response.data && error.response.data.errorMessage) {
+                    reject({ error: error.response.data });
+                } else if (!error.processed) {
+                    reject({ message: 'Unable to retrieve investment holdings' });
+                } else {
+                    reject(error);
+                }
+            });
+        });
+    }
+
+    function loadOverview({ force }: { force: boolean }): Promise<InvestmentOverview> {
+        if (!force && !overviewStateInvalid.value && overview.value) {
+            return new Promise((resolve) => { resolve(overview.value!); });
+        }
+
+        return new Promise((resolve, reject) => {
+            services.getInvestmentOverview().then(response => {
+                const data = response.data;
+
+                if (!data || !data.success || !data.result) {
+                    reject({ message: 'Unable to retrieve investment overview' });
+                    return;
+                }
+
+                if (overviewStateInvalid.value) {
+                    overviewStateInvalid.value = false;
+                }
+
+                const result = InvestmentOverview.of(data.result);
+                overview.value = result;
+
+                resolve(result);
+            }).catch(error => {
+                logger.error('failed to load investment overview', error);
+
+                if (error.response && error.response.data && error.response.data.errorMessage) {
+                    reject({ error: error.response.data });
+                } else if (!error.processed) {
+                    reject({ message: 'Unable to retrieve investment overview' });
+                } else {
+                    reject(error);
+                }
+            });
+        });
+    }
+
     function resetInvestment(): void {
         userAssets.value = [];
         userAssetsMap.value = {};
@@ -316,6 +407,11 @@ export const useInvestmentStore = defineStore('investment', () => {
         transactions.value = [];
         transactionsStateInvalid.value = true;
         latestMarketDataMap.value = {};
+        holdings.value = [];
+        holdingsMap.value = {};
+        holdingsStateInvalid.value = true;
+        overview.value = null;
+        overviewStateInvalid.value = true;
     }
 
     return {
@@ -327,6 +423,12 @@ export const useInvestmentStore = defineStore('investment', () => {
         latestMarketDataMap,
         activeUserAssets,
         userAssetsCount,
+        holdings,
+        holdingsMap,
+        holdingsStateInvalid,
+        holdingsCount,
+        overview,
+        overviewStateInvalid,
         loadUserAssets,
         addUserAsset,
         removeUserAsset,
@@ -337,6 +439,8 @@ export const useInvestmentStore = defineStore('investment', () => {
         loadLatestMarketData,
         refreshAllMarketData,
         initMarketData,
+        loadHoldings,
+        loadOverview,
         resetInvestment
     };
 });

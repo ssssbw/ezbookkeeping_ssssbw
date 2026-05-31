@@ -63,7 +63,9 @@ import type {
     MarketDataInitRequest,
     MarketDataInitResponse,
     MarketDataEstimateRequest,
-    MarketDataInfoResponse
+    MarketDataInfoResponse,
+    InvestmentHoldingResponse,
+    InvestmentOverviewResponse
 } from '@/models/investment.ts';
 import type {
     AuthResponse,
@@ -1064,5 +1066,13 @@ export default {
     },
     estimateMarketData: (req: MarketDataEstimateRequest): ApiResponsePromise<MarketDataInfoResponse> => {
         return axios.get<ApiResponse<MarketDataInfoResponse>>('v1/investment/market_data/estimate.json?assetCode=' + encodeURIComponent(req.assetCode));
+    },
+
+    // Investment - Analysis
+    getInvestmentHoldings: (): ApiResponsePromise<InvestmentHoldingResponse[]> => {
+        return axios.get<ApiResponse<InvestmentHoldingResponse[]>>('v1/investment/analysis/holdings.json');
+    },
+    getInvestmentOverview: (): ApiResponsePromise<InvestmentOverviewResponse> => {
+        return axios.get<ApiResponse<InvestmentOverviewResponse>>('v1/investment/analysis/overview.json');
     }
 };

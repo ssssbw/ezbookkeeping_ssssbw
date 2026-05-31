@@ -73,6 +73,13 @@
 | src/lib/services.ts | ✅ 已修改 | 前端 API 方法（新增 18 个投资模块方法） |
 | src/stores/investment.ts | ✅ 已完成 | 前端 Pinia Store（持仓/交易/行情 CRUD） |
 | src/stores/index.ts | ✅ 已修改 | 注册 investmentStore + resetAllStates |
+| pkg/models/investment_analysis.go | ✅ 已完成 | 持仓聚合/概览 Response 类型（InvestmentHoldingInfo/InvestmentOverviewResponse/InvestmentAllocationItem） |
+| pkg/services/investment_analysis.go | ✅ 已完成 | InvestmentAnalysisService（GetHoldings 持仓计算 + GetOverview 概览聚合） |
+| pkg/api/investment.go | ✅ 已增强 | 新增 HoldingsHandler/OverviewHandler + TransactionListHandler 嵌入资产/账户名称 |
+| cmd/webserver.go | ✅ 已增强 | 新增 2 个分析端点（analysis/holdings.json + analysis/overview.json，共 22 个端点） |
+| src/models/investment.ts | ✅ 已增强 | 新增 InvestmentHolding/InvestmentOverview Model 类 + 持仓/概览 Response 接口 |
+| src/lib/services.ts | ✅ 已增强 | 新增 getInvestmentHoldings/getInvestmentOverview API 方法（共 20 个投资方法） |
+| src/stores/investment.ts | ✅ 已增强 | 新增 holdings/overview 状态 + loadHoldings/loadOverview 方法 |
 
 - 已有的前端代码：投资 Overview 页面骨架（已有，非本次新增）
 - 已有的路由切换：点击 logo 切换记账/理财模式
@@ -254,9 +261,9 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 
 | # | 任务 | 状态 |
 |---|------|------|
-| 2.5.1 | 逐页列出数据需求 | ⬜ |
-| 2.5.2 | 对照后端 API 找差距 | ⬜ |
-| 2.5.3 | 一次性补齐 | ⬜ |
+| 2.5.1 | 逐页列出数据需求 | ✅ 已完成 |
+| 2.5.2 | 对照后端 API 找差距 | ✅ 已完成 |
+| 2.5.3 | 一次性补齐 | ✅ 已完成 |
 
 ### 阶段 3：前端界面 — 预估 2-3 周
 
@@ -311,7 +318,7 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 ## 七、当前状态
 
 - 无阻塞问题
-- 下一步：阶段 2.5 API 契约检查 → 阶段 3 前端界面
+- 下一步：阶段 3 前端界面（OverviewPage → AssetsPage → TransactionsPage → PortfolioPage → AnalysisPage）
 - 用户会在两台电脑间切换开发，此文档是 AI 会话的上下文桥梁
 - 构建验证方式：`.\build.bat backend --no-lint --no-test`（Windows）/ `bash build.sh backend --no-lint --no-test`（macOS/Linux）（不要用 `go build ./...`）
 - 前端构建验证：`npm run build`
@@ -434,14 +441,8 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 5. 数据迁移脚本
    - `scripts/migrate_investment_asset.sql`（InvestmentAsset → Asset + UserAsset）
 6. 构建验证：`bash build.sh backend --no-lint --no-test` 通过
-
-下一个 AI 应该做什么：
-- 读取此文档了解完整上下文
-- 读取 docs/ 下三个文档了解详细设计
-- 从阶段 2.5 开始：API 契约检查 → 阶段 3 前端界面
-- 参考文件：`src/stores/investment.ts`、`src/lib/services.ts`、`src/models/investment.ts`
-- 构建验证方式：`.\build.bat backend --no-lint --no-test`（Windows）/ `bash build.sh backend --no-lint --no-test`（macOS/Linux）
-- 前端构建验证：`npm run build`
+  8. 接口测试：通过 Apifox 测试资产/交易/行情 CRUD 接口
+  9. 数据导入：使用 `scripts/convert_investment_data.py` 导入测试数据
 
 ### 会话 6（2026-05-31）
 
@@ -466,10 +467,33 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
     - `src/stores/index.ts`：注册 investmentStore + resetAllStates
 6. 构建验证：`.\build.bat backend --no-lint --no-test` + `npm run build` 均通过
 
+### 会话 7（2026-05-31）
+
+完成内容：
+1. 阶段 2.5 API 契约检查（2.5.1 + 2.5.2 + 2.5.3 全部完成）
+2. 发现的缺口：
+   - ❌ 无持仓聚合端点（每资产持有份额、成本、市值、收益）
+   - ❌ 无概览聚合端点（总投入/总市值/收益率/配置比例）
+   - ❌ 交易响应缺少资产名称/账户名称
+   - ❌ 前端缺少持仓/概览类型和方法
+3. 补齐内容（2.5.3）：
+   - `pkg/models/investment_analysis.go`：InvestmentHoldingInfo / InvestmentOverviewResponse / InvestmentAllocationItem
+   - `pkg/services/investment_analysis.go`：InvestmentAnalysisService
+     - GetHoldings()：遍历交易记录计算每资产持仓（加权平均成本法），获取最新行情，计算市值/浮动盈亏/收益率
+     - GetOverview()：汇总所有持仓，按 category 分组计算配置比例
+   - `pkg/api/investment.go`：新增 HoldingsHandler + OverviewHandler
+   - `pkg/models/investment_transaction.go`：Response 新增 assetName/assetCode/accountName 字段 + ToInvestmentTransactionInfoResponseWithInfo 方法
+   - `pkg/api/investment.go`：TransactionListHandler 增强 — 批量加载资产/账户名称嵌入响应
+   - `cmd/webserver.go`：注册 2 个新路由（analysis/holdings.json + analysis/overview.json，共 22 个端点）
+   - `src/models/investment.ts`：新增 InvestmentHolding/InvestmentOverview Model 类 + 3 个新接口
+   - `src/lib/services.ts`：新增 getInvestmentHoldings/getInvestmentOverview 方法（共 20 个投资 API）
+   - `src/stores/investment.ts`：新增 holdings/overview 状态 + loadHoldings/loadOverview 方法
+4. 构建验证：`.\build.bat backend --no-lint --no-test` + `npm run build` 均通过
+
 下一个 AI 应该做什么：
 - 读取此文档了解完整上下文
 - 读取 docs/ 下三个文档了解详细设计
-- 从阶段 2.5 开始：API 契约检查 → 阶段 3 前端界面
+- 从阶段 3 开始：前端界面开发（OverviewPage → AssetsPage → TransactionsPage → PortfolioPage → AnalysisPage）
 - 参考文件：`src/stores/investment.ts`、`src/lib/services.ts`、`src/models/investment.ts`
 - 构建验证方式：`.\build.bat backend --no-lint --no-test`（Windows）/ `bash build.sh backend --no-lint --no-test`（macOS/Linux）
 - 前端构建验证：`npm run build`
