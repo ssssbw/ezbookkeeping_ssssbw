@@ -42,6 +42,30 @@ import type {
     AccountDeleteRequest
 } from '@/models/account.ts';
 import type {
+    AssetSearchRequest,
+    AssetGetRequest,
+    AssetCreateRequest,
+    AssetInfoResponse,
+    UserAssetListRequest,
+    UserAssetAddRequest,
+    UserAssetRemoveRequest,
+    UserAssetInfoResponse,
+    InvestmentTransactionListRequest,
+    InvestmentTransactionGetRequest,
+    InvestmentTransactionCreateRequest,
+    InvestmentTransactionModifyRequest,
+    InvestmentTransactionDeleteRequest,
+    InvestmentTransactionInfoResponse,
+    MarketDataListRequest,
+    MarketDataGetRequest,
+    MarketDataCreateRequest,
+    MarketDataModifyRequest,
+    MarketDataInitRequest,
+    MarketDataInitResponse,
+    MarketDataEstimateRequest,
+    MarketDataInfoResponse
+} from '@/models/investment.ts';
+import type {
     AuthResponse,
     RegisterResponse
 } from '@/models/auth_response.ts';
@@ -959,5 +983,86 @@ export default {
         } else {
             return pictureUrl + '?' + params.join('&');
         }
+    },
+
+    // Investment - Global Assets
+    searchAssets: (req: AssetSearchRequest): ApiResponsePromise<AssetInfoResponse[]> => {
+        let url = 'v1/investment/global_assets/search.json?keyword=' + encodeURIComponent(req.keyword);
+        if (req.limit) {
+            url += '&limit=' + req.limit;
+        }
+        return axios.get<ApiResponse<AssetInfoResponse[]>>(url);
+    },
+    getGlobalAsset: (req: AssetGetRequest): ApiResponsePromise<AssetInfoResponse> => {
+        return axios.get<ApiResponse<AssetInfoResponse>>('v1/investment/global_assets/get.json?id=' + req.id);
+    },
+    addGlobalAsset: (req: AssetCreateRequest): ApiResponsePromise<AssetInfoResponse> => {
+        return axios.post<ApiResponse<AssetInfoResponse>>('v1/investment/global_assets/add.json', req);
+    },
+
+    // Investment - User Assets
+    getUserAssets: (req?: UserAssetListRequest): ApiResponsePromise<UserAssetInfoResponse[]> => {
+        let url = 'v1/investment/user_assets/list.json';
+        if (req?.is_active !== undefined) {
+            url += '?is_active=' + req.is_active;
+        }
+        return axios.get<ApiResponse<UserAssetInfoResponse[]>>(url);
+    },
+    addUserAsset: (req: UserAssetAddRequest): ApiResponsePromise<string> => {
+        return axios.post<ApiResponse<string>>('v1/investment/user_assets/add.json', req);
+    },
+    removeUserAsset: (req: UserAssetRemoveRequest): ApiResponsePromise<string> => {
+        return axios.post<ApiResponse<string>>('v1/investment/user_assets/remove.json', req);
+    },
+
+    // Investment - Transactions
+    getInvestmentTransactions: (req?: InvestmentTransactionListRequest): ApiResponsePromise<InvestmentTransactionInfoResponse[]> => {
+        let url = 'v1/investment/transactions/list.json';
+        const params: string[] = [];
+        if (req?.asset_id) { params.push('asset_id=' + req.asset_id); }
+        if (req?.account_id) { params.push('account_id=' + req.account_id); }
+        if (req?.type) { params.push('type=' + req.type); }
+        if (req?.start_time) { params.push('start_time=' + req.start_time); }
+        if (req?.end_time) { params.push('end_time=' + req.end_time); }
+        if (params.length > 0) { url += '?' + params.join('&'); }
+        return axios.get<ApiResponse<InvestmentTransactionInfoResponse[]>>(url);
+    },
+    getInvestmentTransaction: (req: InvestmentTransactionGetRequest): ApiResponsePromise<InvestmentTransactionInfoResponse> => {
+        return axios.get<ApiResponse<InvestmentTransactionInfoResponse>>('v1/investment/transactions/get.json?id=' + req.id);
+    },
+    addInvestmentTransaction: (req: InvestmentTransactionCreateRequest): ApiResponsePromise<InvestmentTransactionInfoResponse> => {
+        return axios.post<ApiResponse<InvestmentTransactionInfoResponse>>('v1/investment/transactions/add.json', req);
+    },
+    modifyInvestmentTransaction: (req: InvestmentTransactionModifyRequest): ApiResponsePromise<InvestmentTransactionInfoResponse> => {
+        return axios.post<ApiResponse<InvestmentTransactionInfoResponse>>('v1/investment/transactions/modify.json', req);
+    },
+    deleteInvestmentTransaction: (req: InvestmentTransactionDeleteRequest): ApiResponsePromise<boolean> => {
+        return axios.post<ApiResponse<boolean>>('v1/investment/transactions/delete.json', req);
+    },
+
+    // Investment - Market Data
+    getLatestMarketData: (req: MarketDataGetRequest): ApiResponsePromise<MarketDataInfoResponse> => {
+        return axios.get<ApiResponse<MarketDataInfoResponse>>('v1/investment/market_data/latest.json?asset_id=' + req.asset_id + '&date=' + req.date);
+    },
+    getMarketDataList: (req: MarketDataListRequest): ApiResponsePromise<MarketDataInfoResponse[]> => {
+        let url = 'v1/investment/market_data/list.json?asset_id=' + req.asset_id;
+        if (req.start_time) { url += '&start_time=' + req.start_time; }
+        if (req.end_time) { url += '&end_time=' + req.end_time; }
+        return axios.get<ApiResponse<MarketDataInfoResponse[]>>(url);
+    },
+    addMarketData: (req: MarketDataCreateRequest): ApiResponsePromise<MarketDataInfoResponse> => {
+        return axios.post<ApiResponse<MarketDataInfoResponse>>('v1/investment/market_data/add.json', req);
+    },
+    modifyMarketData: (req: MarketDataModifyRequest): ApiResponsePromise<MarketDataInfoResponse> => {
+        return axios.post<ApiResponse<MarketDataInfoResponse>>('v1/investment/market_data/modify.json', req);
+    },
+    refreshMarketData: (): ApiResponsePromise<string> => {
+        return axios.post<ApiResponse<string>>('v1/investment/market_data/refresh.json');
+    },
+    initMarketData: (req: MarketDataInitRequest): ApiResponsePromise<MarketDataInitResponse> => {
+        return axios.post<ApiResponse<MarketDataInitResponse>>('v1/investment/market_data/init.json', req);
+    },
+    estimateMarketData: (req: MarketDataEstimateRequest): ApiResponsePromise<MarketDataInfoResponse> => {
+        return axios.get<ApiResponse<MarketDataInfoResponse>>('v1/investment/market_data/estimate.json?assetCode=' + encodeURIComponent(req.assetCode));
     }
 };

@@ -1,0 +1,342 @@
+import { ref, computed } from 'vue';
+import { defineStore } from 'pinia';
+
+import {
+    InvestmentUserAsset,
+    InvestmentTransactionItem,
+    InvestmentMarketDataItem,
+    type MarketDataInitResponse
+} from '@/models/investment.ts';
+
+import services from '@/lib/services.ts';
+import logger from '@/lib/logger.ts';
+
+export const useInvestmentStore = defineStore('investment', () => {
+    const userAssets = ref<InvestmentUserAsset[]>([]);
+    const userAssetsMap = ref<Record<string, InvestmentUserAsset>>({});
+    const userAssetsStateInvalid = ref<boolean>(true);
+
+    const transactions = ref<InvestmentTransactionItem[]>([]);
+    const transactionsStateInvalid = ref<boolean>(true);
+
+    const latestMarketDataMap = ref<Record<string, InvestmentMarketDataItem>>({});
+
+    const activeUserAssets = computed<InvestmentUserAsset[]>(() => {
+        return userAssets.value.filter(ua => ua.isActive);
+    });
+
+    const userAssetsCount = computed<number>(() => {
+        return userAssets.value.length;
+    });
+
+    function loadUserAssets({ force }: { force: boolean }): Promise<InvestmentUserAsset[]> {
+        if (!force && !userAssetsStateInvalid.value) {
+            return new Promise((resolve) => { resolve(userAssets.value); });
+        }
+
+        return new Promise((resolve, reject) => {
+            services.getUserAssets().then(response => {
+                const data = response.data;
+
+                if (!data || !data.success || !data.result) {
+                    reject({ message: 'Unable to retrieve user asset list' });
+                    return;
+                }
+
+                if (userAssetsStateInvalid.value) {
+                    userAssetsStateInvalid.value = false;
+                }
+
+                const list = InvestmentUserAsset.ofMulti(data.result);
+                userAssets.value = list;
+
+                const map: Record<string, InvestmentUserAsset> = {};
+                for (const ua of list) {
+                    map[ua.assetId] = ua;
+                }
+                userAssetsMap.value = map;
+
+                resolve(list);
+            }).catch(error => {
+                logger.error('failed to load user asset list', error);
+
+                if (error.response && error.response.data && error.response.data.errorMessage) {
+                    reject({ error: error.response.data });
+                } else if (!error.processed) {
+                    reject({ message: 'Unable to retrieve user asset list' });
+                } else {
+                    reject(error);
+                }
+            });
+        });
+    }
+
+    function addUserAsset({ assetId }: { assetId: string }): Promise<string> {
+        return new Promise((resolve, reject) => {
+            services.addUserAsset({ assetId }).then(response => {
+                const data = response.data;
+
+                if (!data || !data.success) {
+                    reject({ message: 'Unable to add user asset' });
+                    return;
+                }
+
+                userAssetsStateInvalid.value = true;
+                resolve('ok');
+            }).catch(error => {
+                logger.error('failed to add user asset', error);
+
+                if (error.response && error.response.data && error.response.data.errorMessage) {
+                    reject({ error: error.response.data });
+                } else if (!error.processed) {
+                    reject({ message: 'Unable to add user asset' });
+                } else {
+                    reject(error);
+                }
+            });
+        });
+    }
+
+    function removeUserAsset({ assetId }: { assetId: string }): Promise<string> {
+        return new Promise((resolve, reject) => {
+            services.removeUserAsset({ assetId }).then(response => {
+                const data = response.data;
+
+                if (!data || !data.success) {
+                    reject({ message: 'Unable to remove user asset' });
+                    return;
+                }
+
+                userAssetsStateInvalid.value = true;
+                resolve('ok');
+            }).catch(error => {
+                logger.error('failed to remove user asset', error);
+
+                if (error.response && error.response.data && error.response.data.errorMessage) {
+                    reject({ error: error.response.data });
+                } else if (!error.processed) {
+                    reject({ message: 'Unable to remove user asset' });
+                } else {
+                    reject(error);
+                }
+            });
+        });
+    }
+
+    function loadTransactions({ assetId, accountId, force }: { assetId?: string; accountId?: string; force: boolean }): Promise<InvestmentTransactionItem[]> {
+        if (!force && !transactionsStateInvalid.value && !assetId && !accountId) {
+            return new Promise((resolve) => { resolve(transactions.value); });
+        }
+
+        return new Promise((resolve, reject) => {
+            services.getInvestmentTransactions({
+                asset_id: assetId,
+                account_id: accountId
+            } as any).then(response => {
+                const data = response.data;
+
+                if (!data || !data.success || !data.result) {
+                    reject({ message: 'Unable to retrieve investment transactions' });
+                    return;
+                }
+
+                if (transactionsStateInvalid.value) {
+                    transactionsStateInvalid.value = false;
+                }
+
+                const list = InvestmentTransactionItem.ofMulti(data.result);
+                transactions.value = list;
+                resolve(list);
+            }).catch(error => {
+                logger.error('failed to load investment transactions', error);
+
+                if (error.response && error.response.data && error.response.data.errorMessage) {
+                    reject({ error: error.response.data });
+                } else if (!error.processed) {
+                    reject({ message: 'Unable to retrieve investment transactions' });
+                } else {
+                    reject(error);
+                }
+            });
+        });
+    }
+
+    function addTransaction({ transaction }: { transaction: InvestmentTransactionItem }): Promise<InvestmentTransactionItem> {
+        return new Promise((resolve, reject) => {
+            services.addInvestmentTransaction(transaction.toCreateRequest()).then(response => {
+                const data = response.data;
+
+                if (!data || !data.success || !data.result) {
+                    reject({ message: 'Unable to create investment transaction' });
+                    return;
+                }
+
+                transactionsStateInvalid.value = true;
+                resolve(InvestmentTransactionItem.of(data.result));
+            }).catch(error => {
+                logger.error('failed to create investment transaction', error);
+
+                if (error.response && error.response.data && error.response.data.errorMessage) {
+                    reject({ error: error.response.data });
+                } else if (!error.processed) {
+                    reject({ message: 'Unable to create investment transaction' });
+                } else {
+                    reject(error);
+                }
+            });
+        });
+    }
+
+    function modifyTransaction({ transaction }: { transaction: InvestmentTransactionItem }): Promise<InvestmentTransactionItem> {
+        return new Promise((resolve, reject) => {
+            services.modifyInvestmentTransaction(transaction.toModifyRequest()).then(response => {
+                const data = response.data;
+
+                if (!data || !data.success || !data.result) {
+                    reject({ message: 'Unable to modify investment transaction' });
+                    return;
+                }
+
+                transactionsStateInvalid.value = true;
+                resolve(InvestmentTransactionItem.of(data.result));
+            }).catch(error => {
+                logger.error('failed to modify investment transaction', error);
+
+                if (error.response && error.response.data && error.response.data.errorMessage) {
+                    reject({ error: error.response.data });
+                } else if (!error.processed) {
+                    reject({ message: 'Unable to modify investment transaction' });
+                } else {
+                    reject(error);
+                }
+            });
+        });
+    }
+
+    function deleteTransaction({ transactionId }: { transactionId: string }): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            services.deleteInvestmentTransaction({ id: transactionId }).then(response => {
+                const data = response.data;
+
+                if (!data || !data.success) {
+                    reject({ message: 'Unable to delete investment transaction' });
+                    return;
+                }
+
+                transactionsStateInvalid.value = true;
+                resolve(true);
+            }).catch(error => {
+                logger.error('failed to delete investment transaction', error);
+
+                if (error.response && error.response.data && error.response.data.errorMessage) {
+                    reject({ error: error.response.data });
+                } else if (!error.processed) {
+                    reject({ message: 'Unable to delete investment transaction' });
+                } else {
+                    reject(error);
+                }
+            });
+        });
+    }
+
+    function loadLatestMarketData({ assetId }: { assetId: string }): Promise<InvestmentMarketDataItem | null> {
+        return new Promise((resolve, reject) => {
+            services.getLatestMarketData({ asset_id: assetId, date: 0 }).then(response => {
+                const data = response.data;
+
+                if (!data || !data.success || !data.result) {
+                    resolve(null);
+                    return;
+                }
+
+                const item = InvestmentMarketDataItem.of(data.result);
+                latestMarketDataMap.value[assetId] = item;
+                resolve(item);
+            }).catch(error => {
+                logger.error('failed to load latest market data', error);
+                resolve(null);
+            });
+        });
+    }
+
+    function refreshAllMarketData(): Promise<string> {
+        return new Promise((resolve, reject) => {
+            services.refreshMarketData().then(response => {
+                const data = response.data;
+
+                if (!data || !data.success) {
+                    reject({ message: 'Unable to refresh market data' });
+                    return;
+                }
+
+                resolve('ok');
+            }).catch(error => {
+                logger.error('failed to refresh market data', error);
+
+                if (error.response && error.response.data && error.response.data.errorMessage) {
+                    reject({ error: error.response.data });
+                } else if (!error.processed) {
+                    reject({ message: 'Unable to refresh market data' });
+                } else {
+                    reject(error);
+                }
+            });
+        });
+    }
+
+    function initMarketData({ assetCode, tradeTime }: { assetCode: string; tradeTime: number }): Promise<MarketDataInitResponse> {
+        return new Promise((resolve, reject) => {
+            services.initMarketData({ assetCode, tradeTime }).then(response => {
+                const data = response.data;
+
+                if (!data || !data.success || !data.result) {
+                    reject({ message: 'Unable to init market data' });
+                    return;
+                }
+
+                resolve(data.result);
+            }).catch(error => {
+                logger.error('failed to init market data', error);
+
+                if (error.response && error.response.data && error.response.data.errorMessage) {
+                    reject({ error: error.response.data });
+                } else if (!error.processed) {
+                    reject({ message: 'Unable to init market data' });
+                } else {
+                    reject(error);
+                }
+            });
+        });
+    }
+
+    function resetInvestment(): void {
+        userAssets.value = [];
+        userAssetsMap.value = {};
+        userAssetsStateInvalid.value = true;
+        transactions.value = [];
+        transactionsStateInvalid.value = true;
+        latestMarketDataMap.value = {};
+    }
+
+    return {
+        userAssets,
+        userAssetsMap,
+        userAssetsStateInvalid,
+        transactions,
+        transactionsStateInvalid,
+        latestMarketDataMap,
+        activeUserAssets,
+        userAssetsCount,
+        loadUserAssets,
+        addUserAsset,
+        removeUserAsset,
+        loadTransactions,
+        addTransaction,
+        modifyTransaction,
+        deleteTransaction,
+        loadLatestMarketData,
+        refreshAllMarketData,
+        initMarketData,
+        resetInvestment
+    };
+});

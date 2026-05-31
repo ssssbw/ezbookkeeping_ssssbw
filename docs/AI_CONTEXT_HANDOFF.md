@@ -1,7 +1,7 @@
 # AI 会话上下文交接文档
 
 > 每次会话结束后更新此文件，确保下一个 AI 会话能无缝接续。
-> 最后更新：2026-05-30
+> 最后更新：2026-05-31
 
 ---
 
@@ -37,25 +37,25 @@
 
 | 文件 | 状态 | 说明 |
 |------|------|------|
-| pkg/models/asset.go | ✅ 已完成 | Asset 全局资产表 struct + Request/Response |
-| pkg/models/user_asset.go | ✅ 已完成 | UserAsset 用户持仓表 struct + Request/Response |
-| pkg/models/investment_asset.go | ✅ 已完成 | InvestmentAsset struct + Request/Response（待废弃） |
+| pkg/models/asset.go | ✅ 已完成 | Asset 全局资产表 struct + Request/Response（Code+Market UNIQUE） |
+| pkg/models/user_asset.go | ✅ 已完成 | UserAsset 用户持仓表 struct + Request/Response（含软删除） |
+| pkg/models/investment_asset.go | ❌ 已删除 | 旧 InvestmentAsset model（已清理） |
 | pkg/models/investment_transaction.go | ✅ 已完成 | InvestmentTransaction struct + Request/Response |
 | pkg/models/market_data.go | ✅ 已完成 | MarketData struct + Request/Response |
 | pkg/models/investment_consts.go | ✅ 已存在 | InvestmentAssetType/TransactionType/Market 常量定义 |
-| cmd/database.go | ✅ 已修改 | 注册 5 张新表 |
+| cmd/database.go | ✅ 已修改 | 注册 4 张新表（InvestmentTransaction/MarketData/Asset/UserAsset） |
 | pkg/errs/investment_asset.go | ✅ 已完成 | 投资资产相关错误定义 |
 | pkg/errs/investment_transaction.go | ✅ 已完成 | 投资交易相关错误定义 |
 | pkg/errs/market_data.go | ✅ 已完成 | 行情数据相关错误定义 |
 | pkg/errs/setting.go | ✅ 已修改 | 新增 ErrInvalidMarketDataSource |
 | pkg/uuid/uuid_type.go | ✅ 已修改 | 新增 UUID_TYPE_ASSET (13) 和 UUID_TYPE_USER_ASSET (14) |
 | pkg/services/asset.go | ✅ 已完成 | AssetService 全局资产 CRUD |
-| pkg/services/user_asset.go | ✅ 已完成 | UserAssetService 用户持仓管理 |
-| pkg/services/investment_asset.go | ✅ 已完成 | InvestmentAssetService CRUD（待废弃） |
+| pkg/services/user_asset.go | ✅ 已完成 | UserAssetService 用户持仓管理（软删除） |
+| pkg/services/investment_asset.go | ❌ 已删除 | 旧 InvestmentAssetService（已清理） |
 | pkg/services/investment_transaction.go | ✅ 已完成 | InvestmentTransactionService CRUD + Balance 自动维护 |
 | pkg/services/market_data.go | ✅ 已完成 | MarketDataService CRUD + FetchAllActiveAssetsMarketData + InitAssetMarketData |
-| pkg/api/investment.go | ✅ 已完成 | InvestmentApi Handler（全局资产/用户持仓/交易/行情） |
-| cmd/webserver.go | ✅ 已修改 | 注册 /investment/ 路由组（25+ 个端点） |
+| pkg/api/investment.go | ✅ 已完成 | InvestmentApi Handler（全局资产/用户持仓/交易/行情，旧 Asset Handler 已清理） |
+| cmd/webserver.go | ✅ 已修改 | 注册 /investment/ 路由组（20 个端点，旧 /assets/ 路由已清理） |
 | pkg/marketdata/market_data_provider.go | ✅ 已完成 | MarketDataProvider 接口定义 |
 | pkg/marketdata/akshare_market_data_provider.go | ✅ 已完成 | akshare 数据源实现（备选） |
 | pkg/marketdata/eastmoney_market_data_provider.go | ✅ 已完成 | 东方财富数据源实现（主力） |
@@ -64,9 +64,15 @@
 | pkg/cron/cron_jobs.go | ✅ 已修改 | 新增 FetchMarketDataJob（每日 18:00） |
 | pkg/cron/cron_container.go | ✅ 已修改 | 注册 FetchMarketDataJob |
 | cmd/initializer.go | ✅ 已修改 | 初始化 MarketDataSource |
-| .air.toml | ✅ 已完成 | 热重载配置 |
+| .air.toml | ✅ 已完成 | 热重载配置（macOS/Linux） |
+| .air.windows.toml | ✅ 已完成 | Windows 热重载配置（使用 entrypoint + dev.bat） |
+| dev.bat | ✅ 已完成 | Windows 热重载启动脚本 |
 | go.mod | ✅ 已修改 | 引入 akshare 依赖 |
 | scripts/migrate_investment_asset.sql | ✅ 已完成 | 数据迁移脚本（InvestmentAsset → Asset + UserAsset） |
+| src/models/investment.ts | ✅ 已完成 | 前端 TS 类型定义（4 个 Model 类 + 20+ Request/Response 接口） |
+| src/lib/services.ts | ✅ 已修改 | 前端 API 方法（新增 18 个投资模块方法） |
+| src/stores/investment.ts | ✅ 已完成 | 前端 Pinia Store（持仓/交易/行情 CRUD） |
+| src/stores/index.ts | ✅ 已修改 | 注册 investmentStore + resetAllStates |
 
 - 已有的前端代码：投资 Overview 页面骨架（已有，非本次新增）
 - 已有的路由切换：点击 logo 切换记账/理财模式
@@ -225,14 +231,24 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 | 1.8 | 数据迁移脚本 | ✅ 已完成 | scripts/migrate_investment_asset.sql |
 | 1.9 | 单元测试 | ⬜ 未开始 | |
 
-### 阶段 2：前端 Store + API 层 — 预估 1 周
+### 阶段 1 补充：数据库设计修复
 
-| # | 任务 | 状态 |
-|---|------|------|
-| 2.1 | TS 类型定义 | ⬜ |
-| 2.2 | Pinia Store | ⬜ |
-| 2.3 | services.ts API 方法 | ⬜ |
-| 2.4 | rootStore 集成 | ⬜ |
+| # | 任务 | 状态 | 说明 |
+|---|------|------|------|
+| 1.R.1 | Asset.Code+Market UNIQUE 约束 | ✅ 已完成 | 防止重复创建同一基金 |
+| 1.R.2 | UserAsset 加软删除 | ✅ 已完成 | 与项目惯例一致 |
+| 1.R.3 | InvestmentTransaction 加 TradeTime 索引 | ✅ 已完成 | 优化日期范围查询 |
+| 1.R.4 | 清理 InvestmentAsset 旧体系 | ✅ 已完成 | 删除旧 model/service/API/路由 |
+| 1.R.5 | 更新 ER_DIAGRAM.md | ✅ 已完成 | 反映 Asset+UserAsset 新设计 |
+
+### 阶段 2：前端 Store + API 层
+
+| # | 任务 | 状态 | 参考文件 |
+|---|------|------|---------|
+| 2.1 | TS 类型定义 | ✅ 已完成 | src/models/investment.ts |
+| 2.2 | Pinia Store | ✅ 已完成 | src/stores/investment.ts |
+| 2.3 | services.ts API 方法 | ✅ 已完成 | src/lib/services.ts |
+| 2.4 | rootStore 集成 | ✅ 已完成 | src/stores/index.ts |
 
 ### 阶段 2.5：API 契约检查
 
@@ -295,16 +311,19 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 ## 七、当前状态
 
 - 无阻塞问题
-- 下一步：阶段 2 前端 Store + API 层
+- 下一步：阶段 2.5 API 契约检查 → 阶段 3 前端界面
 - 用户会在两台电脑间切换开发，此文档是 AI 会话的上下文桥梁
 - 构建验证方式：`.\build.bat backend --no-lint --no-test`（Windows）/ `bash build.sh backend --no-lint --no-test`（macOS/Linux）（不要用 `go build ./...`）
-- 热重载：`air`（配置文件：`.air.toml`）
+- 前端构建验证：`npm run build`
+- 热重载：`air`（macOS/Linux 配置文件 `.air.toml`）/ `air -c .air.windows.toml`（Windows）
 
 ---
 
 ## 八、Git 提交记录
 
 ```
+045d3d40 refactor: 数据库设计修复 + 清理旧 InvestmentAsset 体系
+3f1c226b fix: 修复 air 在 Windows 上异常退出的问题
 067ee587 feat: 完善行情数据 Provider（实时估值 + 历史初始化）
 0067d4f4 fix: 修复 market_data 复合索引重复创建问题 + 添加 air 热重载配置
 73d3d316 docs: add AI session context handoff document
@@ -419,6 +438,38 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 下一个 AI 应该做什么：
 - 读取此文档了解完整上下文
 - 读取 docs/ 下三个文档了解详细设计
-- 从阶段 2 开始：前端 Store + API 层
-- 参考文件：`src/stores/account.ts`、`src/lib/services.ts`、`src/models/account.ts`
+- 从阶段 2.5 开始：API 契约检查 → 阶段 3 前端界面
+- 参考文件：`src/stores/investment.ts`、`src/lib/services.ts`、`src/models/investment.ts`
 - 构建验证方式：`.\build.bat backend --no-lint --no-test`（Windows）/ `bash build.sh backend --no-lint --no-test`（macOS/Linux）
+- 前端构建验证：`npm run build`
+
+### 会话 6（2026-05-31）
+
+完成内容：
+1. 修复 air 在 Windows 上异常退出
+    - `.air.windows.toml`：使用 `entrypoint` + `dev.bat` 包装
+    - 根因：air v1.65.3 通过 PowerShell 执行命令，PS 5.1 不支持 `&&`；`full_bin` 字段会自动拼接 `.exe` 后缀
+2. 数据库设计审查 + 修复
+    - Asset.Code+Market: INDEX → UNIQUE
+    - UserAsset: 加 Deleted/DeletedUnixTime/UpdatedUnixTime/Comment
+    - InvestmentTransaction: 加 (Uid,Deleted,TradeTime) 复合索引
+3. 清理 InvestmentAsset 旧体系
+    - 删除 `pkg/models/investment_asset.go`、`pkg/services/investment_asset.go`
+    - 删除 5 个旧 Asset API Handler + 5 条旧路由
+    - `market_data.go` FetchAllActiveAssetsMarketData 改查 UserAsset+Asset
+    - `cmd/database.go` 移除 InvestmentAsset 表注册
+4. 更新 ER_DIAGRAM.md 反映当前设计
+5. 阶段 2：前端 Store + API 层
+    - `src/models/investment.ts`：4 个 Model 类 + 20+ Request/Response 接口 + 3 个枚举
+    - `src/lib/services.ts`：新增 18 个 API 方法（全局资产/用户持仓/交易/行情）
+    - `src/stores/investment.ts`：Pinia Store（持仓/交易/行情 CRUD + 脏标记 + reset）
+    - `src/stores/index.ts`：注册 investmentStore + resetAllStates
+6. 构建验证：`.\build.bat backend --no-lint --no-test` + `npm run build` 均通过
+
+下一个 AI 应该做什么：
+- 读取此文档了解完整上下文
+- 读取 docs/ 下三个文档了解详细设计
+- 从阶段 2.5 开始：API 契约检查 → 阶段 3 前端界面
+- 参考文件：`src/stores/investment.ts`、`src/lib/services.ts`、`src/models/investment.ts`
+- 构建验证方式：`.\build.bat backend --no-lint --no-test`（Windows）/ `bash build.sh backend --no-lint --no-test`（macOS/Linux）
+- 前端构建验证：`npm run build`

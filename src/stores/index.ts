@@ -12,6 +12,7 @@ import { useOverviewStore } from './overview.ts';
 import { useStatisticsStore } from './statistics.ts';
 import { useExplorersStore } from './explorer.ts';
 import { useExchangeRatesStore } from './exchangeRates.ts';
+import { useInvestmentStore } from './investment.ts';
 
 import type { AuthResponse, RegisterResponse } from '@/models/auth_response.ts';
 import type {
@@ -52,6 +53,7 @@ export const useRootStore = defineStore('root', () => {
     const statisticsStore = useStatisticsStore();
     const explorersStore = useExplorersStore();
     const exchangeRatesStore = useExchangeRatesStore();
+    const investmentStore = useInvestmentStore();
 
     const currentNotification = ref<string | null>(null);
 
@@ -70,6 +72,7 @@ export const useRootStore = defineStore('root', () => {
         transactionCategoriesStore.resetTransactionCategories();
         transactionTemplatesStore.resetTransactionTemplates();
         accountsStore.resetAccounts();
+        investmentStore.resetInvestment();
 
         if (resetUserInfoAndSettings) {
             userStore.resetUserBasicInfo();
