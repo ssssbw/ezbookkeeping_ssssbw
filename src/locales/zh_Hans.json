@@ -2749,5 +2749,24 @@
     "Run Backtest": "运行回测",
     "Save Strategy": "保存策略",
     "Load Default": "加载默认",
-    "Backtest results chart will be displayed here": "回测结果图表将显示在这里"
+    "Backtest results chart will be displayed here": "回测结果图表将显示在这里",
+
+    "Search": "搜索",
+    "Code": "代码",
+    "Market": "市场",
+    "Market CN": "中国",
+    "Market HK": "香港",
+    "Market US": "美国",
+    "Watchlist": "自选",
+    "Equity": "股票",
+    "Fixed Income": "基金",
+    "Commodity": "商品",
+    "Digital": "数字资产",
+    "Market Value": "市值",
+    "Avg Cost": "均价成本",
+    "Total Cost": "总成本",
+    "Unrealized P&L": "浮动盈亏",
+    "Quantity": "持仓数量",
+    "No holdings data": "暂无持仓数据",
+    "No watchlist data": "暂无自选数据"
 }

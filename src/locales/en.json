@@ -2749,5 +2749,24 @@
     "Run Backtest": "Run Backtest",
     "Save Strategy": "Save Strategy",
     "Load Default": "Load Default",
-    "Backtest results chart will be displayed here": "Backtest results chart will be displayed here"
+    "Backtest results chart will be displayed here": "Backtest results chart will be displayed here",
+
+    "Search": "Search",
+    "Code": "Code",
+    "Market": "Market",
+    "Market CN": "China",
+    "Market HK": "Hong Kong",
+    "Market US": "United States",
+    "Watchlist": "Watchlist",
+    "Equity": "Equity",
+    "Fixed Income": "Fixed Income",
+    "Commodity": "Commodity",
+    "Digital": "Digital",
+    "Market Value": "Market Value",
+    "Avg Cost": "Avg Cost",
+    "Total Cost": "Total Cost",
+    "Unrealized P&L": "Unrealized P&L",
+    "Quantity": "Quantity",
+    "No holdings data": "No holdings data",
+    "No watchlist data": "No watchlist data"
 }
