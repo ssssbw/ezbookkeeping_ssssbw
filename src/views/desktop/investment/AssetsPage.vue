@@ -1,8 +1,8 @@
 <template>
     <div class="page-content">
-        <div class="page-header">
+        <!-- <div class="page-header">
             <h1 class="page-title">{{ tt('Asset Management') }}</h1>
-        </div>
+        </div> -->
         <div class="page-body">
             <!-- Tabs and Filters Card -->
             <v-card>
@@ -105,6 +105,25 @@
                         <template #no-data>
                             <div class="text-center py-4 text-medium-emphasis">
                                 {{ activeTab === 'holdings' ? tt('No holdings data') : tt('No watchlist data') }}
+                            </div>
+                        </template>
+                        <template #bottom>
+                            <div class="title-and-toolbar d-flex align-center text-no-wrap mt-2" v-if="currentTabFilteredItems">
+                                <span class="text-body-2 text-medium-emphasis">
+                                    {{ tt('format.misc.selectedCount', { count: formatNumberToLocalizedNumerals(currentTabFilteredItems.length), totalCount: formatNumberToLocalizedNumerals(currentTabFilteredItems.length) }) }}
+                                </span>
+                                <v-spacer v-if="currentTabFilteredItems.length > 10" />
+                                <span v-if="currentTabFilteredItems.length > 10" class="text-body-2 text-medium-emphasis">{{ tt('Transactions Per Page') }}</span>
+                                <v-select class="ms-2" density="compact" max-width="100"
+                                          item-title="name" item-value="value"
+                                          :items="getTablePageOptions(currentTabFilteredItems.length)"
+                                          v-model="countPerPage"
+                                          v-if="currentTabFilteredItems.length > 10"
+                                />
+                                <pagination-buttons density="compact"
+                                                    :totalPageCount="totalPageCount"
+                                                    v-model="currentPage"
+                                                    v-if="currentTabFilteredItems.length > 10"></pagination-buttons>
                             </div>
                         </template>
                     </v-data-table>
@@ -214,6 +233,8 @@ import { ref, computed, onMounted } from 'vue';
 
 import { useI18n } from '@/locales/helpers.ts';
 
+import PaginationButtons from '@/components/desktop/PaginationButtons.vue';
+
 import { useInvestmentStore } from '@/stores/investment.ts';
 
 import {
@@ -226,7 +247,7 @@ import {
 import services from '@/lib/services.ts';
 import logger from '@/lib/logger.ts';
 
-const { tt } = useI18n();
+const { tt, formatNumberToLocalizedNumerals } = useI18n();
 
 const investmentStore = useInvestmentStore();
 
@@ -242,6 +263,14 @@ const loading = ref<boolean>(true);
 const detailDialog = ref<boolean>(false);
 const watchlistAssets = ref<DisplayAsset[]>([]);
 const selectedItem = ref<DisplayAsset | null>(null);
+
+// --- Pagination ---
+const countPerPage = ref<number>(10);
+const currentPage = ref<number>(1);
+
+const totalPageCount = computed<number>(() => {
+    return Math.ceil(currentTabFilteredItems.value.length / countPerPage.value);
+});
 
 // --- Display Asset interface ---
 interface DisplayAsset {
@@ -269,6 +298,26 @@ const categoryOptions = computed(() => [
     { title: tt('Commodity'), value: AssetCategory.Commodity },
     { title: tt('Digital'), value: AssetCategory.Digital }
 ]);
+
+// --- Pagination options ---
+function getTablePageOptions(linesCount: number): { value: number; name: string }[] {
+    const pageOptions: { value: number; name: string }[] = [];
+
+    if (!linesCount || linesCount < 1) {
+        pageOptions.push({ value: -1, name: tt('All') });
+        return pageOptions;
+    }
+
+    const availableCountPerPage = [5, 10, 15, 20, 25, 30, 50];
+
+    for (const count of availableCountPerPage) {
+        if (linesCount < count) break;
+        pageOptions.push({ value: count, name: formatNumberToLocalizedNumerals(count) });
+    }
+
+    pageOptions.push({ value: -1, name: tt('All') });
+    return pageOptions;
+}
 
 // --- Market options ---
 const marketOptions = computed(() => [
