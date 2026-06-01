@@ -26,18 +26,23 @@ var UserAssets = &UserAssetService{
 	},
 }
 
-func (s *UserAssetService) GetUserAssetsByUid(c core.Context, uid int64, isActive *bool) ([]*models.UserAsset, error) {
+func (s *UserAssetService) GetUserAssetsByUid(c core.Context, uid int64, isActive *bool, isWatchlist *bool) ([]*models.UserAsset, error) {
 	if uid <= 0 {
 		return nil, errs.ErrUserIdInvalid
 	}
 
 	condition := "uid=? AND deleted=0"
-	conditionParams := make([]any, 0, 2)
+	conditionParams := make([]any, 0, 4)
 	conditionParams = append(conditionParams, uid)
 
 	if isActive != nil {
 		condition = condition + " AND is_active=?"
 		conditionParams = append(conditionParams, *isActive)
+	}
+
+	if isWatchlist != nil {
+		condition = condition + " AND is_watchlist=?"
+		conditionParams = append(conditionParams, *isWatchlist)
 	}
 
 	var userAssets []*models.UserAsset

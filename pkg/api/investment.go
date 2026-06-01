@@ -507,7 +507,7 @@ func (a *InvestmentApi) UserAssetListHandler(c *core.WebContext) (any, *errs.Err
 
 	uid := c.GetCurrentUid()
 
-	userAssets, err := a.userAssets.GetUserAssetsByUid(c, uid, req.IsActive)
+	userAssets, err := a.userAssets.GetUserAssetsByUid(c, uid, req.IsActive, req.IsWatchlist)
 	if err != nil {
 		log.Errorf(c, "[investment.UserAssetListHandler] failed to get user assets, because %s", err.Error())
 		return nil, errs.Or(err, errs.ErrOperationFailed)

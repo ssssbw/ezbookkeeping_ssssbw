@@ -190,7 +190,14 @@ func (s *InvestmentTransactionService) DeleteTransaction(c core.Context, uid int
 			return errs.ErrInvestmentTransactionNotFound
 		}
 
-		return s.updateAccountBalanceForDelete(sess, oldTransaction)
+		err = s.updateAccountBalanceForDelete(sess, oldTransaction)
+		if err != nil {
+			return err
+		}
+
+		// After deleting, check if user still holds any quantity of this asset.
+		// If no remaining holdings, auto-set is_watchlist = true.
+		return s.autoSetWatchlistIfNoHoldings(sess, uid, oldTransaction.AssetId)
 	})
 }
 
@@ -285,4 +292,50 @@ func (s *InvestmentTransactionService) updateAccountBalanceForModify(sess *xorm.
 	}
 
 	return s.updateAccountBalanceForCreate(sess, newTransaction)
+}
+
+// autoSetWatchlistIfNoHoldings checks remaining quantity for the asset.
+// If the user no longer holds any quantity, sets is_watchlist = true on the UserAsset.
+func (s *InvestmentTransactionService) autoSetWatchlistIfNoHoldings(sess *xorm.Session, uid int64, assetId int64) error {
+	var transactions []*models.InvestmentTransaction
+	err := sess.Where("uid=? AND deleted=? AND asset_id=?", uid, false, assetId).OrderBy("trade_time asc").Find(&transactions)
+	if err != nil {
+		return err
+	}
+
+	// Walk through transactions to compute total quantity (same logic as GetHoldings)
+	var totalQuantity int64
+	for _, tx := range transactions {
+		switch tx.Type {
+		case models.INVESTMENT_TRANSACTION_TYPE_BUY:
+			totalQuantity += tx.Quantity
+		case models.INVESTMENT_TRANSACTION_TYPE_SELL:
+			totalQuantity -= tx.Quantity
+		case models.INVESTMENT_TRANSACTION_TYPE_DIVIDEND_REINVEST:
+			totalQuantity += tx.Quantity
+		case models.INVESTMENT_TRANSACTION_TYPE_SPLIT:
+			totalQuantity += tx.Quantity
+		case models.INVESTMENT_TRANSACTION_TYPE_CONVERSION_OUT:
+			totalQuantity -= tx.Quantity
+		case models.INVESTMENT_TRANSACTION_TYPE_CONVERSION_IN:
+			totalQuantity += tx.Quantity
+		case models.INVESTMENT_TRANSACTION_TYPE_DIVIDEND_CASH:
+			// No holding change
+		}
+	}
+
+	// If no remaining holdings, set is_watchlist = true, is_active = true
+	if totalQuantity <= 0 {
+		now := time.Now().Unix()
+		_, err := sess.Where("uid=? AND asset_id=? AND deleted=?", uid, assetId, false).
+			Cols("is_watchlist", "is_active", "updated_unix_time").
+			Update(&models.UserAsset{
+				IsWatchlist:     true,
+				IsActive:        true,
+				UpdatedUnixTime: now,
+			})
+		return err
+	}
+
+	return nil
 }

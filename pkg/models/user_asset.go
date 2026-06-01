@@ -7,6 +7,7 @@ type UserAsset struct {
 	AssetId         int64 `xorm:"INDEX(IDX_user_asset_uid_asset_id) NOT NULL comment('资产ID')"`
 	Deleted         bool  `xorm:"NOT NULL comment('是否删除')"`
 	IsActive        bool  `xorm:"NOT NULL comment('是否活跃')"`
+	IsWatchlist     bool  `xorm:"NOT NULL comment('是否自选关注: true=自选, false=持仓')"`
 	Comment         string `xorm:"VARCHAR(255) NOT NULL comment('备注')"`
 	CreatedUnixTime int64 `comment('创建时间')"`
 	UpdatedUnixTime int64 `comment('更新时间')"`
@@ -15,7 +16,8 @@ type UserAsset struct {
 
 // UserAssetListRequest represents all parameters of user asset listing request
 type UserAssetListRequest struct {
-	IsActive *bool `form:"is_active"`
+	IsActive    *bool `form:"is_active"`
+	IsWatchlist *bool `form:"is_watchlist"`
 }
 
 // UserAssetAddRequest represents all parameters of adding user asset
@@ -30,18 +32,20 @@ type UserAssetRemoveRequest struct {
 
 // UserAssetInfoResponse represents a view-object of user asset
 type UserAssetInfoResponse struct {
-	Id       int64             `json:"id,string"`
-	AssetId  int64             `json:"assetId,string"`
-	IsActive bool              `json:"isActive"`
-	Comment  string            `json:"comment"`
-	Asset    *AssetInfoResponse `json:"asset,omitempty"`
+	Id          int64              `json:"id,string"`
+	AssetId     int64              `json:"assetId,string"`
+	IsActive    bool               `json:"isActive"`
+	IsWatchlist bool               `json:"isWatchlist"`
+	Comment     string             `json:"comment"`
+	Asset       *AssetInfoResponse `json:"asset,omitempty"`
 }
 
 func (ua *UserAsset) ToUserAssetInfoResponse() *UserAssetInfoResponse {
 	return &UserAssetInfoResponse{
-		Id:       ua.Id,
-		AssetId:  ua.AssetId,
-		IsActive: ua.IsActive,
-		Comment:  ua.Comment,
+		Id:          ua.Id,
+		AssetId:     ua.AssetId,
+		IsActive:    ua.IsActive,
+		IsWatchlist: ua.IsWatchlist,
+		Comment:     ua.Comment,
 	}
 }
