@@ -321,11 +321,11 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 - 下一步：AssetsPage 完善 + 阶段 3 前端界面
 - 用户会在两台电脑间切换开发，此文档是 AI 会话的上下文桥梁
 - 构建验证方式：`.\build.bat backend --no-lint --no-test`（Windows）/ `bash build.sh backend --no-lint --no-test`（macOS/Linux）（不要用 `go build ./...`）
-- 热重载：`air`（配置文件：`.air.toml`）
+- 热重载：`air`（macOS/Linux 配置文件 `.air.toml`）/ `air -c .air.windows.toml`（Windows）
 
 ---
 
-## 八、AssetsPage 待办事项（2026-05-30 新增）
+## 八、AssetsPage 待办事项（2026-06-02 新增）
 
 ### 设计决策
 
