@@ -189,6 +189,10 @@ export interface MarketDataEstimateRequest {
     readonly assetCode: string;
 }
 
+export interface AdminCheckResponse {
+    readonly isAdmin: boolean;
+}
+
 export class InvestmentAsset {
     public id: string;
     public code: string;

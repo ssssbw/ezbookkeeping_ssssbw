@@ -1069,6 +1069,11 @@ export default {
         return axios.get<ApiResponse<MarketDataInfoResponse>>('v1/investment/market_data/estimate.json?assetCode=' + encodeURIComponent(req.assetCode));
     },
 
+    // Investment - Admin
+    checkInvestmentAdmin: (): ApiResponsePromise<{ isAdmin: boolean }> => {
+        return axios.get<ApiResponse<{ isAdmin: boolean }>>('v1/investment/admin/check.json');
+    },
+
     // Investment - Analysis
     getInvestmentHoldings: (): ApiResponsePromise<InvestmentHoldingResponse[]> => {
         return axios.get<ApiResponse<InvestmentHoldingResponse[]>>('v1/investment/analysis/holdings.json');

@@ -455,6 +455,9 @@ type Config struct {
 
 	// Market Data
 	MarketDataSource string
+
+	// Investment
+	InvestmentAdminUid int64
 }
 
 // LoadConfiguration loads setting config from given config file path
@@ -597,6 +600,12 @@ func LoadConfiguration(configFilePath string) (*Config, error) {
 	}
 
 	err = loadMarketDataConfiguration(config, cfgFile, "market_data")
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = loadInvestmentConfiguration(config, cfgFile, "investment")
 
 	if err != nil {
 		return nil, err
@@ -1247,6 +1256,19 @@ func loadMarketDataConfiguration(config *Config, configFile *ini.File, sectionNa
 		config.MarketDataSource = dataSource
 	} else {
 		config.MarketDataSource = EastMoneyMarketDataSource
+	}
+
+	return nil
+}
+
+func loadInvestmentConfiguration(config *Config, configFile *ini.File, sectionName string) error {
+	adminUidStr := getConfigItemStringValue(configFile, sectionName, "admin_uid", "0")
+
+	if adminUidStr != "" {
+		value, err := strconv.ParseInt(adminUidStr, 10, 64)
+		if err == nil {
+			config.InvestmentAdminUid = value
+		}
 	}
 
 	return nil
