@@ -318,15 +318,67 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 ## 七、当前状态
 
 - 无阻塞问题
-- 下一步：阶段 3 前端界面（OverviewPage → AssetsPage → TransactionsPage → PortfolioPage → AnalysisPage）
+- 下一步：AssetsPage 完善 + 阶段 3 前端界面
 - 用户会在两台电脑间切换开发，此文档是 AI 会话的上下文桥梁
 - 构建验证方式：`.\build.bat backend --no-lint --no-test`（Windows）/ `bash build.sh backend --no-lint --no-test`（macOS/Linux）（不要用 `go build ./...`）
-- 前端构建验证：`npm run build`
-- 热重载：`air`（macOS/Linux 配置文件 `.air.toml`）/ `air -c .air.windows.toml`（Windows）
+- 热重载：`air`（配置文件：`.air.toml`）
 
 ---
 
-## 八、Git 提交记录
+## 八、AssetsPage 待办事项（2026-05-30 新增）
+
+### 设计决策
+
+| 项目 | 决策 |
+|------|------|
+| 搜索框位置 | 独立在顶部 |
+| [管理] 按钮 | 指定用户可见（InvestmentAdminUid 配置） |
+| Tab 状态 | 持仓(is_watchlist=false) / 自选(is_watchlist=true) |
+| 交易操作 | 弹出表单（类似记账模式） |
+| 全局资产管理 | 放在数据管理菜单，低频操作 |
+| Asset 表初始化 | 首次部署全量拉取，每季度增量更新 |
+
+### 待完成任务
+
+| 优先级 | 任务 | 说明 |
+|--------|------|------|
+| P0 | 重构 AssetsPage 布局 | 搜索框独立、Tab 切换、管理按钮 |
+| P0 | 实现搜索功能 | 搜索本地 Asset 表 |
+| P0 | 实现买入/卖出弹窗 | 交易表单 |
+| P1 | 添加配置项 InvestmentAdminUid | 控制管理按钮可见性 |
+| P1 | 全局资产管理页面 | 放在数据管理菜单 |
+| P2 | Asset 表初始化脚本 | 全量拉取基金/股票数据 |
+| P2 | Cron 定时同步 | 每季度增量更新 |
+
+### 页面功能定义
+
+#### AssetsPage（资产管理）
+
+| Tab | 数据来源 | 操作 |
+|-----|----------|------|
+| 搜索结果 | 本地 Asset 表 | 添加自选、买入 |
+| 自选列表 | UserAsset (is_watchlist=true) | 买入、移除 |
+| 持仓列表 | UserAsset (is_watchlist=false) | 卖出、查看详情 |
+
+#### TransactionsPage（交易记录）
+
+| 功能 | 说明 |
+|------|------|
+| 交易列表 | 所有投资交易历史 |
+| 添加交易 | 支持所有类型（买入/卖出/分红/转换等） |
+| 编辑/删除 | 修改或删除交易 |
+
+### UserAsset 字段状态
+
+| is_active | is_watchlist | 状态 |
+|-----------|--------------|------|
+| true | false | 持仓 |
+| true | true | 自选 |
+| false | * | 不活跃 |
+
+---
+
+## 九、Git 提交记录
 
 ```
 045d3d40 refactor: 数据库设计修复 + 清理旧 InvestmentAsset 体系

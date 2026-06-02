@@ -57,12 +57,14 @@ export interface UserAssetInfoResponse {
     readonly id: string;
     readonly assetId: string;
     readonly isActive: boolean;
+    readonly isWatchlist: boolean;
     readonly comment?: string;
     readonly asset?: AssetInfoResponse;
 }
 
 export interface UserAssetListRequest {
     readonly is_active?: boolean;
+    readonly is_watchlist?: boolean;
 }
 
 export interface UserAssetAddRequest {

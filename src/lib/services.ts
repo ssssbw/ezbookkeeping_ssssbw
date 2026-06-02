@@ -1005,9 +1005,10 @@ export default {
     // Investment - User Assets
     getUserAssets: (req?: UserAssetListRequest): ApiResponsePromise<UserAssetInfoResponse[]> => {
         let url = 'v1/investment/user_assets/list.json';
-        if (req?.is_active !== undefined) {
-            url += '?is_active=' + req.is_active;
-        }
+        const params: string[] = [];
+        if (req?.is_active !== undefined) { params.push('is_active=' + req.is_active); }
+        if (req?.is_watchlist !== undefined) { params.push('is_watchlist=' + req.is_watchlist); }
+        if (params.length > 0) { url += '?' + params.join('&'); }
         return axios.get<ApiResponse<UserAssetInfoResponse[]>>(url);
     },
     addUserAsset: (req: UserAssetAddRequest): ApiResponsePromise<string> => {
