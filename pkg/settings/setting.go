@@ -1262,7 +1262,7 @@ func loadMarketDataConfiguration(config *Config, configFile *ini.File, sectionNa
 }
 
 func loadInvestmentConfiguration(config *Config, configFile *ini.File, sectionName string) error {
-	adminUidStr := getConfigItemStringValue(configFile, sectionName, "admin_uid", "0")
+	adminUidStr := getConfigItemStringValue(configFile, sectionName, "investment_admin_uid", "0")
 
 	if adminUidStr != "" {
 		value, err := strconv.ParseInt(adminUidStr, 10, 64)

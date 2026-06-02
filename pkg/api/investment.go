@@ -603,6 +603,7 @@ func (a *InvestmentApi) AdminCheckHandler(c *core.WebContext) (any, *errs.Error)
 	uid := c.GetCurrentUid()
 	config := a.CurrentConfig()
 	isAdmin := config.InvestmentAdminUid > 0 && config.InvestmentAdminUid == uid
+	log.Infof(c, "[investment.AdminCheckHandler] user \"uid:%d\" is investment admin: %v", uid, isAdmin)
 
 	return map[string]interface{}{
 		"isAdmin": isAdmin,

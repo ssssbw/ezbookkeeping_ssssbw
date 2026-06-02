@@ -1,91 +1,113 @@
 <template>
     <div class="page-content">
         <div class="page-body">
-            <!-- Top Search Bar + Admin Button -->
-            <v-card>
-                <v-card-text>
-                    <v-row align="center" dense>
-                        <v-col>
-                            <v-text-field
-                                v-model="searchKeyword"
-                                :label="tt('Search')"
-                                :placeholder="tt('Search')"
-                                prepend-inner-icon="mdi-magnify"
-                                clearable
-                                hide-details
-                                density="compact"
-                                variant="outlined"
-                                :loading="searchLoading"
-                                @update:model-value="onSearchInput"
-                            />
-                        </v-col>
-                        <v-col cols="auto" class="ps-0">
-                            <v-btn
-                                v-if="isAdmin"
-                                variant="tonal"
-                                color="primary"
-                                size="small"
-                                @click="adminDialog = true"
-                            >
-                                {{ tt('Asset Management') }}
-                            </v-btn>
-                        </v-col>
-                    </v-row>
-                </v-card-text>
-            </v-card>
-
-            <!-- Search Results Card -->
-            <v-card v-if="searchResults.length > 0">
-                <v-card-text class="pa-0">
+            <!-- Search with dropdown -->
+            <div class="position-relative">
+                <v-text-field
+                    v-model="searchKeyword"
+                    :label="tt('Search')"
+                    :placeholder="tt('Search assets')"
+                    prepend-inner-icon="mdi-magnify"
+                    clearable
+                    hide-details
+                    density="default"
+                    variant="outlined"
+                    :loading="searchLoading"
+                    @update:model-value="onSearchInput"
+                    @click:clear="clearSearch"
+                />
+                <!-- Search Results Dropdown -->
+                <v-menu
+                    v-model="showSearchResults"
+                    :close-on-content-click="false"
+                    max-height="400"
+                    min-width="400"
+                    location="bottom"
+                >
+                    <template #activator="{ props }">
+                        <div v-bind="props" class="search-anchor"></div>
+                    </template>
                     <v-list density="compact" lines="two">
                         <v-list-item
                             v-for="item in searchResults"
                             :key="item.id"
-                            class="px-4"
                         >
                             <template #title>
-                                <div class="d-flex align-center">
-                                    <span class="text-body-2 font-weight-medium">{{ item.code }}</span>
-                                    <span class="text-body-2 ms-2">{{ item.name }}</span>
-                                </div>
+                                <span class="text-body-2 font-weight-medium">{{ item.code }}</span>
+                                <span class="text-body-2 ms-2">{{ item.name }}</span>
                             </template>
                             <template #subtitle>
-                                <div class="d-flex align-center text-caption text-medium-emphasis">
-                                    <span>{{ formatCategory(item.category) }}</span>
-                                    <v-icon size="12" class="mx-1">mdi-circle-small</v-icon>
-                                    <span>{{ formatMarket(item.market) }}</span>
-                                </div>
+                                <span class="text-caption text-medium-emphasis">
+                                    {{ formatCategory(item.category) }} · {{ formatMarket(item.market) }}
+                                </span>
+                            </template>
+                            <template #prepend>
+                                <v-chip
+                                    v-if="isInHoldings(item.id)"
+                                    size="x-small"
+                                    color="success"
+                                    variant="tonal"
+                                    class="me-2"
+                                >
+                                    {{ tt('Holdings') }}
+                                </v-chip>
+                                <v-chip
+                                    v-else-if="isInWatchlist(item.id)"
+                                    size="x-small"
+                                    color="primary"
+                                    variant="tonal"
+                                    class="me-2"
+                                >
+                                    {{ tt('Watchlist') }}
+                                </v-chip>
                             </template>
                             <template #append>
-                                <div class="d-flex ga-1">
-                                    <v-btn
-                                        v-if="!isInWatchlistOrHolding(item.id)"
-                                        size="x-small"
-                                        variant="tonal"
-                                        color="primary"
-                                        @click="addAssetToWatchlist(item)"
-                                    >
-                                        {{ tt('Watchlist') }}
-                                    </v-btn>
-                                    <v-btn
-                                        size="x-small"
-                                        variant="tonal"
-                                        color="success"
-                                        @click="openTransactionDialog(item)"
-                                    >
-                                        {{ tt('Add Transaction') }}
-                                    </v-btn>
-                                </div>
+                                <v-btn
+                                    v-if="!isInHoldings(item.id) && !isInWatchlist(item.id)"
+                                    size="x-small"
+                                    variant="tonal"
+                                    color="primary"
+                                    @click.stop="addAssetToWatchlist(item)"
+                                >
+                                    {{ tt('Add to Watchlist') }}
+                                </v-btn>
+                                <v-btn
+                                    size="x-small"
+                                    variant="tonal"
+                                    color="success"
+                                    class="ms-1"
+                                    @click.stop="openTransactionDialog(item); showSearchResults = false"
+                                >
+                                    {{ tt('Buy') }}
+                                </v-btn>
                             </template>
                         </v-list-item>
                     </v-list>
-                </v-card-text>
-            </v-card>
+                </v-menu>
+            </div>
 
-            <!-- Tabs -->
+            <!-- Filters -->
+            <div class="d-flex flex-wrap ga-2">
+                <v-chip-group v-model="categoryFilter" mandatory>
+                    <v-chip value="" filter variant="outlined" size="small">{{ tt('All') }}</v-chip>
+                    <v-chip :value="AssetCategory.Equity" filter variant="outlined" size="small">{{ tt('Equity') }}</v-chip>
+                    <v-chip :value="AssetCategory.FixedIncome" filter variant="outlined" size="small">{{ tt('Fixed Income') }}</v-chip>
+                    <v-chip :value="AssetCategory.Commodity" filter variant="outlined" size="small">{{ tt('Commodity') }}</v-chip>
+                    <v-chip :value="AssetCategory.Digital" filter variant="outlined" size="small">{{ tt('Digital') }}</v-chip>
+                </v-chip-group>
+                <v-divider vertical class="mx-1" />
+                <v-chip-group v-model="marketFilter" mandatory>
+                    <v-chip :value="null" filter variant="outlined" size="small">{{ tt('All Markets') }}</v-chip>
+                    <v-chip :value="InvestmentMarket.CN" filter variant="outlined" size="small">{{ tt('Market CN') }}</v-chip>
+                    <v-chip :value="InvestmentMarket.HK" filter variant="outlined" size="small">{{ tt('Market HK') }}</v-chip>
+                    <v-chip :value="InvestmentMarket.US" filter variant="outlined" size="small">{{ tt('Market US') }}</v-chip>
+                </v-chip-group>
+            </div>
+
+            <!-- Main Card: Tabs + Table -->
             <v-card>
-                <v-card-text class="py-2">
-                    <v-tabs v-model="activeTab" density="compact">
+                <v-card-title class="d-flex align-center py-2">
+                    <v-tabs v-model="activeTab" density="compact" class="flex-grow-1">
                         <v-tab value="watchlist">
                             {{ tt('Watchlist') }} ({{ watchlistCount }})
                         </v-tab>
@@ -93,12 +115,21 @@
                             {{ tt('Holdings') }} ({{ holdingsCount }})
                         </v-tab>
                     </v-tabs>
-                </v-card-text>
-            </v-card>
+                    <v-btn
+                        v-if="isAdmin"
+                        variant="tonal"
+                        color="primary"
+                        size="small"
+                        class="ms-2"
+                        @click="adminDialog = true"
+                    >
+                        {{ tt('Asset Management') }}
+                    </v-btn>
+                </v-card-title>
 
-            <!-- Asset Table -->
-            <v-card>
-                <v-card-text>
+                <v-divider />
+
+                <v-card-text class="pt-2">
                     <v-data-table
                         :headers="computedHeaders"
                         :items="currentTabFilteredItems"
@@ -454,10 +485,15 @@ const selectedItem = ref<DisplayAsset | null>(null);
 const isAdmin = ref<boolean>(false);
 const adminDialog = ref<boolean>(false);
 
+// --- Filter State ---
+const categoryFilter = ref<string>('');
+const marketFilter = ref<number | null>(null);
+
 // --- Search State ---
 const searchKeyword = ref<string>('');
 const searchResults = ref<AssetInfoResponse[]>([]);
 const searchLoading = ref<boolean>(false);
+const showSearchResults = ref<boolean>(false);
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 // --- Watchlist ---
@@ -616,12 +652,26 @@ function holdingToDisplay(h: InvestmentHolding): DisplayAsset {
 }
 
 // --- Filtered lists ---
+function filterByCategoryAndMarket(items: DisplayAsset[]): DisplayAsset[] {
+    let result = items;
+
+    if (categoryFilter.value) {
+        result = result.filter(a => a.category === categoryFilter.value);
+    }
+
+    if (marketFilter.value !== null) {
+        result = result.filter(a => a.market === marketFilter.value);
+    }
+
+    return result;
+}
+
 const filteredHoldings = computed<DisplayAsset[]>(() => {
-    return holdingsList.value;
+    return filterByCategoryAndMarket(holdingsList.value);
 });
 
 const filteredWatchlist = computed<DisplayAsset[]>(() => {
-    return watchlistAssets.value;
+    return filterByCategoryAndMarket(watchlistAssets.value);
 });
 
 const currentTabFilteredItems = computed<DisplayAsset[]>(() => {
@@ -629,6 +679,12 @@ const currentTabFilteredItems = computed<DisplayAsset[]>(() => {
 });
 
 // --- Search ---
+function clearSearch(): void {
+    searchKeyword.value = '';
+    searchResults.value = [];
+    showSearchResults.value = false;
+}
+
 function onSearchInput(): void {
     if (searchTimer) {
         clearTimeout(searchTimer);
@@ -637,6 +693,7 @@ function onSearchInput(): void {
     const keyword = searchKeyword.value.trim();
     if (!keyword) {
         searchResults.value = [];
+        showSearchResults.value = false;
         return;
     }
 
@@ -653,22 +710,27 @@ async function performSearch(keyword: string): Promise<void> {
 
         if (!data || !data.success || !data.result) {
             searchResults.value = [];
+            showSearchResults.value = false;
             return;
         }
 
         searchResults.value = data.result;
+        showSearchResults.value = data.result.length > 0;
     } catch (error) {
         logger.error('Failed to search assets', error);
         searchResults.value = [];
+        showSearchResults.value = false;
     } finally {
         searchLoading.value = false;
     }
 }
 
-function isInWatchlistOrHolding(assetId: string): boolean {
-    if (investmentStore.holdingsMap[assetId]) return true;
-    if (watchlistAssetIds.value.has(assetId)) return true;
-    return false;
+function isInHoldings(assetId: string): boolean {
+    return !!investmentStore.holdingsMap[assetId];
+}
+
+function isInWatchlist(assetId: string): boolean {
+    return watchlistAssetIds.value.has(assetId);
 }
 
 // --- Watchlist loading ---
@@ -970,6 +1032,25 @@ onMounted(async () => {
 .page-body {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 16px;
+}
+
+.position-relative {
+    position: relative;
+}
+
+.search-anchor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+:deep(.v-overlay__content) {
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 </style>
