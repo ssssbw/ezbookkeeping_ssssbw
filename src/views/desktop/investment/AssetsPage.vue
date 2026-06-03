@@ -6,7 +6,7 @@
                 <div class="search-wrapper">
                     <v-text-field
                         v-model="searchQuery"
-                        :placeholder="tt('Search assets by name or code')"
+                        :placeholder="tt('asset.SearchAssetsByNameOrCode')"
                         prepend-inner-icon="mdi-magnify"
                         clearable
                         hide-details
@@ -40,12 +40,6 @@
                                 </v-list-item-title>
                                 <v-list-item-subtitle>
                                     <span class="text-caption text-medium-emphasis">{{ formatMarket(item.market) }}</span>
-                                    <span v-if="item.currentPrice !== undefined && item.currentPrice !== null" class="text-caption ml-2">
-                                        {{ formatPrice(item.currentPrice) }}
-                                    </span>
-                                    <span v-if="item.changeRate !== undefined && item.changeRate !== null" class="text-caption ml-2" :class="getReturnColorClass(item.changeRate)">
-                                        {{ formatReturnRate(item.changeRate) }}
-                                    </span>
                                 </v-list-item-subtitle>
                                 <template #append>
                                     <div class="d-flex ga-1">
@@ -70,17 +64,6 @@
                                 </template>
                             </v-list-item>
                         </v-list>
-                        <v-divider />
-                        <div class="text-center py-2">
-                            <v-btn
-                                variant="text"
-                                size="small"
-                                color="primary"
-                                @mousedown.prevent="onViewAllResults"
-                            >
-                                {{ tt('View all results') }} &gt;
-                            </v-btn>
-                        </div>
                     </v-card>
                 </div>
                 <v-btn
@@ -99,11 +82,11 @@
                 <v-tabs v-model="activeTab" class="px-4">
                     <v-tab value="holdings">
                         {{ tt('Holdings') }}
-                        <span class="text-medium-emphasis ml-1">({{ filteredHoldings.length }})</span>
+                        <v-chip size="small" variant="tonal" class="ml-2">{{ filteredHoldings.length }}</v-chip>
                     </v-tab>
                     <v-tab value="watchlist">
                         {{ tt('Watchlist') }}
-                        <span class="text-medium-emphasis ml-1">({{ filteredWatchlist.length }})</span>
+                        <v-chip size="small" variant="tonal" class="ml-2">{{ filteredWatchlist.length }}</v-chip>
                     </v-tab>
                 </v-tabs>
             </v-card>
@@ -119,6 +102,8 @@
                         :hover="true"
                         item-value="assetId"
                         class="holdings-table"
+                        v-model:items-per-page="holdingsPerPage"
+                        v-model:page="holdingsPage"
                         @click:row="onRowClick"
                     >
                         <template #item.assetCode="{ item }">
@@ -129,6 +114,10 @@
                         </template>
                         <template #item.market="{ item }">
                             <span class="text-body-2">{{ formatMarket(item.market) }}</span>
+                        </template>
+                        <template #item.industry="{ item }">
+                            <span v-if="item.industry" class="text-body-2">{{ formatIndustry(item.industry) }}</span>
+                            <span v-else class="text-medium-emphasis">--</span>
                         </template>
                         <template #item.quantity="{ item }">
                             <span v-if="item.quantity !== undefined && item.quantity !== null" class="text-body-2">
@@ -185,6 +174,12 @@
                                 {{ tt('No holdings data') }}
                             </div>
                         </template>
+                        <template #bottom>
+                            <div class="mt-2 mb-4" v-if="filteredHoldings.length >= 0">
+                                <pagination-buttons :totalPageCount="holdingsTotalPageCount"
+                                                    v-model="holdingsPage"></pagination-buttons>
+                            </div>
+                        </template>
                     </v-data-table>
                 </v-card-text>
 
@@ -193,31 +188,23 @@
                 <v-card-text class="py-3 px-6">
                     <div class="d-flex flex-wrap align-center ga-6">
                         <div class="summary-item">
-                            <span class="text-caption text-medium-emphasis">{{ tt('Market Value') }}(USD)</span>
-                            <span class="text-body-1 font-weight-bold ml-2">{{ formatCurrencyValue(holdingsSummary.totalMarketValue, 'USD') }}</span>
+                            <span class="text-caption text-medium-emphasis">{{ tt('asset.TotalMarketValue') }}</span>
+                            <span class="text-body-1 font-weight-bold ml-2">{{ formatCurrencyValue(holdingsSummary.totalMarketValue, 'CNY') }}</span>
                         </div>
                         <div class="summary-item">
-                            <span class="text-caption text-medium-emphasis">{{ tt('Unrealized P&L') }}(USD)</span>
+                            <span class="text-caption text-medium-emphasis">{{ tt('Total Cost') }}</span>
+                            <span class="text-body-1 font-weight-bold ml-2">{{ formatCurrencyValue(holdingsSummary.totalCost, 'CNY') }}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="text-caption text-medium-emphasis">{{ tt('Unrealized P&L') }}</span>
                             <span class="text-body-1 font-weight-bold ml-2" :class="getReturnColorClass(holdingsSummary.totalUnrealizedPnl)">
-                                {{ formatCurrencyValue(holdingsSummary.totalUnrealizedPnl, 'USD') }}
+                                {{ formatCurrencyValue(holdingsSummary.totalUnrealizedPnl, 'CNY') }}
                             </span>
                         </div>
                         <div class="summary-item">
                             <span class="text-caption text-medium-emphasis">{{ tt('Return Rate') }}</span>
                             <span class="text-body-1 font-weight-bold ml-2" :class="getReturnColorClass(holdingsSummary.totalReturnRate)">
                                 {{ formatReturnRate(holdingsSummary.totalReturnRate) }}
-                            </span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="text-caption text-medium-emphasis">{{ tt('Today\'s P&L') }}</span>
-                            <span class="text-body-1 font-weight-bold ml-2" :class="getReturnColorClass(holdingsSummary.todayPnl)">
-                                {{ formatCurrencyValue(holdingsSummary.todayPnl, 'USD') }}
-                            </span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="text-caption text-medium-emphasis">{{ tt('Today\'s Return Rate') }}</span>
-                            <span class="text-body-1 font-weight-bold ml-2" :class="getReturnColorClass(holdingsSummary.todayReturnRate)">
-                                {{ formatReturnRate(holdingsSummary.todayReturnRate) }}
                             </span>
                         </div>
                     </div>
@@ -235,6 +222,8 @@
                         :hover="true"
                         item-value="assetId"
                         class="watchlist-table"
+                        v-model:items-per-page="watchlistPerPage"
+                        v-model:page="watchlistPage"
                         @click:row="onRowClick"
                     >
                         <template #item.assetCode="{ item }">
@@ -246,15 +235,13 @@
                         <template #item.market="{ item }">
                             <span class="text-body-2">{{ formatMarket(item.market) }}</span>
                         </template>
+                        <template #item.industry="{ item }">
+                            <span v-if="item.industry" class="text-body-2">{{ formatIndustry(item.industry) }}</span>
+                            <span v-else class="text-medium-emphasis">--</span>
+                        </template>
                         <template #item.currentPrice="{ item }">
                             <span v-if="item.currentPrice !== undefined && item.currentPrice !== null" class="text-body-2">
                                 {{ formatPrice(item.currentPrice) }}
-                            </span>
-                            <span v-else class="text-medium-emphasis">--</span>
-                        </template>
-                        <template #item.changeRate="{ item }">
-                            <span v-if="item.changeRate !== undefined && item.changeRate !== null" class="text-body-2" :class="getReturnColorClass(item.changeRate)">
-                                {{ formatReturnRate(item.changeRate) }}
                             </span>
                             <span v-else class="text-medium-emphasis">--</span>
                         </template>
@@ -277,14 +264,15 @@
                                 {{ tt('No watchlist data') }}
                             </div>
                         </template>
+                        <template #bottom>
+                            <div class="mt-2 mb-4" v-if="filteredWatchlist.length > 0">
+                                <pagination-buttons :totalPageCount="watchlistTotalPageCount"
+                                                    v-model="watchlistPage"></pagination-buttons>
+                            </div>
+                        </template>
                     </v-data-table>
                 </v-card-text>
             </v-card>
-
-            <!-- Data Delay Notice -->
-            <div class="text-center text-caption text-medium-emphasis py-2">
-                {{ tt('Data delayed 15 minutes') }}
-            </div>
 
             <!-- Detail Dialog -->
             <v-dialog v-model="detailDialog" max-width="520">
@@ -326,7 +314,7 @@
                                     </div>
                                 </v-col>
                                 <v-col cols="6">
-                                    <div class="text-caption text-medium-emphasis">{{ tt('Holdings') }}</div>
+                                    <div class="text-caption text-medium-emphasis">{{ tt('Quantity') }}</div>
                                     <div class="text-body-1">{{ formatQuantity(selectedItem.quantity) }}</div>
                                 </v-col>
                                 <v-col cols="6">
@@ -390,7 +378,7 @@
                         <span class="text-body-2 text-medium-emphasis">{{ selectedTransactionAsset.code }}</span>
                     </v-card-title>
                     <v-card-text>
-                        <v-form @submit.prevent="submitTransaction">
+                        <v-form ref="transactionFormRef" @submit.prevent="submitTransaction">
                             <v-row dense>
                                 <v-col cols="12">
                                     <v-select
@@ -530,12 +518,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 
+import PaginationButtons from '@/components/desktop/PaginationButtons.vue';
+
 import { useI18n } from '@/locales/helpers.ts';
 
 import { useInvestmentStore } from '@/stores/investment.ts';
 import { useAccountsStore } from '@/stores/account.ts';
-
-import { AccountCategory } from '@/core/account.ts';
 
 import {
     AssetCategory,
@@ -543,6 +531,7 @@ import {
     InvestmentTransactionType,
     InvestmentHolding,
     InvestmentUserAsset,
+    InvestmentTransactionItem,
     type AssetInfoResponse
 } from '@/models/investment.ts';
 
@@ -555,7 +544,6 @@ const { tt } = useI18n();
 const investmentStore = useInvestmentStore();
 const accountsStore = useAccountsStore();
 
-// --- Constants ---
 const DIVISOR = 10000;
 
 // --- State ---
@@ -564,15 +552,10 @@ const searchQuery = ref<string>('');
 const loading = ref<boolean>(true);
 const detailDialog = ref<boolean>(false);
 const selectedItem = ref<DisplayAsset | null>(null);
-const isAdmin = ref<boolean>(false);
+const showManageButton = ref<boolean>(false);
 const adminDialog = ref<boolean>(false);
 
-// --- Filter State ---
-const categoryFilter = ref<string>('');
-const marketFilter = ref<number | null>(null);
-
 // --- Search State ---
-const searchKeyword = ref<string>('');
 const searchResults = ref<AssetInfoResponse[]>([]);
 const searchLoading = ref<boolean>(false);
 const showSearchResults = ref<boolean>(false);
@@ -585,7 +568,7 @@ const watchlistAssetIds = ref<Set<string>>(new Set());
 // --- Transaction Dialog ---
 const transactionDialog = ref<boolean>(false);
 const transactionSubmitting = ref<boolean>(false);
-const selectedTransactionAsset = ref<AssetInfoResponse | null>(null);
+const selectedTransactionAsset = ref<{ assetId: string; code: string; name: string } | null>(null);
 const transactionForm = ref({
     accountId: '',
     type: InvestmentTransactionType.Buy,
@@ -598,11 +581,17 @@ const transactionForm = ref({
 });
 
 // --- Pagination ---
-const countPerPage = ref<number>(10);
-const currentPage = ref<number>(1);
+const holdingsPerPage = ref<number>(10);
+const holdingsPage = ref<number>(1);
+const watchlistPerPage = ref<number>(10);
+const watchlistPage = ref<number>(1);
 
-const totalPageCount = computed<number>(() => {
-    return Math.ceil(currentTabFilteredItems.value.length / countPerPage.value);
+const holdingsTotalPageCount = computed<number>(() => {
+    return Math.ceil(filteredHoldings.value.length / (holdingsPerPage.value > 0 ? holdingsPerPage.value : 10));
+});
+
+const watchlistTotalPageCount = computed<number>(() => {
+    return Math.ceil(filteredWatchlist.value.length / (watchlistPerPage.value > 0 ? watchlistPerPage.value : 10));
 });
 
 // --- Display Asset interface ---
@@ -613,6 +602,7 @@ interface DisplayAsset {
     category: string;
     currency: string;
     market: number;
+    industry: string;
     quantity?: number;
     avgCostPrice?: number;
     totalCost?: number;
@@ -620,81 +610,61 @@ interface DisplayAsset {
     marketValue?: number;
     unrealizedPnl?: number;
     returnRate?: number;
-    changeRate?: number;
     isHolding: boolean;
 }
 
-interface SearchResultItem {
-    id: string;
-    code: string;
-    name: string;
-    category: string;
-    currency: string;
-    market: number;
-    currentPrice?: number;
-    changeRate?: number;
-// --- Pagination options ---
-function getTablePageOptions(linesCount: number): { value: number; name: string }[] {
-    const pageOptions: { value: number; name: string }[] = [];
+// --- Transaction helpers ---
+const investmentAccountItems = computed(() => {
+    return accountsStore.allAccounts
+        .filter(a => a.category === 7)
+        .map(a => ({
+            title: a.name,
+            value: a.id
+        }));
+});
 
-    if (!linesCount || linesCount < 1) {
-        pageOptions.push({ value: -1, name: tt('All') });
-        return pageOptions;
-    }
+const transactionTypeOptions = computed(() => [
+    { title: tt('Buy'), value: InvestmentTransactionType.Buy },
+    { title: tt('Sell'), value: InvestmentTransactionType.Sell }
+]);
 
-    const availableCountPerPage = [5, 10, 15, 20, 25, 30, 50];
-
-    for (const count of availableCountPerPage) {
-        if (linesCount < count) break;
-        pageOptions.push({ value: count, name: formatNumberToLocalizedNumerals(count) });
-    }
-
-    pageOptions.push({ value: -1, name: tt('All') });
-    return pageOptions;
-}
+const isTransactionFormValid = computed(() => {
+    return transactionForm.value.accountId !== ''
+        && transactionForm.value.amount > 0
+        && transactionForm.value.tradeTime !== '';
+});
 
 // --- Table headers ---
 const holdingsHeaders = computed(() => [
-    { key: 'assetCode', title: tt('Code'), sortable: true },
-    { key: 'assetName', title: tt('Asset Name'), sortable: true },
-    { key: 'market', title: tt('Market'), sortable: true },
-    { key: 'quantity', title: tt('Quantity'), sortable: true, align: 'end' as const },
-    { key: 'currentPrice', title: tt('Current Price'), sortable: true, align: 'end' as const },
-    { key: 'marketValue', title: tt('Market Value'), sortable: true, align: 'end' as const },
-    { key: 'totalCost', title: tt('Total Cost'), sortable: true, align: 'end' as const },
-    { key: 'unrealizedPnl', title: tt('Unrealized P&L'), sortable: true, align: 'end' as const },
-    { key: 'returnRate', title: tt('Return Rate'), sortable: true, align: 'end' as const },
+    { key: 'assetCode', title: tt('Code'), sortable: false },
+    { key: 'assetName', title: tt('asset.AssetName'), sortable: false },
+    { key: 'market', title: tt('Market') + ' ▾', sortable: false },
+    { key: 'industry', title: tt('Industry') + ' ▾', sortable: false },
+    { key: 'quantity', title: tt('Quantity'), sortable: false, align: 'end' as const },
+    { key: 'currentPrice', title: tt('Current Price'), sortable: false, align: 'end' as const },
+    { key: 'marketValue', title: tt('Market Value'), sortable: false, align: 'end' as const },
+    { key: 'totalCost', title: tt('Total Cost'), sortable: false, align: 'end' as const },
+    { key: 'unrealizedPnl', title: tt('Unrealized P&L'), sortable: false, align: 'end' as const },
+    { key: 'returnRate', title: tt('Return Rate'), sortable: false, align: 'end' as const },
     { key: 'actions', title: tt('Action'), sortable: false, align: 'center' as const, width: '160' }
 ]);
 
 const watchlistHeaders = computed(() => [
-    { key: 'assetCode', title: tt('Code'), sortable: true },
-    { key: 'assetName', title: tt('Asset Name'), sortable: true },
-    { key: 'market', title: tt('Market'), sortable: true },
-    { key: 'currentPrice', title: tt('Current Price'), sortable: true, align: 'end' as const },
-    { key: 'changeRate', title: tt('Change Rate'), sortable: true, align: 'end' as const },
+    { key: 'assetCode', title: tt('Code'), sortable: false },
+    { key: 'assetName', title: tt('asset.AssetName'), sortable: false },
+    { key: 'market', title: tt('Market') + ' ▾', sortable: false },
+    { key: 'industry', title: tt('Industry') + ' ▾', sortable: false },
+    { key: 'currentPrice', title: tt('Current Price'), sortable: false, align: 'end' as const },
     { key: 'actions', title: tt('Action'), sortable: false, align: 'center' as const, width: '160' }
 ]);
 
-const holdingsSortBy = computed(() => [
-    { key: 'marketValue', order: 'desc' as const }
-]);
+const holdingsSortBy = computed(() => []);
 
-const watchlistSortBy = computed(() => [
-    { key: 'assetName', order: 'asc' as const }
-]);
+const watchlistSortBy = computed(() => []);
 
-// --- Holdings (from store) ---
+// --- Holdings ---
 const holdingsList = computed<DisplayAsset[]>(() => {
     return investmentStore.holdings.map(h => holdingToDisplay(h));
-});
-
-const holdingsCount = computed<number>(() => {
-    return investmentStore.holdings.length;
-});
-
-const watchlistCount = computed<number>(() => {
-    return watchlistAssets.value.length;
 });
 
 function holdingToDisplay(h: InvestmentHolding): DisplayAsset {
@@ -705,6 +675,7 @@ function holdingToDisplay(h: InvestmentHolding): DisplayAsset {
         category: h.category,
         currency: h.currency,
         market: h.market,
+        industry: '',
         quantity: h.quantity,
         avgCostPrice: h.avgCostPrice,
         totalCost: h.totalCost,
@@ -741,31 +712,22 @@ const holdingsSummary = computed(() => {
 
     return {
         totalMarketValue,
+        totalCost,
         totalUnrealizedPnl,
-        totalReturnRate,
-        todayPnl: 0,
-        todayReturnRate: 0
+        totalReturnRate
     };
 });
 
 // --- Filtered lists ---
-function filterByCategoryAndMarket(items: DisplayAsset[]): DisplayAsset[] {
-    let result = items;
-
-    return result;
-}
-
 const filteredHoldings = computed<DisplayAsset[]>(() => {
-    return filterByCategoryAndMarket(holdingsList.value);
+    return holdingsList.value;
 });
 
 const filteredWatchlist = computed<DisplayAsset[]>(() => {
-    return filterByCategoryAndMarket(watchlistAssets.value);
+    return watchlistAssets.value;
 });
 
 // --- Search ---
-let searchTimer: ReturnType<typeof setTimeout> | null = null;
-
 function onSearchFocus(): void {
     if (searchQuery.value.trim() && searchResults.value.length > 0) {
         showSearchResults.value = true;
@@ -773,7 +735,6 @@ function onSearchFocus(): void {
 }
 
 function onSearchBlur(): void {
-    // Delay hiding to allow click on results
     setTimeout(() => {
         showSearchResults.value = false;
     }, 200);
@@ -807,20 +768,8 @@ async function performSearch(keyword: string): Promise<void> {
             return;
         }
 
-        const results: SearchResultItem[] = data.result.map((item: AssetInfoResponse) => ({
-            id: item.id,
-            code: item.code,
-            name: item.name,
-            category: item.category,
-            currency: item.currency,
-            market: item.market
-        }));
-
-        searchResults.value = results;
-        showSearchResults.value = results.length > 0;
-
-        // Load prices for search results
-        loadSearchResultPrices(results);
+        searchResults.value = data.result;
+        showSearchResults.value = data.result.length > 0;
     } catch (error) {
         logger.error('Failed to search assets', error);
         searchResults.value = [];
@@ -830,26 +779,10 @@ async function performSearch(keyword: string): Promise<void> {
     }
 }
 
-async function loadSearchResultPrices(items: SearchResultItem[]): Promise<void> {
-    const pricePromises = items.map(async (item) => {
-        try {
-            const result = await investmentStore.loadLatestMarketData({ assetId: item.id });
-            if (result) {
-                item.currentPrice = result.price;
-            }
-        } catch {
-            // Ignore individual failures
-        }
-    });
-
-    await Promise.all(pricePromises);
-}
-
-function onSearchResultClick(item: SearchResultItem): void {
+function onSearchResultClick(item: AssetInfoResponse): void {
     showSearchResults.value = false;
     searchQuery.value = '';
 
-    // Check if already in holdings or watchlist
     const existingHolding = holdingsList.value.find(h => h.assetId === item.id);
     if (existingHolding) {
         showDetail(existingHolding);
@@ -862,7 +795,6 @@ function onSearchResultClick(item: SearchResultItem): void {
         return;
     }
 
-    // Show as a temporary detail
     const displayItem: DisplayAsset = {
         assetId: item.id,
         assetCode: item.code,
@@ -870,85 +802,23 @@ function onSearchResultClick(item: SearchResultItem): void {
         category: item.category,
         currency: item.currency,
         market: item.market,
-        currentPrice: item.currentPrice,
-        changeRate: item.changeRate,
+        industry: item.industry || '',
         isHolding: false
     };
     showDetail(displayItem);
 }
 
-function onViewAllResults(): void {
-    showSearchResults.value = false;
-    // Keep the search query to filter the current tab
-}
-
 function isInWatchlist(assetId: string): boolean {
-    return watchlistAssets.value.some(w => w.assetId === assetId);
+    return watchlistAssetIds.value.has(assetId);
 }
 
-async function addToWatchlist(item: SearchResultItem): Promise<void> {
+async function addToWatchlist(item: AssetInfoResponse): Promise<void> {
     try {
         await investmentStore.addUserAsset({ assetId: item.id });
-        // Reload watchlist
         await loadWatchlist();
     } catch (error) {
         logger.error('Failed to add to watchlist', error);
     }
-}
-
-// --- Search ---
-function clearSearch(): void {
-    searchKeyword.value = '';
-    searchResults.value = [];
-    showSearchResults.value = false;
-}
-
-function onSearchInput(): void {
-    if (searchTimer) {
-        clearTimeout(searchTimer);
-    }
-
-    const keyword = searchKeyword.value.trim();
-    if (!keyword) {
-        searchResults.value = [];
-        showSearchResults.value = false;
-        return;
-    }
-
-    searchTimer = setTimeout(() => {
-        performSearch(keyword);
-    }, 300);
-}
-
-async function performSearch(keyword: string): Promise<void> {
-    searchLoading.value = true;
-    try {
-        const response = await services.searchAssets({ keyword, limit: 10 });
-        const data = response.data;
-
-        if (!data || !data.success || !data.result) {
-            searchResults.value = [];
-            showSearchResults.value = false;
-            return;
-        }
-
-        searchResults.value = data.result;
-        showSearchResults.value = data.result.length > 0;
-    } catch (error) {
-        logger.error('Failed to search assets', error);
-        searchResults.value = [];
-        showSearchResults.value = false;
-    } finally {
-        searchLoading.value = false;
-    }
-}
-
-function isInHoldings(assetId: string): boolean {
-    return !!investmentStore.holdingsMap[assetId];
-}
-
-function isInWatchlist(assetId: string): boolean {
-    return watchlistAssetIds.value.has(assetId);
 }
 
 // --- Watchlist loading ---
@@ -963,7 +833,6 @@ async function loadWatchlist(): Promise<void> {
         }
 
         const userAssets = InvestmentUserAsset.ofMulti(data.result);
-
         const holdingAssetIds = new Set(investmentStore.holdings.map(h => h.assetId));
 
         const watchlistItems: DisplayAsset[] = [];
@@ -975,7 +844,6 @@ async function loadWatchlist(): Promise<void> {
             }
 
             const a = ua.asset;
-
             ids.add(a.id);
 
             watchlistItems.push({
@@ -985,6 +853,7 @@ async function loadWatchlist(): Promise<void> {
                 category: a.category,
                 currency: a.currency,
                 market: a.market,
+                industry: a.industry || '',
                 isHolding: holdingAssetIds.has(a.id)
             });
         }
@@ -1013,23 +882,6 @@ async function loadWatchlistPrices(items: DisplayAsset[]): Promise<void> {
     await Promise.all(pricePromises);
 }
 
-async function addAssetToWatchlist(asset: AssetInfoResponse): Promise<void> {
-    try {
-        await investmentStore.addUserAsset({ assetId: asset.id });
-
-        watchlistAssetIds.value.add(asset.id);
-
-        searchResults.value = searchResults.value.map(r =>
-            r.id === asset.id ? { ...r } : r
-        );
-
-        await loadWatchlist();
-    } catch (error) {
-        logger.error('Failed to add asset to watchlist', error);
-    }
-}
-
-// --- Remove from watchlist ---
 async function removeFromWatchlist(item: DisplayAsset): Promise<void> {
     try {
         await investmentStore.removeUserAsset({ assetId: item.assetId });
@@ -1052,19 +904,100 @@ function showDetail(item: DisplayAsset): void {
 }
 
 // --- Action handlers ---
-function onBuyClick(item: DisplayAsset | SearchResultItem): void {
-    // TODO: Open buy transaction dialog
-    logger.debug('Buy clicked for', item);
+function onBuyClick(item: DisplayAsset | AssetInfoResponse): void {
+    const isAssetInfo = (i: DisplayAsset | AssetInfoResponse): i is AssetInfoResponse => 'id' in i;
+    if (isAssetInfo(item)) {
+        selectedTransactionAsset.value = { assetId: item.id, code: item.code, name: item.name };
+    } else {
+        selectedTransactionAsset.value = { assetId: item.assetId, code: item.assetCode, name: item.assetName };
+    }
+    transactionForm.value.type = InvestmentTransactionType.Buy;
+    transactionForm.value.amount = 0;
+    transactionForm.value.quantity = 0;
+    transactionForm.value.price = 0;
+    transactionForm.value.fee = 0;
+    transactionForm.value.tradeTime = '';
+    transactionForm.value.comment = '';
+    transactionDialog.value = true;
 }
 
 function onSellClick(item: DisplayAsset): void {
-    // TODO: Open sell transaction dialog
-    logger.debug('Sell clicked for', item);
+    selectedTransactionAsset.value = {
+        assetId: item.assetId,
+        code: item.assetCode,
+        name: item.assetName
+    };
+    transactionForm.value.type = InvestmentTransactionType.Sell;
+    transactionForm.value.amount = 0;
+    transactionForm.value.quantity = 0;
+    transactionForm.value.price = 0;
+    transactionForm.value.fee = 0;
+    transactionForm.value.tradeTime = '';
+    transactionForm.value.comment = '';
+    transactionDialog.value = true;
 }
 
 function onManageClick(): void {
-    // TODO: Open asset management dialog
-    logger.debug('Manage clicked');
+    adminDialog.value = true;
+}
+
+// --- Submit Transaction ---
+async function submitTransaction(): Promise<void> {
+    if (!selectedTransactionAsset.value) return;
+
+    const asset = selectedTransactionAsset.value;
+    const form = transactionForm.value;
+
+    transactionSubmitting.value = true;
+    try {
+        const accountId = form.accountId;
+        const type = form.type;
+
+        const tradeTimeStr = form.tradeTime;
+        let tradeTime = getCurrentUnixTime();
+        if (tradeTimeStr) {
+            tradeTime = Math.floor(new Date(tradeTimeStr).getTime() / 1000);
+        }
+
+        const utcOffset = getTimezoneOffsetMinutes(tradeTime);
+
+        const transaction = new InvestmentTransactionItem(
+            '',
+            asset.assetId,
+            accountId,
+            type,
+            tradeTime,
+            Math.round(form.amount * DIVISOR)
+        );
+        transaction.quantity = Math.round(form.quantity * DIVISOR);
+        transaction.price = Math.round(form.price * DIVISOR);
+        transaction.fee = Math.round(form.fee * DIVISOR);
+        transaction.utcOffset = utcOffset;
+        transaction.comment = form.comment;
+
+        await investmentStore.addTransaction({ transaction });
+
+        transactionDialog.value = false;
+        investmentStore.holdingsStateInvalid = true;
+        await investmentStore.loadHoldings({ force: true });
+    } catch (error) {
+        logger.error('Failed to submit transaction', error);
+    } finally {
+        transactionSubmitting.value = false;
+    }
+}
+
+// --- Admin check ---
+async function checkAdmin(): Promise<void> {
+    try {
+        const response = await services.checkInvestmentAdmin();
+        const data = response.data;
+        if (data && data.success && data.result) {
+            showManageButton.value = data.result.isAdmin;
+        }
+    } catch (error) {
+        logger.error('Failed to check admin status', error);
+    }
 }
 
 // --- Format helpers ---
@@ -1129,6 +1062,22 @@ function formatCategory(category: string): string {
     }
 }
 
+function formatIndustry(industry: string): string {
+    const industryMap: Record<string, string> = {
+        'technology': tt('Technology'),
+        'healthcare': tt('Healthcare'),
+        'consumer': tt('Consumer'),
+        'finance': tt('Finance'),
+        'energy': tt('Energy'),
+        'industrial': tt('Industrial'),
+        'real_estate': tt('Real Estate'),
+        'materials': tt('Materials'),
+        'utilities': tt('Utilities'),
+        'telecom': tt('Telecom')
+    };
+    return industryMap[industry] || industry;
+}
+
 function getCurrencySymbol(currency: string): string {
     switch (currency) {
         case 'CNY': return '\u00a5';
@@ -1155,9 +1104,9 @@ function getCategoryColor(category: string): string {
     }
 }
 
-// --- Watch for tab change to reset page ---
+// --- Watch for tab change ---
 watch(activeTab, () => {
-    currentPage.value = 1;
+    // Reset state on tab change if needed
 });
 
 // --- Lifecycle ---
@@ -1187,7 +1136,6 @@ onMounted(async () => {
     gap: 16px;
 }
 
-/* Search Section */
 .search-section {
     display: flex;
     align-items: center;
@@ -1207,7 +1155,6 @@ onMounted(async () => {
     height: 40px;
 }
 
-/* Search Results Overlay */
 .search-results-overlay {
     position: absolute;
     top: 100%;
@@ -1219,14 +1166,12 @@ onMounted(async () => {
     overflow-y: auto;
 }
 
-/* Summary Footer */
 .summary-item {
     display: flex;
     align-items: center;
     white-space: nowrap;
 }
 
-/* Tables */
 .holdings-table :deep(.v-data-table__td),
 .watchlist-table :deep(.v-data-table__td) {
     padding-top: 8px;

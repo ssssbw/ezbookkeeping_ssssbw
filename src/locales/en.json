@@ -2772,6 +2772,27 @@
     "Search assets": "Search assets",
     "Add to Watchlist": "Add to Watchlist",
     "Buy": "Buy",
+    "Sell": "Sell",
     "No holdings data": "No holdings data",
-    "No watchlist data": "No watchlist data"
+    "No watchlist data": "No watchlist data",
+
+    "Industry": "Industry",
+    "Technology": "Technology",
+    "Healthcare": "Healthcare",
+    "Consumer": "Consumer",
+    "Finance": "Finance",
+    "Energy": "Energy",
+    "Industrial": "Industrial",
+    "Real Estate": "Real Estate",
+    "Materials": "Materials",
+    "Utilities": "Utilities",
+    "Telecom": "Telecom",
+
+    "asset": {
+        "SearchAssetsByNameOrCode": "Search assets by name or code",
+        "AssetName": "Asset Name",
+        "TotalMarketValue": "Total Market Value",
+        "ItemsPerPage": "Items Per Page",
+        "DataDelayed15Minutes": "Data delayed 15 minutes"
+    }
 }

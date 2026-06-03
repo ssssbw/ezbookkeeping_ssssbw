@@ -2772,6 +2772,27 @@
     "Search assets": "搜索资产",
     "Add to Watchlist": "添加自选",
     "Buy": "买入",
+    "Sell": "卖出",
     "No holdings data": "暂无持仓数据",
-    "No watchlist data": "暂无自选数据"
+    "No watchlist data": "暂无自选数据",
+
+    "Industry": "行业",
+    "Technology": "科技",
+    "Healthcare": "医疗",
+    "Consumer": "消费",
+    "Finance": "金融",
+    "Energy": "能源",
+    "Industrial": "工业",
+    "Real Estate": "房地产",
+    "Materials": "材料",
+    "Utilities": "公用事业",
+    "Telecom": "电信",
+
+    "asset": {
+        "SearchAssetsByNameOrCode": "搜索资产名称或代码",
+        "AssetName": "资产名称",
+        "TotalMarketValue": "总市值",
+        "ItemsPerPage": "每页显示",
+        "DataDelayed15Minutes": "数据延迟 15 分钟"
+    }
 }

@@ -273,7 +273,7 @@
 <script setup lang="ts">
 import SnackBar from '@/components/desktop/SnackBar.vue';
 
-import { ref, computed, useTemplateRef } from 'vue';
+import { ref, computed, useTemplateRef, watch } from 'vue';
 
 import { useDisplay, useTheme } from 'vuetify';
 import { useRoute, useRouter } from 'vue-router';
@@ -345,6 +345,14 @@ const isInvestmentMode = ref<boolean>(false);
 
 const mdAndDown = computed<boolean>(() => display.mdAndDown.value);
 const currentRoutePath = computed<string>(() => route.path);
+
+// Sync investment mode based on route path
+watch(currentRoutePath, (path) => {
+    const shouldBeInvestment = path.startsWith('/investment/');
+    if (shouldBeInvestment !== isInvestmentMode.value) {
+        isInvestmentMode.value = shouldBeInvestment;
+    }
+}, { immediate: true });
 
 const currentNickName = computed<string>(() => userStore.currentUserNickname || tt('User'));
 const currentUserAvatar = computed<string | null>(() => userStore.getUserAvatarUrl(userStore.currentUserBasicInfo, true));
