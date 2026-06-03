@@ -145,7 +145,7 @@ export const useInvestmentStore = defineStore('investment', () => {
             services.getInvestmentTransactions({
                 asset_id: assetId,
                 account_id: accountId
-            } as any).then(response => {
+            }).then(response => {
                 const data = response.data;
 
                 if (!data || !data.success || !data.result) {
@@ -253,7 +253,7 @@ export const useInvestmentStore = defineStore('investment', () => {
     }
 
     function loadLatestMarketData({ assetId }: { assetId: string }): Promise<InvestmentMarketDataItem | null> {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             services.getLatestMarketData({ asset_id: assetId, date: 0 }).then(response => {
                 const data = response.data;
 
