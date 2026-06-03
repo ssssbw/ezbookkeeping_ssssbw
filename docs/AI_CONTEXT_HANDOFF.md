@@ -80,6 +80,12 @@
 | src/models/investment.ts | ✅ 已增强 | 新增 InvestmentHolding/InvestmentOverview Model 类 + 持仓/概览 Response 接口 |
 | src/lib/services.ts | ✅ 已增强 | 新增 getInvestmentHoldings/getInvestmentOverview API 方法（共 20 个投资方法） |
 | src/stores/investment.ts | ✅ 已增强 | 新增 holdings/overview 状态 + loadHoldings/loadOverview 方法 |
+| pkg/settings/setting.go | ✅ 已增强 | 新增 InvestmentAdminUid 配置项 |
+| pkg/api/investment.go | ✅ 已增强 | 新增 AdminCheckHandler |
+| cmd/webserver.go | ✅ 已增强 | 新增 admin/check.json 路由（共 23 个端点） |
+| src/models/investment.ts | ✅ 已增强 | 新增 AdminCheckResponse 接口 |
+| src/lib/services.ts | ✅ 已增强 | 新增 checkInvestmentAdmin API 方法（共 21 个投资方法） |
+| src/views/desktop/investment/AssetsPage.vue | ✅ 已重构 | 搜索下拉、分类/市场 chips 筛选、买卖弹窗、管理按钮 |
 
 - 已有的前端代码：投资 Overview 页面骨架（已有，非本次新增）
 - 已有的路由切换：点击 logo 切换记账/理财模式
@@ -318,7 +324,7 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 ## 七、当前状态
 
 - 无阻塞问题
-- 下一步：AssetsPage 完善 + 阶段 3 前端界面
+- 下一步：阶段 3 继续（OverviewPage → TransactionsPage → PortfolioPage → AnalysisPage）
 - 用户会在两台电脑间切换开发，此文档是 AI 会话的上下文桥梁
 - 构建验证方式：`.\build.bat backend --no-lint --no-test`（Windows）/ `bash build.sh backend --no-lint --no-test`（macOS/Linux）（不要用 `go build ./...`）
 - 热重载：`air`（macOS/Linux 配置文件 `.air.toml`）/ `air -c .air.windows.toml`（Windows）
@@ -340,15 +346,15 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 
 ### 待完成任务
 
-| 优先级 | 任务 | 说明 |
-|--------|------|------|
-| P0 | 重构 AssetsPage 布局 | 搜索框独立、Tab 切换、管理按钮 |
-| P0 | 实现搜索功能 | 搜索本地 Asset 表 |
-| P0 | 实现买入/卖出弹窗 | 交易表单 |
-| P1 | 添加配置项 InvestmentAdminUid | 控制管理按钮可见性 |
-| P1 | 全局资产管理页面 | 放在数据管理菜单 |
-| P2 | Asset 表初始化脚本 | 全量拉取基金/股票数据 |
-| P2 | Cron 定时同步 | 每季度增量更新 |
+| 优先级 | 任务 | 状态 | 说明 |
+|--------|------|------|------|
+| P0 | 重构 AssetsPage 布局 | ✅ 已完成 | 搜索框独立、Tab 切换、管理按钮 |
+| P0 | 实现搜索功能 | ✅ 已完成 | 搜索本地 Asset 表 |
+| P0 | 实现买入/卖出弹窗 | ✅ 已完成 | 交易表单 |
+| P1 | 添加配置项 InvestmentAdminUid | ✅ 已完成 | 控制管理按钮可见性 |
+| P1 | 全局资产管理页面 | ⬜ 待做 | 放在数据管理菜单 |
+| P2 | Asset 表初始化脚本 | ⬜ 待做 | 全量拉取基金/股票数据 |
+| P2 | Cron 定时同步 | ⬜ 待做 | 每季度增量更新 |
 
 ### 页面功能定义
 
@@ -542,10 +548,33 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
    - `src/stores/investment.ts`：新增 holdings/overview 状态 + loadHoldings/loadOverview 方法
 4. 构建验证：`.\build.bat backend --no-lint --no-test` + `npm run build` 均通过
 
+### 会话 8（2026-06-02）
+
+完成内容：
+1. AssetsPage 重构（基于用户在公司设计的 UI 方案）
+   - 搜索框独立在顶部，输入时弹出下拉列表（类似搜索引擎）
+   - 分类筛选用 chips（全部/权益类/固收类/商品类/数字资产）
+   - 市场筛选用 chips（全部市场/中国/香港/美国）
+   - 整个页面只有一个卡片（tabs + 表格）
+   - 搜索结果显示状态标签（已持有/自选中）
+   - 买入/卖出弹窗（选择资金池、交易类型、金额等）
+   - 管理按钮（仅 InvestmentAdminUid 可见）
+2. 后端配置
+   - `pkg/settings/setting.go`：新增 InvestmentAdminUid 配置项
+   - `pkg/api/investment.go`：新增 AdminCheckHandler
+   - `cmd/webserver.go`：注册 /investment/admin/check.json 路由
+3. 前端实现
+   - `src/views/desktop/investment/AssetsPage.vue`：完整重构
+   - `src/lib/services.ts`：新增 checkInvestmentAdmin API 方法
+   - `src/models/investment.ts`：新增 AdminCheckResponse 接口
+4. i18n 补全
+   - 新增 Search Results、All Markets、Search assets、Add to Watchlist、Buy 等 key
+5. 构建验证：`.\build.bat backend --no-lint --no-test` + `npm run build` 均通过
+
 下一个 AI 应该做什么：
 - 读取此文档了解完整上下文
 - 读取 docs/ 下三个文档了解详细设计
-- 从阶段 3 开始：前端界面开发（OverviewPage → AssetsPage → TransactionsPage → PortfolioPage → AnalysisPage）
+- 继续阶段 3：其他页面开发（OverviewPage → TransactionsPage → PortfolioPage → AnalysisPage）
 - 参考文件：`src/stores/investment.ts`、`src/lib/services.ts`、`src/models/investment.ts`
 - 构建验证方式：`.\build.bat backend --no-lint --no-test`（Windows）/ `bash build.sh backend --no-lint --no-test`（macOS/Linux）
 - 前端构建验证：`npm run build`

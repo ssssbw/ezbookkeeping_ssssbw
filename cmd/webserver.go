@@ -509,6 +509,9 @@ func startWebServer(c *core.CliContext) error {
 			apiV1Route.GET("/investment/analysis/holdings.json", bindApi(api.Investment.HoldingsHandler))
 			apiV1Route.GET("/investment/analysis/overview.json", bindApi(api.Investment.OverviewHandler))
 
+			// Investment Admin
+			apiV1Route.GET("/investment/admin/check.json", bindApi(api.Investment.AdminCheckHandler))
+
 			// System
 			apiV1Route.GET("/systems/version.json", bindApi(api.Systems.VersionHandler))
 		}

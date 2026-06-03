@@ -598,3 +598,15 @@ func (a *InvestmentApi) OverviewHandler(c *core.WebContext) (any, *errs.Error) {
 	return overview, nil
 }
 
+// AdminCheckHandler checks if current user is investment admin
+func (a *InvestmentApi) AdminCheckHandler(c *core.WebContext) (any, *errs.Error) {
+	uid := c.GetCurrentUid()
+	config := a.CurrentConfig()
+	isAdmin := config.InvestmentAdminUid > 0 && config.InvestmentAdminUid == uid
+	log.Infof(c, "[investment.AdminCheckHandler] user \"uid:%d\" is investment admin: %v", uid, isAdmin)
+
+	return map[string]interface{}{
+		"isAdmin": isAdmin,
+	}, nil
+}
+
