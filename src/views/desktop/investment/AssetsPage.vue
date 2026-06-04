@@ -7,10 +7,10 @@
                     <v-text-field
                         v-model="searchQuery"
                         :placeholder="tt('asset.SearchAssetsByNameOrCode')"
-                        prepend-inner-icon="mdi-magnify"
+                        :prepend-inner-icon="mdiMagnify"
                         clearable
                         hide-details
-                        density="comfortable"
+                        density="compact"
                         variant="outlined"
                         class="search-input"
                         @focus="onSearchFocus"
@@ -73,11 +73,11 @@
                     class="manage-btn ml-3"
                     @click="onManageClick"
                 >
-                    {{ tt('Asset Management') }}
+                    {{ tt('asset.Global Asset Management') }}
                 </v-btn>
             </div>
 
-            <!-- Tabs -->
+            <!-- Tabs + Table (merged card) -->
             <v-card>
                 <v-tabs v-model="activeTab" class="px-4">
                     <v-tab value="holdings">
@@ -89,11 +89,9 @@
                         <v-chip size="small" variant="tonal" class="ml-2">{{ filteredWatchlist.length }}</v-chip>
                     </v-tab>
                 </v-tabs>
-            </v-card>
 
-            <!-- Holdings Table -->
-            <v-card v-if="activeTab === 'holdings'">
-                <v-card-text class="pa-0">
+                <!-- Holdings Tab Content -->
+                <v-card-text v-if="activeTab === 'holdings'" class="pa-0">
                     <v-data-table
                         :headers="holdingsHeaders"
                         :items="filteredHoldings"
@@ -175,7 +173,7 @@
                             </div>
                         </template>
                         <template #bottom>
-                            <div class="mt-2 mb-4" v-if="filteredHoldings.length >= 0">
+                            <div class="mt-2 mb-4">
                                 <pagination-buttons :totalPageCount="holdingsTotalPageCount"
                                                     v-model="holdingsPage"></pagination-buttons>
                             </div>
@@ -183,37 +181,8 @@
                     </v-data-table>
                 </v-card-text>
 
-                <!-- Holdings Summary Footer -->
-                <v-divider />
-                <v-card-text class="py-3 px-6">
-                    <div class="d-flex flex-wrap align-center ga-6">
-                        <div class="summary-item">
-                            <span class="text-caption text-medium-emphasis">{{ tt('asset.TotalMarketValue') }}</span>
-                            <span class="text-body-1 font-weight-bold ml-2">{{ formatCurrencyValue(holdingsSummary.totalMarketValue, 'CNY') }}</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="text-caption text-medium-emphasis">{{ tt('Total Cost') }}</span>
-                            <span class="text-body-1 font-weight-bold ml-2">{{ formatCurrencyValue(holdingsSummary.totalCost, 'CNY') }}</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="text-caption text-medium-emphasis">{{ tt('Unrealized P&L') }}</span>
-                            <span class="text-body-1 font-weight-bold ml-2" :class="getReturnColorClass(holdingsSummary.totalUnrealizedPnl)">
-                                {{ formatCurrencyValue(holdingsSummary.totalUnrealizedPnl, 'CNY') }}
-                            </span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="text-caption text-medium-emphasis">{{ tt('Return Rate') }}</span>
-                            <span class="text-body-1 font-weight-bold ml-2" :class="getReturnColorClass(holdingsSummary.totalReturnRate)">
-                                {{ formatReturnRate(holdingsSummary.totalReturnRate) }}
-                            </span>
-                        </div>
-                    </div>
-                </v-card-text>
-            </v-card>
-
-            <!-- Watchlist Table -->
-            <v-card v-if="activeTab === 'watchlist'">
-                <v-card-text class="pa-0">
+                <!-- Watchlist Tab Content -->
+                <v-card-text v-if="activeTab === 'watchlist'" class="pa-0">
                     <v-data-table
                         :headers="watchlistHeaders"
                         :items="filteredWatchlist"
@@ -265,13 +234,42 @@
                             </div>
                         </template>
                         <template #bottom>
-                            <div class="mt-2 mb-4" v-if="filteredWatchlist.length > 0">
+                            <div class="mt-2 mb-4">
                                 <pagination-buttons :totalPageCount="watchlistTotalPageCount"
                                                     v-model="watchlistPage"></pagination-buttons>
                             </div>
                         </template>
                     </v-data-table>
                 </v-card-text>
+
+                <!-- Holdings Summary Footer (only under holdings tab) -->
+                <template v-if="activeTab === 'holdings'">
+                    <v-divider />
+                    <v-card-text class="py-3 px-6">
+                        <div class="d-flex flex-wrap align-center ga-6">
+                            <div class="summary-item">
+                                <span class="text-caption text-medium-emphasis">{{ tt('asset.TotalMarketValue') }}</span>
+                                <span class="text-body-1 font-weight-bold ml-2">{{ formatCurrencyValue(holdingsSummary.totalMarketValue, 'CNY') }}</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="text-caption text-medium-emphasis">{{ tt('Total Cost') }}</span>
+                                <span class="text-body-1 font-weight-bold ml-2">{{ formatCurrencyValue(holdingsSummary.totalCost, 'CNY') }}</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="text-caption text-medium-emphasis">{{ tt('Unrealized P&L') }}</span>
+                                <span class="text-body-1 font-weight-bold ml-2" :class="getReturnColorClass(holdingsSummary.totalUnrealizedPnl)">
+                                    {{ formatCurrencyValue(holdingsSummary.totalUnrealizedPnl, 'CNY') }}
+                                </span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="text-caption text-medium-emphasis">{{ tt('Return Rate') }}</span>
+                                <span class="text-body-1 font-weight-bold ml-2" :class="getReturnColorClass(holdingsSummary.totalReturnRate)">
+                                    {{ formatReturnRate(holdingsSummary.totalReturnRate) }}
+                                </span>
+                            </div>
+                        </div>
+                    </v-card-text>
+                </template>
             </v-card>
 
             <!-- Detail Dialog -->
@@ -496,13 +494,13 @@
             <v-dialog v-model="adminDialog" max-width="600">
                 <v-card>
                     <v-card-title class="d-flex align-center">
-                        <span class="text-h6">{{ tt('Asset Management') }}</span>
+                        <span class="text-h6">{{ tt('asset.Global Asset Management') }}</span>
                         <v-spacer />
                         <v-btn variant="text" icon="mdi-close" density="compact" @click="adminDialog = false" />
                     </v-card-title>
                     <v-card-text>
                         <div class="text-body-2 text-medium-emphasis">
-                            {{ tt('Asset Management') }}
+                            {{ tt('asset.Global Asset Management') }}
                         </div>
                     </v-card-text>
                     <v-card-actions>
@@ -534,6 +532,8 @@ import {
     InvestmentTransactionItem,
     type AssetInfoResponse
 } from '@/models/investment.ts';
+
+import { mdiMagnify } from '@mdi/js';
 
 import services from '@/lib/services.ts';
 import logger from '@/lib/logger.ts';
@@ -587,11 +587,11 @@ const watchlistPerPage = ref<number>(10);
 const watchlistPage = ref<number>(1);
 
 const holdingsTotalPageCount = computed<number>(() => {
-    return Math.ceil(filteredHoldings.value.length / (holdingsPerPage.value > 0 ? holdingsPerPage.value : 10));
+    return Math.max(1, Math.ceil(filteredHoldings.value.length / (holdingsPerPage.value > 0 ? holdingsPerPage.value : 10)));
 });
 
 const watchlistTotalPageCount = computed<number>(() => {
-    return Math.ceil(filteredWatchlist.value.length / (watchlistPerPage.value > 0 ? watchlistPerPage.value : 10));
+    return Math.max(1, Math.ceil(filteredWatchlist.value.length / (watchlistPerPage.value > 0 ? watchlistPerPage.value : 10)));
 });
 
 // --- Display Asset interface ---

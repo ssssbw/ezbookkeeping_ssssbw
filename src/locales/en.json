@@ -2793,6 +2793,7 @@
         "AssetName": "Asset Name",
         "TotalMarketValue": "Total Market Value",
         "ItemsPerPage": "Items Per Page",
-        "DataDelayed15Minutes": "Data delayed 15 minutes"
+        "DataDelayed15Minutes": "Data delayed 15 minutes",
+        "Global Asset Management": "Global Asset Management"
     }
 }

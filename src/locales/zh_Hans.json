@@ -2793,6 +2793,7 @@
         "AssetName": "资产名称",
         "TotalMarketValue": "总市值",
         "ItemsPerPage": "每页显示",
-        "DataDelayed15Minutes": "数据延迟 15 分钟"
+        "DataDelayed15Minutes": "数据延迟 15 分钟",
+        "Global Asset Management": "全局资产管理"
     }
 }
