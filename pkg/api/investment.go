@@ -494,6 +494,97 @@ func (a *InvestmentApi) GlobalAssetCreateHandler(c *core.WebContext) (any, *errs
 	return asset.ToAssetInfoResponse(), nil
 }
 
+func (a *InvestmentApi) GlobalAssetListHandler(c *core.WebContext) (any, *errs.Error) {
+	var req models.AssetListRequest
+	err := c.ShouldBindQuery(&req)
+
+	if err != nil {
+		log.Warnf(c, "[investment.GlobalAssetListHandler] parse request failed, because %s", err.Error())
+		return nil, errs.NewIncompleteOrIncorrectSubmissionError(err)
+	}
+
+	if req.Page <= 0 {
+		req.Page = 1
+	}
+	if req.PageSize <= 0 || req.PageSize > 100 {
+		req.PageSize = 50
+	}
+
+	totalCount, err := a.globalAssets.GetAllAssetsCount(c, req.Category, req.Market, req.Industry, req.Keyword)
+	if err != nil {
+		log.Errorf(c, "[investment.GlobalAssetListHandler] failed to count assets, because %s", err.Error())
+		return nil, errs.Or(err, errs.ErrOperationFailed)
+	}
+
+	assets, err := a.globalAssets.GetAllAssets(c, req.Category, req.Market, req.Industry, req.Keyword)
+	if err != nil {
+		log.Errorf(c, "[investment.GlobalAssetListHandler] failed to list assets, because %s", err.Error())
+		return nil, errs.Or(err, errs.ErrOperationFailed)
+	}
+
+	assetResps := make([]*models.AssetInfoResponse, len(assets))
+	for i, asset := range assets {
+		assetResps[i] = asset.ToAssetInfoResponse()
+	}
+
+	return &models.AssetListResponse{
+		TotalCount: totalCount,
+		Assets:     assetResps,
+	}, nil
+}
+
+func (a *InvestmentApi) GlobalAssetModifyHandler(c *core.WebContext) (any, *errs.Error) {
+	var req models.AssetModifyRequest
+	err := c.ShouldBindJSON(&req)
+
+	if err != nil {
+		log.Warnf(c, "[investment.GlobalAssetModifyHandler] parse request failed, because %s", err.Error())
+		return nil, errs.NewIncompleteOrIncorrectSubmissionError(err)
+	}
+
+	asset := &models.Asset{
+		AssetId:  req.Id,
+		Code:     req.Code,
+		Market:   req.Market,
+		Name:     req.Name,
+		Category: req.Category,
+		Currency: req.Currency,
+		Industry: req.Industry,
+		Tags:     req.Tags,
+		ExtraInfo: req.ExtraInfo,
+	}
+
+	err = a.globalAssets.ModifyAsset(c, asset)
+	if err != nil {
+		log.Errorf(c, "[investment.GlobalAssetModifyHandler] failed to modify asset \"id:%d\", because %s", req.Id, err.Error())
+		return nil, errs.Or(err, errs.ErrOperationFailed)
+	}
+
+	log.Infof(c, "[investment.GlobalAssetModifyHandler] asset \"id:%d\" has been modified successfully", req.Id)
+
+	return asset.ToAssetInfoResponse(), nil
+}
+
+func (a *InvestmentApi) GlobalAssetDeleteHandler(c *core.WebContext) (any, *errs.Error) {
+	var req models.AssetDeleteRequest
+	err := c.ShouldBindJSON(&req)
+
+	if err != nil {
+		log.Warnf(c, "[investment.GlobalAssetDeleteHandler] parse request failed, because %s", err.Error())
+		return nil, errs.NewIncompleteOrIncorrectSubmissionError(err)
+	}
+
+	err = a.globalAssets.DeleteAsset(c, req.Id)
+	if err != nil {
+		log.Errorf(c, "[investment.GlobalAssetDeleteHandler] failed to delete asset \"id:%d\", because %s", req.Id, err.Error())
+		return nil, errs.Or(err, errs.ErrOperationFailed)
+	}
+
+	log.Infof(c, "[investment.GlobalAssetDeleteHandler] asset \"id:%d\" has been deleted successfully", req.Id)
+
+	return true, nil
+}
+
 // User Asset handlers
 
 func (a *InvestmentApi) UserAssetListHandler(c *core.WebContext) (any, *errs.Error) {

@@ -26,9 +26,9 @@ var Assets = &AssetService{
 	},
 }
 
-func (s *AssetService) GetAllAssets(c core.Context, category models.AssetCategory, market models.InvestmentMarket, industry string) ([]*models.Asset, error) {
+func (s *AssetService) GetAllAssets(c core.Context, category models.AssetCategory, market models.InvestmentMarket, industry string, keyword string) ([]*models.Asset, error) {
 	condition := "1=1"
-	conditionParams := make([]any, 0, 3)
+	conditionParams := make([]any, 0, 4)
 
 	if category != "" {
 		condition = condition + " AND category=?"
@@ -43,6 +43,12 @@ func (s *AssetService) GetAllAssets(c core.Context, category models.AssetCategor
 	if industry != "" {
 		condition = condition + " AND industry=?"
 		conditionParams = append(conditionParams, industry)
+	}
+
+	if keyword != "" {
+		condition = condition + " AND (code LIKE ? OR name LIKE ?)"
+		keywordPattern := "%" + keyword + "%"
+		conditionParams = append(conditionParams, keywordPattern, keywordPattern)
 	}
 
 	var assets []*models.Asset
@@ -142,4 +148,45 @@ func (s *AssetService) ModifyAsset(c core.Context, asset *models.Asset) error {
 
 		return nil
 	})
+}
+
+func (s *AssetService) DeleteAsset(c core.Context, assetId int64) error {
+	if assetId <= 0 {
+		return errs.ErrInvestmentAssetIdInvalid
+	}
+
+	return s.UserDataDB(0).DoTransaction(c, func(sess *xorm.Session) error {
+		deletedRows, err := sess.ID(assetId).Delete(&models.Asset{})
+		if err != nil {
+			return err
+		} else if deletedRows < 1 {
+			return errs.ErrInvestmentAssetNotFound
+		}
+		return nil
+	})
+}
+
+func (s *AssetService) GetAllAssetsCount(c core.Context, category models.AssetCategory, market models.InvestmentMarket, industry string, keyword string) (int64, error) {
+	condition := "1=1"
+	conditionParams := make([]any, 0, 4)
+
+	if category != "" {
+		condition = condition + " AND category=?"
+		conditionParams = append(conditionParams, category)
+	}
+	if market > 0 {
+		condition = condition + " AND market=?"
+		conditionParams = append(conditionParams, market)
+	}
+	if industry != "" {
+		condition = condition + " AND industry=?"
+		conditionParams = append(conditionParams, industry)
+	}
+	if keyword != "" {
+		condition = condition + " AND (code LIKE ? OR name LIKE ?)"
+		keywordPattern := "%" + keyword + "%"
+		conditionParams = append(conditionParams, keywordPattern, keywordPattern)
+	}
+
+	return s.UserDataDB(0).NewSession(c).Where(condition, conditionParams...).Count(&models.Asset{})
 }

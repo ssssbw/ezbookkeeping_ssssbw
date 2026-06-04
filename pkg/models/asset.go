@@ -30,6 +30,15 @@ type AssetListRequest struct {
 	Category AssetCategory    `form:"category"`
 	Market   InvestmentMarket `form:"market"`
 	Industry string           `form:"industry"`
+	Keyword  string           `form:"keyword"`
+	Page     int              `form:"page"`
+	PageSize int              `form:"pageSize"`
+}
+
+// AssetListResponse represents the response of asset listing
+type AssetListResponse struct {
+	TotalCount int64               `json:"totalCount"`
+	Assets     []*AssetInfoResponse `json:"assets"`
 }
 
 // AssetGetRequest represents all parameters of asset getting request
@@ -66,6 +75,10 @@ type AssetModifyRequest struct {
 	Industry  string           `json:"industry"`
 	Tags      string           `json:"tags"`
 	ExtraInfo string           `json:"extraInfo"`
+}
+
+type AssetDeleteRequest struct {
+	Id int64 `json:"id,string" binding:"required,min=1"`
 }
 
 // AssetInfoResponse represents a view-object of asset
