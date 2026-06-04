@@ -1,7 +1,7 @@
 # AI 会话上下文交接文档
 
 > 每次会话结束后更新此文件，确保下一个 AI 会话能无缝接续。
-> 最后更新：2026-05-31
+> 最后更新：2026-06-04
 
 ---
 
@@ -86,6 +86,15 @@
 | src/models/investment.ts | ✅ 已增强 | 新增 AdminCheckResponse 接口 |
 | src/lib/services.ts | ✅ 已增强 | 新增 checkInvestmentAdmin API 方法（共 21 个投资方法） |
 | src/views/desktop/investment/AssetsPage.vue | ✅ 已重构 | 搜索下拉、分类/市场 chips 筛选、买卖弹窗、管理按钮 |
+| src/views/desktop/investment/AssetsPage.vue | ✅ 已增强 | Tab+表格合并单卡片、行业列（▾筛选icon）、分页兜底、mdiMagnify SVG 图标 |
+| src/views/desktop/MainLayout.vue | ✅ 已增强 | watch currentRoutePath 自动同步 isInvestmentMode（/investment/* → 理财模式标题） |
+| pkg/models/asset.go | ✅ 已增强 | 新增 AssetDeleteRequest、AssetListResponse、AssetListRequest 加 keyword/page/pageSize |
+| pkg/services/asset.go | ✅ 已增强 | 新增 DeleteAsset、GetAllAssetsCount、GetAllAssets 加 keyword 参数 |
+| pkg/api/investment.go | ✅ 已增强 | 新增 GlobalAssetListHandler/ModifyHandler/DeleteHandler（共 26 个端点） |
+| cmd/webserver.go | ✅ 已增强 | 注册 list/modify/delete 路由 |
+| src/models/investment.ts | ✅ 已增强 | 新增 AssetModifyRequest/DeleteRequest/ListRequest/ListResponse |
+| src/lib/services.ts | ✅ 已增强 | 新增 listGlobalAssets/modifyGlobalAsset/deleteGlobalAsset（共 24 个投资 API） |
+| src/locales/en.json + zh_Hans.json | ✅ 已增强 | 新增 Industry 相关 11 key + asset.AssetCode/NoAssetsFound/ConfirmDeleteAsset |
 
 - 已有的前端代码：投资 Overview 页面骨架（已有，非本次新增）
 - 已有的路由切换：点击 logo 切换记账/理财模式
@@ -276,7 +285,7 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 | # | 任务 | 状态 |
 |---|------|------|
 | 3.1 | OverviewPage | ⬜ |
-| 3.2 | AssetsPage | ⬜ |
+| 3.2 | AssetsPage | 🔧 进行中（搜索+持仓/自选+行业列+管理CRUD，细节待完善） |
 | 3.3 | TransactionsPage | ⬜ |
 | 3.4 | PortfolioPage | ⬜ |
 | 3.5 | AnalysisPage | ⬜ |
@@ -325,8 +334,10 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 
 - 无阻塞问题
 - 下一步：阶段 3 继续（OverviewPage → TransactionsPage → PortfolioPage → AnalysisPage）
-- 用户会在两台电脑间切换开发，此文档是 AI 会话的上下文桥梁
+- AssetsPage 基本功能已实现，细节待完善
+- 36 个投资模块专属 i18n key 待迁移到 `asset.` 嵌套对象（用户说后面再改）
 - 构建验证方式：`.\build.bat backend --no-lint --no-test`（Windows）/ `bash build.sh backend --no-lint --no-test`（macOS/Linux）（不要用 `go build ./...`）
+- 前端验证：`npm run lint`（vue-tsc + eslint）
 - 热重载：`air`（macOS/Linux 配置文件 `.air.toml`）/ `air -c .air.windows.toml`（Windows）
 
 ---
@@ -352,7 +363,7 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 | P0 | 实现搜索功能 | ✅ 已完成 | 搜索本地 Asset 表 |
 | P0 | 实现买入/卖出弹窗 | ✅ 已完成 | 交易表单 |
 | P1 | 添加配置项 InvestmentAdminUid | ✅ 已完成 | 控制管理按钮可见性 |
-| P1 | 全局资产管理页面 | ⬜ 待做 | 放在数据管理菜单 |
+| P1 | 全局资产管理页面 | ✅ 已完成 | 管理员弹窗内 CRUD（搜索+行业筛选+新增/编辑/删除） |
 | P2 | Asset 表初始化脚本 | ⬜ 待做 | 全量拉取基金/股票数据 |
 | P2 | Cron 定时同步 | ⬜ 待做 | 每季度增量更新 |
 
@@ -577,4 +588,50 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 - 继续阶段 3：其他页面开发（OverviewPage → TransactionsPage → PortfolioPage → AnalysisPage）
 - 参考文件：`src/stores/investment.ts`、`src/lib/services.ts`、`src/models/investment.ts`
 - 构建验证方式：`.\build.bat backend --no-lint --no-test`（Windows）/ `bash build.sh backend --no-lint --no-test`（macOS/Linux）
-- 前端构建验证：`npm run build`
+- 前端构建验证：`npm run lint`
+
+### 会话 9（2026-06-03 ~ 2026-06-04）
+
+完成内容：
+1. AssetsPage 修复合并冲突后持续完善
+   - 修复合并冲突导致的全部 TS 编译错误（重复声明、缺失函数/变量）
+   - 补全缺失函数：checkAdmin、showManageButton、submitTransaction 等
+   - 对照设计稿实现：搜索栏+结果浮层、持仓/自选双 Tab 表格、汇总栏、买卖/详情对话框
+2. UI 调整（根据用户反馈逐项优化）
+   - Tab 栏+表格合并为单个 v-card（参考记账模式）
+   - 分页器改为记账模式样式（只保留 PaginationButtons，去掉 v-select）
+   - 表头去掉排序箭头（sortable: false）
+   - 市场列后加行业列（title 带 ▾ 筛选 icon）
+   - 搜索图标改为 mdiMagnify SVG（@mdi/js 导入，density=compact）
+   - 分页 totalPageCount 加 Math.max(1, ...) 兜底
+   - 代码列去掉头像
+   - 导航栏标题自动同步路由（MainLayout.vue watch currentRoutePath）
+   - Tab 数字用 v-chip size="small" variant="tonal"
+3. i18n 补全
+   - Industry 及 10 个行业分类中英文 key
+   - asset.SearchAssetsByNameOrCode、asset.AssetName、asset.TotalMarketValue 等
+4. 技术决策
+   - isInvestmentMode 不持久化到 localStorage，完全由 URL 路由决定
+   - i18n 投资专属 key 用 `asset.` 嵌套对象包裹
+   - 36 个投资模块专属 key 用户说后面再迁移到 asset. 下
+
+### 会话 10（2026-06-04）
+
+完成内容：
+1. 全局资产管理 CRUD（前后端一起实现）
+   - 后端：AssetDeleteRequest model、DeleteAsset/GetAllAssetsCount service 方法
+   - 后端：GlobalAssetListHandler/ModifyHandler/DeleteHandler（asset.go + investment.go）
+   - 后端：注册 list.json/modify.json/delete.json 路由（共 26 个端点）
+   - 前端：AssetModifyRequest/DeleteRequest/ListRequest/ListResponse 类型
+   - 前端：listGlobalAssets/modifyGlobalAsset/deleteGlobalAsset API（共 24 个投资 API）
+   - 前端：管理弹窗完整 CRUD（搜索+行业筛选表格、新增/编辑表单、删除确认）
+   - i18n：新增 AssetCode、NoAssetsFound、ConfirmDeleteAsset
+2. 后端 API 端点统计（共 26 个）
+   - global_assets: search/get/list/add/modify/delete（6 个）
+   - user_assets: list/add/remove（3 个）
+   - transactions: list/get/add/modify/delete（5 个）
+   - market_data: latest/list/add/modify/refresh/init/estimate（7 个）
+   - analysis: holdings/overview（2 个）
+   - admin: check（1 个）
+   - overview: 策略页（2 个，非本次）
+3. 验证：后端 `go build` + `go test` 通过，前端 `npm run lint` 零错误
