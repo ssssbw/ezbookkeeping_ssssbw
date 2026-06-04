@@ -2791,9 +2791,12 @@
     "asset": {
         "SearchAssetsByNameOrCode": "搜索资产名称或代码",
         "AssetName": "资产名称",
+        "AssetCode": "资产代码",
         "TotalMarketValue": "总市值",
         "ItemsPerPage": "每页显示",
         "DataDelayed15Minutes": "数据延迟 15 分钟",
-        "Global Asset Management": "全局资产管理"
+        "Global Asset Management": "全局资产管理",
+        "NoAssetsFound": "未找到资产",
+        "ConfirmDeleteAsset": "确定要删除"
     }
 }

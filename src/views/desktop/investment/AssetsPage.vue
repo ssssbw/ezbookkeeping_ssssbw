@@ -491,21 +491,132 @@
             </v-dialog>
 
             <!-- Admin Dialog -->
-            <v-dialog v-model="adminDialog" max-width="600">
+            <v-dialog v-model="adminDialog" max-width="900" scrollable>
                 <v-card>
                     <v-card-title class="d-flex align-center">
                         <span class="text-h6">{{ tt('asset.Global Asset Management') }}</span>
                         <v-spacer />
                         <v-btn variant="text" icon="mdi-close" density="compact" @click="adminDialog = false" />
                     </v-card-title>
-                    <v-card-text>
-                        <div class="text-body-2 text-medium-emphasis">
-                            {{ tt('asset.Global Asset Management') }}
+                    <v-divider />
+                    <v-card-text class="pa-0">
+                        <div class="pa-4 pb-2">
+                            <div class="d-flex ga-3 align-center">
+                                <v-text-field
+                                    v-model="adminSearchKeyword"
+                                    :prepend-inner-icon="mdiMagnify"
+                                    density="compact"
+                                    :placeholder="tt('asset.SearchAssetsByNameOrCode')"
+                                    hide-details
+                                    clearable
+                                    variant="outlined"
+                                    style="max-width: 360px"
+                                    @update:model-value="onAdminSearchChange"
+                                />
+                                <v-select
+                                    v-model="adminIndustryFilter"
+                                    density="compact"
+                                    :placeholder="tt('Industry')"
+                                    :items="adminIndustryOptions"
+                                    item-title="label"
+                                    item-value="value"
+                                    clearable
+                                    hide-details
+                                    variant="outlined"
+                                    style="max-width: 180px"
+                                />
+                                <v-spacer />
+                                <v-btn color="primary" variant="tonal" @click="onAssetAddClick">
+                                    {{ tt('Add') }}
+                                </v-btn>
+                            </div>
                         </div>
+
+                        <v-data-table
+                            :headers="adminHeaders"
+                            :items="filteredAdminAssets"
+                            :loading="adminLoading"
+                            :hover="true"
+                            item-value="id"
+                            density="compact"
+                            class="admin-table"
+                        >
+                            <template #item.code="{ item }">
+                                <span class="text-body-2 font-weight-medium">{{ item.code }}</span>
+                            </template>
+                            <template #item.name="{ item }">
+                                <span class="text-body-2">{{ item.name }}</span>
+                            </template>
+                            <template #item.market="{ item }">
+                                <span class="text-body-2">{{ formatMarket(item.market) }}</span>
+                            </template>
+                            <template #item.industry="{ item }">
+                                <span v-if="item.industry" class="text-body-2">{{ formatIndustry(item.industry) }}</span>
+                                <span v-else class="text-medium-emphasis">--</span>
+                            </template>
+                            <template #item.actions="{ item }">
+                                <div class="d-flex ga-1">
+                                    <v-btn size="x-small" variant="text" icon="mdi-pencil" @click.stop="onAssetEditClick(item)" />
+                                    <v-btn size="x-small" variant="text" icon="mdi-delete" color="error" @click.stop="onAssetDeleteClick(item)" />
+                                </div>
+                            </template>
+                            <template #loading>
+                                <v-skeleton-loader type="table-row@10" :loading="true" />
+                            </template>
+                            <template #no-data>
+                                <div class="text-center py-6 text-medium-emphasis">{{ tt('asset.NoAssetsFound') }}</div>
+                            </template>
+                        </v-data-table>
                     </v-card-text>
+                    <v-divider />
                     <v-card-actions>
                         <v-spacer />
                         <v-btn variant="text" @click="adminDialog = false">{{ tt('Close') }}</v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
+
+            <!-- Asset Create/Edit Dialog -->
+            <v-dialog v-model="assetFormDialog" max-width="500">
+                <v-card>
+                    <v-card-title class="d-flex align-center">
+                        <span class="text-h6">{{ assetFormMode === 'create' ? tt('Add') : tt('Edit') }}</span>
+                        <v-spacer />
+                        <v-btn variant="text" icon="mdi-close" density="compact" @click="assetFormDialog = false" />
+                    </v-card-title>
+                    <v-divider />
+                    <v-card-text class="pa-4">
+                        <v-text-field v-model="assetForm.code" :label="tt('asset.AssetCode')" density="compact" variant="outlined" :rules="[v => !!v || 'Required']" />
+                        <v-text-field v-model="assetForm.name" :label="tt('asset.AssetName')" density="compact" variant="outlined" :rules="[v => !!v || 'Required']" class="mt-3" />
+                        <div class="d-flex ga-3 mt-3">
+                            <v-select v-model="assetForm.market" :label="tt('Market')" density="compact" variant="outlined" :items="marketOptions" style="flex: 1" />
+                            <v-select v-model="assetForm.category" :label="tt('Category')" density="compact" variant="outlined" :items="categoryOptions" style="flex: 1" />
+                        </div>
+                        <div class="d-flex ga-3 mt-3">
+                            <v-text-field v-model="assetForm.currency" :label="tt('Currency')" density="compact" variant="outlined" style="flex: 1" />
+                            <v-select v-model="assetForm.industry" :label="tt('Industry')" density="compact" variant="outlined" :items="industryFormOptions" clearable style="flex: 1" />
+                        </div>
+                    </v-card-text>
+                    <v-divider />
+                    <v-card-actions>
+                        <v-spacer />
+                        <v-btn variant="text" @click="assetFormDialog = false">{{ tt('Cancel') }}</v-btn>
+                        <v-btn color="primary" variant="tonal" :loading="assetFormSaving" :disabled="!isAssetFormValid" @click="onAssetFormSubmit">{{ tt('Save') }}</v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
+
+            <!-- Asset Delete Confirm Dialog -->
+            <v-dialog v-model="assetDeleteDialog" max-width="400">
+                <v-card>
+                    <v-card-title>{{ tt('Confirm') }}</v-card-title>
+                    <v-card-text>
+                        <span class="text-body-2">{{ tt('asset.ConfirmDeleteAsset') }} "{{ assetToDelete?.name }}" ?</span>
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-spacer />
+                        <v-btn variant="text" @click="assetDeleteDialog = false">{{ tt('Cancel') }}</v-btn>
+                        <v-btn color="error" variant="tonal" :loading="assetDeleteSaving" @click="onAssetDeleteConfirm">{{ tt('Delete') }}</v-btn>
                     </v-card-actions>
                 </v-card>
             </v-dialog>
@@ -530,7 +641,8 @@ import {
     InvestmentHolding,
     InvestmentUserAsset,
     InvestmentTransactionItem,
-    type AssetInfoResponse
+    type AssetInfoResponse,
+    type AssetModifyRequest
 } from '@/models/investment.ts';
 
 import { mdiMagnify } from '@mdi/js';
@@ -554,6 +666,69 @@ const detailDialog = ref<boolean>(false);
 const selectedItem = ref<DisplayAsset | null>(null);
 const showManageButton = ref<boolean>(false);
 const adminDialog = ref<boolean>(false);
+const adminLoading = ref<boolean>(false);
+const adminSearchKeyword = ref<string>('');
+const adminIndustryFilter = ref<string>('');
+const adminAssets = ref<AssetInfoResponse[]>([]);
+const assetFormDialog = ref<boolean>(false);
+const assetFormMode = ref<'create' | 'edit'>('create');
+const assetFormSaving = ref<boolean>(false);
+const assetForm = ref({
+    id: '',
+    code: '',
+    name: '',
+    market: InvestmentMarket.CN as number,
+    category: AssetCategory.Equity as string,
+    currency: 'CNY',
+    industry: ''
+});
+const assetDeleteDialog = ref<boolean>(false);
+const assetDeleteSaving = ref<boolean>(false);
+const assetToDelete = ref<AssetInfoResponse | null>(null);
+
+const adminHeaders = [
+    { key: 'code', title: tt('asset.AssetCode'), sortable: false },
+    { key: 'name', title: tt('asset.AssetName'), sortable: false },
+    { key: 'market', title: tt('Market'), sortable: false },
+    { key: 'category', title: tt('Category'), sortable: false },
+    { key: 'industry', title: tt('Industry') + ' ▾', sortable: false },
+    { key: 'currency', title: tt('Currency'), sortable: false },
+    { key: 'actions', title: '', sortable: false, width: '100' }
+];
+
+const adminIndustryOptions = computed(() => {
+    const industries = new Set<string>();
+    adminAssets.value.forEach(a => { if (a.industry) industries.add(a.industry); });
+    return Array.from(industries).sort().map(v => ({ label: formatIndustry(v), value: v }));
+});
+
+const filteredAdminAssets = computed(() => {
+    let result = adminAssets.value;
+    if (adminIndustryFilter.value) {
+        result = result.filter(a => a.industry === adminIndustryFilter.value);
+    }
+    return result;
+});
+
+const marketOptions = [
+    { title: 'A股', value: InvestmentMarket.CN },
+    { title: '港股', value: InvestmentMarket.HK },
+    { title: '美股', value: InvestmentMarket.US }
+];
+
+const categoryOptions = [
+    { title: tt('Equity'), value: AssetCategory.Equity },
+    { title: tt('Fixed Income'), value: AssetCategory.FixedIncome },
+    { title: tt('Commodity'), value: AssetCategory.Commodity },
+    { title: tt('Digital'), value: AssetCategory.Digital }
+];
+
+const industryFormOptions = ['technology', 'healthcare', 'consumer', 'finance', 'energy', 'industrial', 'real_estate', 'materials', 'utilities', 'telecom'].map(v => ({
+    title: formatIndustry(v),
+    value: v
+}));
+
+const isAssetFormValid = computed(() => !!assetForm.value.code && !!assetForm.value.name);
 
 // --- Search State ---
 const searchResults = ref<AssetInfoResponse[]>([]);
@@ -937,8 +1112,112 @@ function onSellClick(item: DisplayAsset): void {
     transactionDialog.value = true;
 }
 
-function onManageClick(): void {
+async function onManageClick(): Promise<void> {
     adminDialog.value = true;
+    adminSearchKeyword.value = '';
+    adminIndustryFilter.value = '';
+    await loadAdminAssets();
+}
+
+async function loadAdminAssets(): Promise<void> {
+    adminLoading.value = true;
+    try {
+        const resp = await services.listGlobalAssets({
+            keyword: adminSearchKeyword.value || undefined
+        });
+        adminAssets.value = resp.data?.result?.assets || [];
+    } catch (e) {
+        logger.error('Failed to load admin assets', e);
+        adminAssets.value = [];
+    } finally {
+        adminLoading.value = false;
+    }
+}
+
+function onAdminSearchChange(): void {
+    loadAdminAssets();
+}
+
+function onAssetAddClick(): void {
+    assetFormMode.value = 'create';
+    assetForm.value = {
+        id: '',
+        code: '',
+        name: '',
+        market: InvestmentMarket.CN,
+        category: AssetCategory.Equity,
+        currency: 'CNY',
+        industry: ''
+    };
+    assetFormDialog.value = true;
+}
+
+function onAssetEditClick(asset: AssetInfoResponse): void {
+    assetFormMode.value = 'edit';
+    assetForm.value = {
+        id: asset.id,
+        code: asset.code,
+        name: asset.name,
+        market: asset.market,
+        category: asset.category,
+        currency: asset.currency,
+        industry: asset.industry || ''
+    };
+    assetFormDialog.value = true;
+}
+
+function onAssetDeleteClick(asset: AssetInfoResponse): void {
+    assetToDelete.value = asset;
+    assetDeleteDialog.value = true;
+}
+
+async function onAssetFormSubmit(): Promise<void> {
+    if (!isAssetFormValid.value) return;
+    assetFormSaving.value = true;
+    try {
+        if (assetFormMode.value === 'create') {
+            await services.addGlobalAsset({
+                code: assetForm.value.code,
+                market: assetForm.value.market,
+                name: assetForm.value.name,
+                category: assetForm.value.category,
+                currency: assetForm.value.currency,
+                industry: assetForm.value.industry || undefined
+            });
+        } else {
+            const req: AssetModifyRequest = {
+                id: assetForm.value.id,
+                code: assetForm.value.code,
+                market: assetForm.value.market,
+                name: assetForm.value.name,
+                category: assetForm.value.category,
+                currency: assetForm.value.currency,
+                industry: assetForm.value.industry || undefined
+            };
+            await services.modifyGlobalAsset(req);
+        }
+        assetFormDialog.value = false;
+        await loadAdminAssets();
+    } catch (e) {
+        logger.error('Failed to save asset', e);
+    } finally {
+        assetFormSaving.value = false;
+    }
+}
+
+async function onAssetDeleteConfirm(): Promise<void> {
+    if (!assetToDelete.value) return;
+    assetDeleteSaving.value = true;
+    try {
+        await services.deleteGlobalAsset({ id: assetToDelete.value.id });
+        assetDeleteDialog.value = false;
+        assetToDelete.value = null;
+        await loadAdminAssets();
+    } catch (e) {
+        logger.error('Failed to delete asset', e);
+    } finally {
+        assetDeleteSaving.value = false;
+    }
 }
 
 // --- Submit Transaction ---

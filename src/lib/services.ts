@@ -45,6 +45,10 @@ import type {
     AssetSearchRequest,
     AssetGetRequest,
     AssetCreateRequest,
+    AssetModifyRequest,
+    AssetDeleteRequest,
+    AssetListRequest,
+    AssetListResponse,
     AssetInfoResponse,
     UserAssetListRequest,
     UserAssetAddRequest,
@@ -1000,6 +1004,22 @@ export default {
     },
     addGlobalAsset: (req: AssetCreateRequest): ApiResponsePromise<AssetInfoResponse> => {
         return axios.post<ApiResponse<AssetInfoResponse>>('v1/investment/global_assets/add.json', req);
+    },
+    listGlobalAssets: (req?: AssetListRequest): ApiResponsePromise<AssetListResponse> => {
+        let url = 'v1/investment/global_assets/list.json';
+        const params: string[] = [];
+        if (req?.category) { params.push('category=' + req.category); }
+        if (req?.market) { params.push('market=' + req.market); }
+        if (req?.industry) { params.push('industry=' + req.industry); }
+        if (req?.keyword) { params.push('keyword=' + encodeURIComponent(req.keyword)); }
+        if (params.length > 0) { url += '?' + params.join('&'); }
+        return axios.get<ApiResponse<AssetListResponse>>(url);
+    },
+    modifyGlobalAsset: (req: AssetModifyRequest): ApiResponsePromise<AssetInfoResponse> => {
+        return axios.post<ApiResponse<AssetInfoResponse>>('v1/investment/global_assets/modify.json', req);
+    },
+    deleteGlobalAsset: (req: AssetDeleteRequest): ApiResponsePromise<boolean> => {
+        return axios.post<ApiResponse<boolean>>('v1/investment/global_assets/delete.json', req);
     },
 
     // Investment - User Assets

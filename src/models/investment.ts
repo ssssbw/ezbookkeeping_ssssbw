@@ -53,6 +53,34 @@ export interface AssetCreateRequest {
     readonly extraInfo?: string;
 }
 
+export interface AssetModifyRequest {
+    readonly id: string;
+    readonly code: string;
+    readonly market: number;
+    readonly name: string;
+    readonly category: string;
+    readonly currency: string;
+    readonly industry?: string;
+    readonly tags?: string;
+    readonly extraInfo?: string;
+}
+
+export interface AssetDeleteRequest {
+    readonly id: string;
+}
+
+export interface AssetListRequest {
+    readonly category?: string;
+    readonly market?: number;
+    readonly industry?: string;
+    readonly keyword?: string;
+}
+
+export interface AssetListResponse {
+    readonly totalCount: number;
+    readonly assets: AssetInfoResponse[];
+}
+
 export interface UserAssetInfoResponse {
     readonly id: string;
     readonly assetId: string;

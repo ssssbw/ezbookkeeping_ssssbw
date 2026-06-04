@@ -2791,9 +2791,12 @@
     "asset": {
         "SearchAssetsByNameOrCode": "Search assets by name or code",
         "AssetName": "Asset Name",
+        "AssetCode": "Asset Code",
         "TotalMarketValue": "Total Market Value",
         "ItemsPerPage": "Items Per Page",
         "DataDelayed15Minutes": "Data delayed 15 minutes",
-        "Global Asset Management": "Global Asset Management"
+        "Global Asset Management": "Global Asset Management",
+        "NoAssetsFound": "No assets found",
+        "ConfirmDeleteAsset": "Are you sure you want to delete"
     }
 }
