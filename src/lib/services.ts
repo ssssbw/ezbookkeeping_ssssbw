@@ -1018,8 +1018,21 @@ export default {
     modifyGlobalAsset: (req: AssetModifyRequest): ApiResponsePromise<AssetInfoResponse> => {
         return axios.post<ApiResponse<AssetInfoResponse>>('v1/investment/global_assets/modify.json', req);
     },
-    deleteGlobalAsset: (req: AssetDeleteRequest): ApiResponsePromise<boolean> => {
+deleteGlobalAsset: (req: AssetDeleteRequest): ApiResponsePromise<boolean> => {
         return axios.post<ApiResponse<boolean>>('v1/investment/global_assets/delete.json', req);
+    },
+    syncGlobalAssets: (): ApiResponsePromise<{
+        fundsAdded: number;
+        stocksAdded: number;
+        etfsAdded: number;
+        totalAdded: number;
+    }> => {
+        return axios.post<ApiResponse<{
+            fundsAdded: number;
+            stocksAdded: number;
+            etfsAdded: number;
+            totalAdded: number;
+        }>>('v1/investment/global_assets/sync.json');
     },
 
     // Investment - User Assets

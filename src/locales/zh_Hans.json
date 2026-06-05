@@ -2797,6 +2797,12 @@
         "DataDelayed15Minutes": "数据延迟 15 分钟",
         "Global Asset Management": "全局资产管理",
         "NoAssetsFound": "未找到资产",
-        "ConfirmDeleteAsset": "确定要删除"
+        "ConfirmDeleteAsset": "确定要删除",
+        "Sync Assets": "同步资产",
+        "Syncing assets from data source...": "正在从数据源同步资产...",
+        "Sync complete": "同步完成",
+        "assets added": "个资产已添加",
+        "Sync failed": "同步失败",
+        "SubCategory": "子分类"
     }
 }

@@ -2797,6 +2797,12 @@
         "DataDelayed15Minutes": "Data delayed 15 minutes",
         "Global Asset Management": "Global Asset Management",
         "NoAssetsFound": "No assets found",
-        "ConfirmDeleteAsset": "Are you sure you want to delete"
+        "ConfirmDeleteAsset": "Are you sure you want to delete",
+        "Sync Assets": "Sync Assets",
+        "Syncing assets from data source...": "Syncing assets from data source...",
+        "Sync complete": "Sync complete",
+        "assets added": "assets added",
+        "Sync failed": "Sync failed",
+        "SubCategory": "Sub Category"
     }
 }

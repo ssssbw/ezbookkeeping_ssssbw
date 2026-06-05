@@ -27,6 +27,7 @@ export interface AssetInfoResponse {
     readonly market: number;
     readonly name: string;
     readonly category: string;
+    readonly subCategory?: string;
     readonly currency: string;
     readonly industry?: string;
     readonly tags?: string;

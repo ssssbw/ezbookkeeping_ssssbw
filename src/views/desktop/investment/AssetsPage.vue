@@ -529,6 +529,16 @@
                                 <v-btn color="primary" variant="tonal" @click="onAssetAddClick">
                                     {{ tt('Add') }}
                                 </v-btn>
+                                <v-btn
+                                    variant="tonal"
+                                    color="secondary"
+                                    :loading="syncingAssets"
+                                    :disabled="syncingAssets"
+                                    @click="onSyncAssets"
+                                >
+                                    <v-icon start size="small">mdi-database-sync</v-icon>
+                                    {{ tt('asset.Sync Assets') }}
+                                </v-btn>
                             </div>
                         </div>
 
@@ -552,6 +562,10 @@
                             </template>
                             <template #item.industry="{ item }">
                                 <span v-if="item.industry" class="text-body-2">{{ formatIndustry(item.industry) }}</span>
+                                <span v-else class="text-medium-emphasis">--</span>
+                            </template>
+                            <template #item.subCategory="{ item }">
+                                <span v-if="item.subCategory" class="text-body-2">{{ item.subCategory }}</span>
                                 <span v-else class="text-medium-emphasis">--</span>
                             </template>
                             <template #item.actions="{ item }">
@@ -685,6 +699,8 @@ const assetForm = ref({
 const assetDeleteDialog = ref<boolean>(false);
 const assetDeleteSaving = ref<boolean>(false);
 const assetToDelete = ref<AssetInfoResponse | null>(null);
+const syncingAssets = ref<boolean>(false);
+const syncResult = ref<{ fundsAdded: number; stocksAdded: number; etfsAdded: number; totalAdded: number } | null>(null);
 
 const adminHeaders = [
     { key: 'code', title: tt('asset.AssetCode'), sortable: false },
@@ -692,6 +708,7 @@ const adminHeaders = [
     { key: 'market', title: tt('Market'), sortable: false },
     { key: 'category', title: tt('Category'), sortable: false },
     { key: 'industry', title: tt('Industry') + ' ▾', sortable: false },
+    { key: 'subCategory', title: tt('asset.SubCategory'), sortable: false },
     { key: 'currency', title: tt('Currency'), sortable: false },
     { key: 'actions', title: '', sortable: false, width: '100' }
 ];
@@ -1117,6 +1134,23 @@ async function onManageClick(): Promise<void> {
     adminSearchKeyword.value = '';
     adminIndustryFilter.value = '';
     await loadAdminAssets();
+}
+
+async function onSyncAssets(): Promise<void> {
+    syncingAssets.value = true;
+    syncResult.value = null;
+    try {
+        const resp = await services.syncGlobalAssets();
+        const data = resp.data?.result;
+        if (data) {
+            syncResult.value = data;
+            await loadAdminAssets();
+        }
+    } catch (e) {
+        logger.error('Failed to sync assets', e);
+    } finally {
+        syncingAssets.value = false;
+    }
 }
 
 async function loadAdminAssets(): Promise<void> {
