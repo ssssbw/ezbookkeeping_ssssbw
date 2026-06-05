@@ -86,6 +86,7 @@ func (c *CronJobSchedulerContainer) registerAllJobs(ctx core.Context, config *se
 	}
 
 	Container.registerIntervalJob(ctx, FetchMarketDataJob)
+	Container.registerIntervalJob(ctx, SyncAssetsJob)
 }
 
 func (c *CronJobSchedulerContainer) registerIntervalJob(ctx core.Context, job *CronJob) {

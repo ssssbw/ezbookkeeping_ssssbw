@@ -42,3 +42,16 @@ var FetchMarketDataJob = &CronJob{
 		return services.MarketData.FetchAllActiveAssetsMarketData(c)
 	},
 }
+
+// SyncAssetsJob represents the cron job which periodically sync global assets from external data source
+var SyncAssetsJob = &CronJob{
+	Name:        "SyncAssets",
+	Description: "Quarterly sync global assets from external data source.",
+	Period: CronJobCronPeriod{
+		Expression: "0 2 1 1,4,7,10 *",
+	},
+	Run: func(c *core.CronContext) error {
+		_, err := services.AssetSync.SyncAllAssets(c)
+		return err
+	},
+}

@@ -19,6 +19,7 @@ type Asset struct {
 	Category        AssetCategory `xorm:"INDEX NOT NULL comment('类别: equity/fixed_income/commodity/digital')"`
 	Currency        string        `xorm:"NOT NULL comment('计价货币: CNY/USD/HKD')"`
 	Industry        string        `xorm:"INDEX comment('行业分类: technology/healthcare/consumer/financial/...')"`
+	SubCategory     string        `xorm:"INDEX" json:"subCategory"` // 子分类，如"混合型-灵活"
 	Tags            string        `xorm:"TEXT comment('标签JSON数组, 用于搜索')"`
 	ExtraInfo       string        `xorm:"TEXT comment('扩展信息JSON: 基金公司/经理/费率等')"`
 	CreatedUnixTime int64         `comment('创建时间')"`
@@ -59,9 +60,10 @@ type AssetCreateRequest struct {
 	Name      string           `json:"name" binding:"required,notBlank,max=64"`
 	Category  AssetCategory    `json:"category" binding:"required"`
 	Currency  string           `json:"currency" binding:"required,len=3,validCurrency"`
-	Industry  string           `json:"industry"`
-	Tags      string           `json:"tags"`
-	ExtraInfo string           `json:"extraInfo"`
+	Industry    string           `json:"industry"`
+	SubCategory string           `json:"subCategory"`
+	Tags        string           `json:"tags"`
+	ExtraInfo   string           `json:"extraInfo"`
 }
 
 // AssetModifyRequest represents all parameters of asset modification request
@@ -72,9 +74,10 @@ type AssetModifyRequest struct {
 	Name      string           `json:"name" binding:"required,notBlank,max=64"`
 	Category  AssetCategory    `json:"category" binding:"required"`
 	Currency  string           `json:"currency" binding:"required,len=3,validCurrency"`
-	Industry  string           `json:"industry"`
-	Tags      string           `json:"tags"`
-	ExtraInfo string           `json:"extraInfo"`
+	Industry    string           `json:"industry"`
+	SubCategory string           `json:"subCategory"`
+	Tags        string           `json:"tags"`
+	ExtraInfo   string           `json:"extraInfo"`
 }
 
 type AssetDeleteRequest struct {
@@ -88,9 +91,10 @@ type AssetInfoResponse struct {
 	Market    InvestmentMarket `json:"market"`
 	Name      string           `json:"name"`
 	Category  AssetCategory    `json:"category"`
-	Currency  string           `json:"currency"`
-	Industry  string           `json:"industry,omitempty"`
-	Tags      string           `json:"tags,omitempty"`
+	Currency    string           `json:"currency"`
+	Industry    string           `json:"industry,omitempty"`
+	SubCategory string           `json:"subCategory,omitempty"`
+	Tags        string           `json:"tags,omitempty"`
 	ExtraInfo string           `json:"extraInfo,omitempty"`
 }
 
@@ -101,10 +105,11 @@ func (a *Asset) ToAssetInfoResponse() *AssetInfoResponse {
 		Code:      a.Code,
 		Market:    a.Market,
 		Name:      a.Name,
-		Category:  a.Category,
-		Currency:  a.Currency,
-		Industry:  a.Industry,
-		Tags:      a.Tags,
+		Category:    a.Category,
+		Currency:    a.Currency,
+		Industry:    a.Industry,
+		SubCategory: a.SubCategory,
+		Tags:        a.Tags,
 		ExtraInfo: a.ExtraInfo,
 	}
 }

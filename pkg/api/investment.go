@@ -21,6 +21,7 @@ type InvestmentApi struct {
 	globalAssets *services.AssetService
 	userAssets   *services.UserAssetService
 	analysis     *services.InvestmentAnalysisService
+	assetSync    *services.AssetSyncService
 }
 
 var Investment = &InvestmentApi{
@@ -38,6 +39,7 @@ var Investment = &InvestmentApi{
 	globalAssets: services.Assets,
 	userAssets:   services.UserAssets,
 	analysis:     services.InvestmentAnalysis,
+	assetSync:    services.AssetSync,
 }
 
 // Transaction handlers
@@ -583,6 +585,14 @@ func (a *InvestmentApi) GlobalAssetDeleteHandler(c *core.WebContext) (any, *errs
 	log.Infof(c, "[investment.GlobalAssetDeleteHandler] asset \"id:%d\" has been deleted successfully", req.Id)
 
 	return true, nil
+}
+
+func (a *InvestmentApi) AssetSyncHandler(c *core.WebContext) (any, *errs.Error) {
+	result, err := a.assetSync.SyncAllAssets(c)
+	if err != nil {
+		return nil, errs.ErrOperationFailed
+	}
+	return result, nil
 }
 
 // User Asset handlers

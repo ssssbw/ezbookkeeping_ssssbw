@@ -68,6 +68,21 @@ func (p CronJobEvery15MinutesPeriod) ToJobDefinition() gocron.JobDefinition {
 	return gocron.CronJob(fmt.Sprintf("%d */15 * * * *", p.Second), true)
 }
 
+// CronJobCronPeriod represents the period of execution with a cron expression
+type CronJobCronPeriod struct {
+	Expression string
+}
+
+// GetInterval returns the interval time of the period of CronJobCronPeriod
+func (p CronJobCronPeriod) GetInterval() time.Duration {
+	return 24 * time.Hour
+}
+
+// ToJobDefinition returns the gocron job definition of the period of CronJobCronPeriod
+func (p CronJobCronPeriod) ToJobDefinition() gocron.JobDefinition {
+	return gocron.CronJob(p.Expression, true)
+}
+
 // GetInterval returns the interval time of the period of CronJobFixedTimePeriod
 func (p CronJobFixedTimePeriod) GetInterval() time.Duration {
 	return 0

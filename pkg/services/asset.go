@@ -138,7 +138,7 @@ func (s *AssetService) ModifyAsset(c core.Context, asset *models.Asset) error {
 	asset.UpdatedUnixTime = time.Now().Unix()
 
 	return s.UserDataDB(0).DoTransaction(c, func(sess *xorm.Session) error {
-		updatedRows, err := sess.ID(asset.AssetId).Cols("code", "market", "name", "category", "currency", "industry", "tags", "extra_info", "updated_unix_time").Update(asset)
+		updatedRows, err := sess.ID(asset.AssetId).Cols("code", "market", "name", "category", "currency", "industry", "sub_category", "tags", "extra_info", "updated_unix_time").Update(asset)
 
 		if err != nil {
 			return err

@@ -485,9 +485,10 @@ func startWebServer(c *core.CliContext) error {
 			apiV1Route.GET("/investment/global_assets/list.json", bindApi(api.Investment.GlobalAssetListHandler))
 			apiV1Route.POST("/investment/global_assets/add.json", bindApi(api.Investment.GlobalAssetCreateHandler))
 			apiV1Route.POST("/investment/global_assets/modify.json", bindApi(api.Investment.GlobalAssetModifyHandler))
-			apiV1Route.POST("/investment/global_assets/delete.json", bindApi(api.Investment.GlobalAssetDeleteHandler))
+		apiV1Route.POST("/investment/global_assets/delete.json", bindApi(api.Investment.GlobalAssetDeleteHandler))
+		apiV1Route.POST("/investment/global_assets/sync.json", bindApi(api.Investment.AssetSyncHandler))
 
-			// User Assets
+		// User Assets
 			apiV1Route.GET("/investment/user_assets/list.json", bindApi(api.Investment.UserAssetListHandler))
 			apiV1Route.POST("/investment/user_assets/add.json", bindApi(api.Investment.UserAssetAddHandler))
 			apiV1Route.POST("/investment/user_assets/remove.json", bindApi(api.Investment.UserAssetRemoveHandler))
