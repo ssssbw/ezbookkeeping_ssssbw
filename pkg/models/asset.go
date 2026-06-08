@@ -17,9 +17,9 @@ type Asset struct {
 	Market          InvestmentMarket `xorm:"UNIQUE(UQE_asset_code_market) NOT NULL comment('市场: 1=中国, 2=香港, 3=美国')"`
 	Name            string        `xorm:"NOT NULL comment('资产名称')"`
 	Category        AssetCategory `xorm:"INDEX NOT NULL comment('类别: equity/fixed_income/commodity/digital')"`
+	SubCategory     string        `xorm:"INDEX comment('子分类, 如混合型-灵活')" json:"subCategory"`
 	Currency        string        `xorm:"NOT NULL comment('计价货币: CNY/USD/HKD')"`
 	Industry        string        `xorm:"INDEX comment('行业分类: technology/healthcare/consumer/financial/...')"`
-	SubCategory     string        `xorm:"INDEX" json:"subCategory"` // 子分类，如"混合型-灵活"
 	Tags            string        `xorm:"TEXT comment('标签JSON数组, 用于搜索')"`
 	ExtraInfo       string        `xorm:"TEXT comment('扩展信息JSON: 基金公司/经理/费率等')"`
 	CreatedUnixTime int64         `comment('创建时间')"`

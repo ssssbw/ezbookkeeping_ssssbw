@@ -190,3 +190,17 @@ func (s *AssetService) GetAllAssetsCount(c core.Context, category models.AssetCa
 
 	return s.UserDataDB(0).NewSession(c).Where(condition, conditionParams...).Count(&models.Asset{})
 }
+
+func (s *AssetService) GetAllAssetCodeAndMarketMap(c core.Context, market models.InvestmentMarket) (map[string]bool, error) {
+	var assets []*models.Asset
+	err := s.UserDataDB(0).NewSession(c).Select("code").Where("market=?", market).Find(&assets)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]bool, len(assets))
+	for _, a := range assets {
+		result[a.Code] = true
+	}
+	return result, nil
+}

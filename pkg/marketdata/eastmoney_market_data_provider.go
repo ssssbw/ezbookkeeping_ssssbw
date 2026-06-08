@@ -3,7 +3,7 @@ package marketdata
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -40,7 +40,7 @@ func (p *EastMoneyMarketDataProvider) GetRealtimeEstimate(c core.Context, assetC
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func (p *EastMoneyMarketDataProvider) GetLatestPrice(c core.Context, assetCode s
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +150,7 @@ func (p *EastMoneyMarketDataProvider) GetHistoricalPrices(c core.Context, assetC
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +200,7 @@ func (p *EastMoneyMarketDataProvider) GetAllFundNames(c core.Context) (map[strin
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
