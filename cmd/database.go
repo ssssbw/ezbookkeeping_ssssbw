@@ -6,6 +6,8 @@
 package cmd
 
 import (
+	"strings"
+
 	"github.com/urfave/cli/v3"
 
 	"github.com/mayswind/ezbookkeeping/pkg/core"
@@ -189,7 +191,11 @@ func updateAllDatabaseTablesStructure(c *core.CliContext) error {
 	err = datastore.Container.UserDataStore.SyncStructs(new(models.MarketData))
 
 	if err != nil {
-		return err
+		if strings.Contains(err.Error(), "already exists") {
+			log.BootWarnf(c, "[database.updateAllDatabaseTablesStructure] market data table sync warning: %s (index already exists, ignoring)", err.Error())
+		} else {
+			return err
+		}
 	}
 
 	log.BootInfof(c, "[database.updateAllDatabaseTablesStructure] market data table maintained successfully")
@@ -197,7 +203,11 @@ func updateAllDatabaseTablesStructure(c *core.CliContext) error {
 	err = datastore.Container.UserDataStore.SyncStructs(new(models.Asset))
 
 	if err != nil {
-		return err
+		if strings.Contains(err.Error(), "already exists") {
+			log.BootWarnf(c, "[database.updateAllDatabaseTablesStructure] asset table sync warning: %s (index already exists, ignoring)", err.Error())
+		} else {
+			return err
+		}
 	}
 
 	log.BootInfof(c, "[database.updateAllDatabaseTablesStructure] asset table maintained successfully")
@@ -205,7 +215,11 @@ func updateAllDatabaseTablesStructure(c *core.CliContext) error {
 	err = datastore.Container.UserDataStore.SyncStructs(new(models.UserAsset))
 
 	if err != nil {
-		return err
+		if strings.Contains(err.Error(), "already exists") {
+			log.BootWarnf(c, "[database.updateAllDatabaseTablesStructure] user asset table sync warning: %s (index already exists, ignoring)", err.Error())
+		} else {
+			return err
+		}
 	}
 
 	log.BootInfof(c, "[database.updateAllDatabaseTablesStructure] user asset table maintained successfully")
