@@ -2787,6 +2787,7 @@
     "Materials": "材料",
     "Utilities": "公用事业",
     "Telecom": "电信",
+    "Other Industry": "其他行业",
 
     "asset": {
         "SearchAssetsByNameOrCode": "搜索资产名称或代码",

@@ -2787,6 +2787,7 @@
     "Materials": "Materials",
     "Utilities": "Utilities",
     "Telecom": "Telecom",
+    "Other Industry": "Other Industry",
 
     "asset": {
         "SearchAssetsByNameOrCode": "Search assets by name or code",

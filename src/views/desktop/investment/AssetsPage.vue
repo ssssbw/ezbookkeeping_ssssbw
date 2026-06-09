@@ -492,7 +492,7 @@
 
             <!-- Admin Dialog -->
             <v-dialog v-model="adminDialog" max-width="900" scrollable>
-                <v-card>
+                <v-card style="height: 70vh;">
                     <v-card-title class="d-flex align-center">
                         <span class="text-h6">{{ tt('asset.Global Asset Management') }}</span>
                         <v-spacer />
@@ -534,9 +534,9 @@
                                     color="secondary"
                                     :loading="syncingAssets"
                                     :disabled="syncingAssets"
+                                    :prepend-icon="mdiDatabaseSync"
                                     @click="onSyncAssets"
                                 >
-                                    <v-icon start size="small">mdi-database-sync</v-icon>
                                     {{ tt('asset.Sync Assets') }}
                                 </v-btn>
                             </div>
@@ -550,6 +550,8 @@
                             item-value="id"
                             density="compact"
                             class="admin-table"
+                            v-model:items-per-page="adminPerPage"
+                            v-model:page="adminPage"
                         >
                             <template #item.code="{ item }">
                                 <span class="text-body-2 font-weight-medium">{{ item.code }}</span>
@@ -559,6 +561,9 @@
                             </template>
                             <template #item.market="{ item }">
                                 <span class="text-body-2">{{ formatMarket(item.market) }}</span>
+                            </template>
+                            <template #item.category="{ item }">
+                                <span class="text-body-2">{{ formatCategory(item.category) }}</span>
                             </template>
                             <template #item.industry="{ item }">
                                 <span v-if="item.industry" class="text-body-2">{{ formatIndustry(item.industry) }}</span>
@@ -579,6 +584,11 @@
                             </template>
                             <template #no-data>
                                 <div class="text-center py-6 text-medium-emphasis">{{ tt('asset.NoAssetsFound') }}</div>
+                            </template>
+                            <template #bottom>
+                                <div class="mt-2 mb-4">
+                                    <pagination-buttons :totalPageCount="adminTotalPageCount" v-model="adminPage" />
+                                </div>
                             </template>
                         </v-data-table>
                     </v-card-text>
@@ -659,7 +669,7 @@ import {
     type AssetModifyRequest
 } from '@/models/investment.ts';
 
-import { mdiMagnify } from '@mdi/js';
+import { mdiMagnify, mdiDatabaseSync } from '@mdi/js';
 
 import services from '@/lib/services.ts';
 import logger from '@/lib/logger.ts';
@@ -681,6 +691,8 @@ const selectedItem = ref<DisplayAsset | null>(null);
 const showManageButton = ref<boolean>(false);
 const adminDialog = ref<boolean>(false);
 const adminLoading = ref<boolean>(false);
+const adminPage = ref<number>(1);
+const adminPerPage = ref<number>(15);
 const adminSearchKeyword = ref<string>('');
 const adminIndustryFilter = ref<string>('');
 const adminAssets = ref<AssetInfoResponse[]>([]);
@@ -725,6 +737,10 @@ const filteredAdminAssets = computed(() => {
         result = result.filter(a => a.industry === adminIndustryFilter.value);
     }
     return result;
+});
+
+const adminTotalPageCount = computed(() => {
+    return Math.max(1, Math.ceil(filteredAdminAssets.value.length / adminPerPage.value));
 });
 
 const marketOptions = [
@@ -1168,8 +1184,15 @@ async function loadAdminAssets(): Promise<void> {
     }
 }
 
+let adminSearchTimer: ReturnType<typeof setTimeout> | null = null;
+
 function onAdminSearchChange(): void {
-    loadAdminAssets();
+    if (adminSearchTimer) {
+        clearTimeout(adminSearchTimer);
+    }
+    adminSearchTimer = setTimeout(() => {
+        loadAdminAssets();
+    }, 300);
 }
 
 function onAssetAddClick(): void {
@@ -1386,7 +1409,8 @@ function formatIndustry(industry: string): string {
         'real_estate': tt('Real Estate'),
         'materials': tt('Materials'),
         'utilities': tt('Utilities'),
-        'telecom': tt('Telecom')
+        'telecom': tt('Telecom'),
+        'other': tt('Other Industry'),
     };
     return industryMap[industry] || industry;
 }
@@ -1475,6 +1499,7 @@ onMounted(async () => {
     right: 0;
     z-index: 100;
     margin-top: 4px;
+    min-height: 200px;
     max-height: 400px;
     overflow-y: auto;
 }
