@@ -491,7 +491,7 @@
             </v-dialog>
 
             <!-- Admin Dialog -->
-            <v-dialog v-model="adminDialog" max-width="900" scrollable>
+            <v-dialog v-model="adminDialog" max-width="1000" scrollable>
                 <v-card style="height: 70vh;">
                     <v-card-title class="d-flex align-center">
                         <span class="text-h6">{{ tt('asset.Global Asset Management') }}</span>
@@ -513,18 +513,6 @@
                                     style="max-width: 360px"
                                     @update:model-value="onAdminSearchChange"
                                 />
-                                <v-select
-                                    v-model="adminIndustryFilter"
-                                    density="compact"
-                                    :placeholder="tt('Industry')"
-                                    :items="adminIndustryOptions"
-                                    item-title="label"
-                                    item-value="value"
-                                    clearable
-                                    hide-details
-                                    variant="outlined"
-                                    style="max-width: 180px"
-                                />
                                 <v-spacer />
                                 <v-btn color="primary" variant="tonal" @click="onAssetAddClick">
                                     {{ tt('Add') }}
@@ -543,6 +531,9 @@
                         </div>
 
                         <v-data-table
+                            fixed-header
+                            fixed-footer
+                            multi-sort
                             :headers="adminHeaders"
                             :items="filteredAdminAssets"
                             :loading="adminLoading"
@@ -724,12 +715,6 @@ const adminHeaders = [
     { key: 'currency', title: tt('Currency'), sortable: false },
     { key: 'actions', title: '', sortable: false, width: '100' }
 ];
-
-const adminIndustryOptions = computed(() => {
-    const industries = new Set<string>();
-    adminAssets.value.forEach(a => { if (a.industry) industries.add(a.industry); });
-    return Array.from(industries).sort().map(v => ({ label: formatIndustry(v), value: v }));
-});
 
 const filteredAdminAssets = computed(() => {
     let result = adminAssets.value;
