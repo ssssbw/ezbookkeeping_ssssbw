@@ -25,6 +25,7 @@ type InvestmentHoldingInfo struct {
 	Currency      string           `json:"currency"`
 	Market        InvestmentMarket `json:"market"`
 	AccountId     int64            `json:"accountId,string"`
+	AccountName   string           `json:"accountName"`
 	Quantity      int64            `json:"quantity"`
 	AvgCostPrice  int64            `json:"avgCostPrice"`
 	TotalCost     int64            `json:"totalCost"`

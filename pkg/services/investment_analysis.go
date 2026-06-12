@@ -19,7 +19,7 @@ var InvestmentAnalysis = &InvestmentAnalysisService{
 	},
 }
 
-// GetHoldings returns computed holding info for all active user assets
+// GetHoldings returns computed holding info for all active user assets, grouped by asset+account
 func (s *InvestmentAnalysisService) GetHoldings(c core.Context, uid int64) ([]*models.InvestmentHoldingInfo, error) {
 	if uid <= 0 {
 		return nil, errs.ErrUserIdInvalid
@@ -36,17 +36,31 @@ func (s *InvestmentAnalysisService) GetHoldings(c core.Context, uid int64) ([]*m
 		return []*models.InvestmentHoldingInfo{}, nil
 	}
 
+	// 2. Batch load account names for this user's investment accounts
+	var accounts []*models.Account
+	err = s.UserDataDB(uid).NewSession(c).
+		Where("uid=? AND deleted=? AND category=?", uid, false, models.ACCOUNT_CATEGORY_INVESTMENT).
+		Find(&accounts)
+	if err != nil {
+		return nil, err
+	}
+
+	accountNameMap := make(map[int64]string, len(accounts))
+	for _, a := range accounts {
+		accountNameMap[a.AccountId] = a.Name
+	}
+
 	var holdings []*models.InvestmentHoldingInfo
 
 	for _, ua := range userAssets {
-		// 2a. Get asset info
+		// 3a. Get asset info
 		asset := &models.Asset{}
 		has, err := s.UserDataDB(0).NewSession(c).ID(ua.AssetId).Get(asset)
 		if err != nil || !has {
 			continue
 		}
 
-		// 2b. Get all non-deleted transactions for this asset, ordered by trade_time ASC
+		// 3b. Get all non-deleted transactions for this asset, ordered by trade_time ASC
 		var transactions []*models.InvestmentTransaction
 		err = s.UserDataDB(uid).NewSession(c).
 			Where("uid=? AND deleted=? AND asset_id=?", uid, false, ua.AssetId).
@@ -56,58 +70,57 @@ func (s *InvestmentAnalysisService) GetHoldings(c core.Context, uid int64) ([]*m
 			continue
 		}
 
-		// 2c. Walk through transactions maintaining running totals
-		var totalQuantity int64
-		var totalCost     int64
-		accountIdSet := make(map[int64]bool)
-		var lastAccountId int64
+		// 3c. Group transactions by accountId
+		type accountState struct {
+			totalQuantity int64
+			totalCost     int64
+		}
+		accountStates := make(map[int64]*accountState)
 
 		for _, tx := range transactions {
-			accountIdSet[tx.AccountId] = true
-			lastAccountId = tx.AccountId
+			state, ok := accountStates[tx.AccountId]
+			if !ok {
+				state = &accountState{}
+				accountStates[tx.AccountId] = state
+			}
 
 			switch tx.Type {
 			case models.INVESTMENT_TRANSACTION_TYPE_BUY:
-				totalQuantity += tx.Quantity
-				totalCost += tx.Amount + tx.Fee
+				state.totalQuantity += tx.Quantity
+				state.totalCost += tx.Amount + tx.Fee
 
 			case models.INVESTMENT_TRANSACTION_TYPE_SELL:
-				if totalQuantity > 0 {
-					sellCost := totalCost * tx.Quantity / totalQuantity
-					totalQuantity -= tx.Quantity
-					totalCost -= sellCost
+				if state.totalQuantity > 0 {
+					sellCost := state.totalCost * tx.Quantity / state.totalQuantity
+					state.totalQuantity -= tx.Quantity
+					state.totalCost -= sellCost
 				}
 
 			case models.INVESTMENT_TRANSACTION_TYPE_DIVIDEND_REINVEST:
-				totalQuantity += tx.Quantity
-				totalCost += tx.Amount
+				state.totalQuantity += tx.Quantity
+				state.totalCost += tx.Amount
 
 			case models.INVESTMENT_TRANSACTION_TYPE_SPLIT:
-				totalQuantity += tx.Quantity
+				state.totalQuantity += tx.Quantity
 				// totalCost unchanged for splits
 
 			case models.INVESTMENT_TRANSACTION_TYPE_CONVERSION_OUT:
-				if totalQuantity > 0 {
-					sellCost := totalCost * tx.Quantity / totalQuantity
-					totalQuantity -= tx.Quantity
-					totalCost -= sellCost
+				if state.totalQuantity > 0 {
+					sellCost := state.totalCost * tx.Quantity / state.totalQuantity
+					state.totalQuantity -= tx.Quantity
+					state.totalCost -= sellCost
 				}
 
 			case models.INVESTMENT_TRANSACTION_TYPE_CONVERSION_IN:
-				totalQuantity += tx.Quantity
-				totalCost += tx.Amount + tx.Fee
+				state.totalQuantity += tx.Quantity
+				state.totalCost += tx.Amount + tx.Fee
 
 			case models.INVESTMENT_TRANSACTION_TYPE_DIVIDEND_CASH:
 				// No holding change
 			}
 		}
 
-		// 2d. Skip if no holdings
-		if totalQuantity <= 0 {
-			continue
-		}
-
-		// 2e. Get latest market price
+		// 3d. Get latest market price
 		marketData := &models.MarketData{}
 		_, _ = s.UserDataDB(uid).NewSession(c).
 			Where("asset_id=?", ua.AssetId).
@@ -117,47 +130,42 @@ func (s *InvestmentAnalysisService) GetHoldings(c core.Context, uid int64) ([]*m
 
 		currentPrice := marketData.Price
 
-		// 2f. Compute derived metrics
-		marketValue := totalQuantity * currentPrice / 10000
-		unrealizedPnl := marketValue - totalCost
-		var returnRate int64
-		if totalCost > 0 {
-			returnRate = unrealizedPnl * 10000 / totalCost
-		}
-
-		// 2g. Determine accountId
-		accountId := lastAccountId
-		if len(accountIdSet) == 1 {
-			for id := range accountIdSet {
-				accountId = id
-				break
+		// 3e. Build one holding per account
+		for accountId, state := range accountStates {
+			if state.totalQuantity <= 0 {
+				continue
 			}
-		}
 
-		// 2h. Build holding info
-		var avgCostPrice int64
-		if totalQuantity > 0 {
-			avgCostPrice = totalCost * 10000 / totalQuantity
-		}
+			marketValue := state.totalQuantity * currentPrice / 10000
+			unrealizedPnl := marketValue - state.totalCost
+			var returnRate int64
+			if state.totalCost > 0 {
+				returnRate = unrealizedPnl * 10000 / state.totalCost
+			}
 
-		holding := &models.InvestmentHoldingInfo{
-			AssetId:       ua.AssetId,
-			AssetCode:     asset.Code,
-			AssetName:     asset.Name,
-			Category:      asset.Category,
-			Currency:      asset.Currency,
-			Market:        asset.Market,
-			AccountId:     accountId,
-			Quantity:      totalQuantity,
-			AvgCostPrice:  avgCostPrice,
-			TotalCost:     totalCost,
-			CurrentPrice:  currentPrice,
-			MarketValue:   marketValue,
-			UnrealizedPnl: unrealizedPnl,
-			ReturnRate:    returnRate,
-		}
+			var avgCostPrice int64
+			if state.totalQuantity > 0 {
+				avgCostPrice = state.totalCost * 10000 / state.totalQuantity
+			}
 
-		holdings = append(holdings, holding)
+			holdings = append(holdings, &models.InvestmentHoldingInfo{
+				AssetId:       ua.AssetId,
+				AssetCode:     asset.Code,
+				AssetName:     asset.Name,
+				Category:      asset.Category,
+				Currency:      asset.Currency,
+				Market:        asset.Market,
+				AccountId:     accountId,
+				AccountName:   accountNameMap[accountId],
+				Quantity:      state.totalQuantity,
+				AvgCostPrice:  avgCostPrice,
+				TotalCost:     state.totalCost,
+				CurrentPrice:  currentPrice,
+				MarketValue:   marketValue,
+				UnrealizedPnl: unrealizedPnl,
+				ReturnRate:    returnRate,
+			})
+		}
 	}
 
 	return holdings, nil

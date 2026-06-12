@@ -42,6 +42,78 @@ export const useInvestmentStore = defineStore('investment', () => {
         return holdings.value.length;
     });
 
+    const holdingsSummary = computed(() => {
+        let totalMarketValue = 0;
+        let totalCost = 0;
+        let totalUnrealizedPnl = 0;
+
+        for (const h of holdings.value) {
+            totalMarketValue += h.marketValue;
+            totalCost += h.totalCost;
+            totalUnrealizedPnl += h.unrealizedPnl;
+        }
+
+        const totalReturnRate = totalCost !== 0
+            ? Math.round((totalUnrealizedPnl / totalCost) * 10000)
+            : 0;
+
+        return { totalMarketValue, totalCost, totalUnrealizedPnl, totalReturnRate };
+    });
+
+    interface AggregatedHolding {
+        assetId: string;
+        assetCode: string;
+        assetName: string;
+        category: string;
+        market: number;
+        currency: string;
+        totalQuantity: number;
+        totalMarketValue: number;
+        totalCost: number;
+        unrealizedPnl: number;
+        weightedReturnRate: number;
+        holdings: InvestmentHolding[];
+    }
+
+    const aggregatedHoldings = computed<AggregatedHolding[]>(() => {
+        const map = new Map<string, AggregatedHolding>();
+
+        for (const h of holdings.value) {
+            let agg = map.get(h.assetId);
+            if (!agg) {
+                agg = {
+                    assetId: h.assetId,
+                    assetCode: h.assetCode,
+                    assetName: h.assetName,
+                    category: h.category,
+                    market: h.market,
+                    currency: h.currency,
+                    totalQuantity: 0,
+                    totalMarketValue: 0,
+                    totalCost: 0,
+                    unrealizedPnl: 0,
+                    weightedReturnRate: 0,
+                    holdings: [],
+                };
+                map.set(h.assetId, agg);
+            }
+
+            agg.totalQuantity += h.quantity;
+            agg.totalMarketValue += h.marketValue;
+            agg.totalCost += h.totalCost;
+            agg.unrealizedPnl += h.unrealizedPnl;
+            agg.holdings.push(h);
+        }
+
+        for (const agg of map.values()) {
+            agg.weightedReturnRate = agg.totalCost !== 0
+                ? Math.round((agg.unrealizedPnl / agg.totalCost) * 10000)
+                : 0;
+        }
+
+        return Array.from(map.values());
+    });
+
     function loadUserAssets({ force }: { force: boolean }): Promise<InvestmentUserAsset[]> {
         if (!force && !userAssetsStateInvalid.value) {
             return new Promise((resolve) => { resolve(userAssets.value); });
@@ -427,6 +499,8 @@ export const useInvestmentStore = defineStore('investment', () => {
         holdingsMap,
         holdingsStateInvalid,
         holdingsCount,
+        holdingsSummary,
+        aggregatedHoldings,
         overview,
         overviewStateInvalid,
         loadUserAssets,

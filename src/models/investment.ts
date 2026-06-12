@@ -405,6 +405,7 @@ export interface InvestmentHoldingResponse {
     readonly currency: string;
     readonly market: number;
     readonly accountId: string;
+    readonly accountName: string;
     readonly quantity: number;
     readonly avgCostPrice: number;
     readonly totalCost: number;
@@ -436,6 +437,7 @@ export class InvestmentHolding {
     public currency: string;
     public market: number;
     public accountId: string;
+    public accountName: string;
     public quantity: number;
     public avgCostPrice: number;
     public totalCost: number;
@@ -452,6 +454,7 @@ export class InvestmentHolding {
         this.currency = currency;
         this.market = market;
         this.accountId = '';
+        this.accountName = '';
         this.quantity = 0;
         this.avgCostPrice = 0;
         this.totalCost = 0;
@@ -464,6 +467,7 @@ export class InvestmentHolding {
     public static of(response: InvestmentHoldingResponse): InvestmentHolding {
         const holding = new InvestmentHolding(response.assetId, response.assetCode, response.assetName, response.category, response.currency, response.market);
         holding.accountId = response.accountId;
+        holding.accountName = response.accountName;
         holding.quantity = response.quantity;
         holding.avgCostPrice = response.avgCostPrice;
         holding.totalCost = response.totalCost;
