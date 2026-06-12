@@ -44,7 +44,7 @@
             <template #expanded-row="{ item }">
                 <tr v-for="h in item.holdings" :key="h.accountId" class="expanded-row">
                     <td :colspan="1" />
-                    <td class="text-body-2 text-medium-emphasis">{{ h.accountName || h.accountId }}</td>
+                    <td class="text-body-2 text-medium-emphasis">{{ getAccountName(h.accountId) }}</td>
                     <td />
                     <td />
                     <td class="text-body-2 text-end">{{ formatQuantity(h.quantity) }}</td>
@@ -84,6 +84,7 @@ import PaginationButtons from '@/components/desktop/PaginationButtons.vue';
 
 import { useI18n } from '@/locales/helpers.ts';
 import { useInvestmentStore } from '@/stores/investment.ts';
+import { useAccountsStore } from '@/stores/account.ts';
 
 import {
     formatMarket, formatQuantity, formatCurrencyValue,
@@ -92,6 +93,12 @@ import {
 
 const { tt } = useI18n();
 const investmentStore = useInvestmentStore();
+const accountsStore = useAccountsStore();
+
+function getAccountName(accountId: string): string {
+    const account = accountsStore.allAccounts.find(a => a.id === accountId);
+    return account?.name || accountId;
+}
 
 defineProps<{
     loading: boolean;

@@ -36,20 +36,6 @@ func (s *InvestmentAnalysisService) GetHoldings(c core.Context, uid int64) ([]*m
 		return []*models.InvestmentHoldingInfo{}, nil
 	}
 
-	// 2. Batch load account names for this user's investment accounts
-	var accounts []*models.Account
-	err = s.UserDataDB(uid).NewSession(c).
-		Where("uid=? AND deleted=? AND category=?", uid, false, models.ACCOUNT_CATEGORY_INVESTMENT).
-		Find(&accounts)
-	if err != nil {
-		return nil, err
-	}
-
-	accountNameMap := make(map[int64]string, len(accounts))
-	for _, a := range accounts {
-		accountNameMap[a.AccountId] = a.Name
-	}
-
 	var holdings []*models.InvestmentHoldingInfo
 
 	for _, ua := range userAssets {
@@ -156,7 +142,6 @@ func (s *InvestmentAnalysisService) GetHoldings(c core.Context, uid int64) ([]*m
 				Currency:      asset.Currency,
 				Market:        asset.Market,
 				AccountId:     accountId,
-				AccountName:   accountNameMap[accountId],
 				Quantity:      state.totalQuantity,
 				AvgCostPrice:  avgCostPrice,
 				TotalCost:     state.totalCost,

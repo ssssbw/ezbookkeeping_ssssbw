@@ -4,7 +4,7 @@
             <v-card-title class="d-flex align-center">
                 <span class="text-h6">{{ mode === 'create' ? tt('Add') : tt('Edit') }}</span>
                 <v-spacer />
-                <v-btn variant="text" icon="mdi-close" density="compact" @click="$emit('update:modelValue', false)" />
+                <v-btn variant="text" :icon="mdiClose" density="compact" @click="$emit('update:modelValue', false)" />
             </v-card-title>
             <v-divider />
             <v-card-text class="pa-4">
@@ -38,6 +38,7 @@ import { AssetCategory, InvestmentMarket, type AssetInfoResponse, type AssetModi
 
 import services from '@/lib/services.ts';
 import logger from '@/lib/logger.ts';
+import { mdiClose } from '@mdi/js';
 
 import { formatIndustry } from '../assetUtils.ts';
 

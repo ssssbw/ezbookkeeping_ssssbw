@@ -4,7 +4,7 @@
             <v-card-title class="d-flex align-center">
                 <span class="text-h6">{{ tt('asset.Global Asset Management') }}</span>
                 <v-spacer />
-                <v-btn variant="text" icon="mdi-close" density="compact" @click="$emit('update:modelValue', false)" />
+                <v-btn variant="text" :icon="mdiClose" density="compact" @click="$emit('update:modelValue', false)" />
             </v-card-title>
             <v-divider />
             <v-card-text class="pa-0">
@@ -73,8 +73,8 @@
                     </template>
                     <template #item.actions="{ item }">
                         <div class="d-flex ga-1">
-                            <v-btn size="x-small" variant="text" icon="mdi-pencil" @click.stop="onEditClick(item)" />
-                            <v-btn size="x-small" variant="text" icon="mdi-delete" color="error" @click.stop="onDeleteClick(item)" />
+                            <v-btn size="x-small" variant="text" :icon="mdiPencil" @click.stop="onEditClick(item)" />
+                            <v-btn size="x-small" variant="text" :icon="mdiDelete" color="error" @click.stop="onDeleteClick(item)" />
                         </div>
                     </template>
                     <template #loading>
@@ -123,7 +123,7 @@ import { useI18n } from '@/locales/helpers.ts';
 
 import type { AssetInfoResponse } from '@/models/investment.ts';
 
-import { mdiMagnify, mdiDatabaseSync } from '@mdi/js';
+import { mdiMagnify, mdiDatabaseSync, mdiClose, mdiPencil, mdiDelete } from '@mdi/js';
 
 import services from '@/lib/services.ts';
 import logger from '@/lib/logger.ts';

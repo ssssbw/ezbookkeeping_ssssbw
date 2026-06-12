@@ -60,6 +60,7 @@ import AssetAdminDialog from './assets/dialogs/AssetAdminDialog.vue';
 import { useI18n } from '@/locales/helpers.ts';
 
 import { useInvestmentStore } from '@/stores/investment.ts';
+import { useAccountsStore } from '@/stores/account.ts';
 
 import { InvestmentUserAsset, type AssetInfoResponse } from '@/models/investment.ts';
 
@@ -70,6 +71,7 @@ import type { DisplayAsset } from './assets/types.ts';
 
 const { tt } = useI18n();
 const investmentStore = useInvestmentStore();
+const accountsStore = useAccountsStore();
 
 const activeTab = ref<string>('holdings');
 const loading = ref<boolean>(true);
@@ -202,6 +204,7 @@ onMounted(async () => {
     loading.value = true;
     try {
         checkAdmin();
+        await accountsStore.loadAllAccounts({ force: false });
         await investmentStore.loadHoldings({ force: false });
         await loadWatchlist();
     } catch (error) {
