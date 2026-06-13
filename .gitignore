@@ -164,6 +164,9 @@ ezbookkeeping
 .env
 **/.env
 
+# Database files
+*.db
+
 # Other directories
 /data/
 /storage/
