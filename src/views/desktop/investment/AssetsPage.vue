@@ -130,7 +130,7 @@ function onWatchlistSelect(item: DisplayAsset): void {
 // --- Watchlist ---
 async function loadWatchlist(): Promise<void> {
     try {
-        const response = await services.getUserAssets({ is_watchlist: true });
+        const response = await services.getUserAssets({ is_active: true, is_watchlist: true });
         const data = response.data;
 
         if (!data || !data.success || !data.result) {

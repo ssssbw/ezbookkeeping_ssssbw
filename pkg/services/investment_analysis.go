@@ -27,7 +27,7 @@ func (s *InvestmentAnalysisService) GetHoldings(c core.Context, uid int64) ([]*m
 
 	// 1. Get all active user assets
 	var userAssets []*models.UserAsset
-	err := s.UserDataDB(uid).NewSession(c).Where("uid=? AND deleted=? AND is_active=?", uid, false, true).Find(&userAssets)
+	err := s.UserDataDB(uid).NewSession(c).Where("uid=? AND deleted=? AND is_active=? AND is_watchlist=?", uid, false, true, false).Find(&userAssets)
 	if err != nil {
 		return nil, err
 	}
