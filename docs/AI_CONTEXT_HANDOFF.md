@@ -191,10 +191,15 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 | 字段 | 类型 | XORM | 说明 |
 |------|------|------|------|
 | Id | int64 | PK | UUID |
-| Uid | int64 | INDEX(IDX_user_asset_uid_asset_id) | 用户 ID |
-| AssetId | int64 | INDEX(IDX_user_asset_uid_asset_id) | 资产 ID |
-| IsActive | bool | | 是否活跃 |
-| AddedUnixTime | int64 | | 添加时间 |
+| Uid | int64 | INDEX(IDX_user_asset_uid_asset_id) NOT NULL | 用户 ID |
+| AssetId | int64 | INDEX(IDX_user_asset_uid_asset_id) NOT NULL | 资产 ID |
+| Deleted | bool | NOT NULL | 软删除 |
+| IsActive | bool | NOT NULL | 是否活跃 |
+| IsWatchlist | bool | NOT NULL | 是否自选关注: true=自选, false=持仓 |
+| Comment | string | VARCHAR(255) NOT NULL | 备注 |
+| CreatedUnixTime | int64 | | 创建时间 |
+| UpdatedUnixTime | int64 | | 更新时间 |
+| DeletedUnixTime | int64 | | 删除时间 |
 
 #### InvestmentAsset（待废弃）
 
