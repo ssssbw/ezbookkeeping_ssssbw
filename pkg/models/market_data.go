@@ -21,7 +21,7 @@ type MarketDataListRequest struct {
 // MarketDataGetRequest represents all parameters of market data getting request
 type MarketDataGetRequest struct {
 	AssetId int64 `form:"asset_id,string" binding:"required,min=1"`
-	Date    int64 `form:"date" binding:"required,min=1"`
+	Date    int64 `form:"date"`
 }
 
 // MarketDataCreateRequest represents all parameters of market data creation request
