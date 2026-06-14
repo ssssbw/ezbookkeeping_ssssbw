@@ -35,18 +35,19 @@
                             <span class="text-body-2 text-medium-emphasis ml-2">{{ item.name }}</span>
                         </v-list-item-title>
                         <v-list-item-subtitle>
-                            <span class="text-caption text-medium-emphasis">{{ formatMarket(item.market, tt) }}</span>
+                            <span class="text-caption text-medium-emphasis">
+                                {{ formatCategory(item.category, tt) }} · {{ formatMarket(item.market, tt) }}
+                            </span>
                         </v-list-item-subtitle>
                         <template #append>
                             <v-btn
                                 v-if="!isInWatchlist(item.id)"
-                                size="x-small"
+                                size="small"
                                 variant="tonal"
                                 color="primary"
+                                :icon="mdiStarPlus"
                                 @mousedown.prevent.stop="addToWatchlist(item)"
-                            >
-                                +{{ tt('Watchlist') }}
-                            </v-btn>
+                            />
                         </template>
                     </v-list-item>
                 </v-list>
@@ -54,8 +55,9 @@
         </div>
         <v-btn
             v-if="showManageButton"
-            variant="outlined"
+            variant="tonal"
             color="primary"
+            :prepend-icon="mdiCogOutline"
             class="manage-btn ml-3"
             @click="$emit('manage')"
         >
@@ -72,12 +74,12 @@ import { useInvestmentStore } from '@/stores/investment.ts';
 
 import { type AssetInfoResponse } from '@/models/investment.ts';
 
-import { mdiMagnify } from '@mdi/js';
+import { mdiMagnify, mdiStarPlus, mdiCogOutline } from '@mdi/js';
 
 import services from '@/lib/services.ts';
 import logger from '@/lib/logger.ts';
 
-import { formatMarket, getCategoryColor } from './assetUtils.ts';
+import { formatMarket, formatCategory, getCategoryColor } from './assetUtils.ts';
 
 const props = defineProps<{
     showManageButton: boolean;

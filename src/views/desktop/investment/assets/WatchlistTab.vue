@@ -31,10 +31,8 @@
                 <span v-else class="text-medium-emphasis">--</span>
             </template>
             <template #item.actions="{ item }">
-                <div class="d-flex ga-1">
-                    <v-btn size="x-small" variant="tonal" color="error" @click.stop="removeFromWatchlist(item)">
-                        {{ tt('Remove') }}
-                    </v-btn>
+                <div class="d-flex ga-1 justify-end">
+                    <v-btn size="small" variant="text" color="error" :icon="mdiStarRemove" density="comfortable" @click.stop="removeFromWatchlist(item)" />
                 </div>
             </template>
             <template #loading>
@@ -65,6 +63,8 @@ import { useInvestmentStore } from '@/stores/investment.ts';
 import type { DisplayAsset } from './types.ts';
 
 import { formatMarket, formatIndustry, formatPrice } from './assetUtils.ts';
+
+import { mdiStarRemove } from '@mdi/js';
 
 import logger from '@/lib/logger.ts';
 
