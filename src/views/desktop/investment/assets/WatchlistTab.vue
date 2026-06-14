@@ -32,7 +32,10 @@
             </template>
             <template #item.actions="{ item }">
                 <div class="d-flex ga-1 justify-end">
-                    <v-btn size="small" variant="text" color="error" :icon="mdiStarRemove" density="comfortable" @click.stop="removeFromWatchlist(item)" />
+                    <v-btn size="small" variant="text" color="error" density="comfortable" @click.stop="removeFromWatchlist(item)">
+                        <v-icon :icon="mdiStarRemove" />
+                        <v-tooltip activator="parent" location="top">{{ tt('Remove from Watchlist') }}</v-tooltip>
+                    </v-btn>
                 </div>
             </template>
             <template #loading>

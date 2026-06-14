@@ -45,9 +45,11 @@
                                 size="small"
                                 variant="tonal"
                                 color="primary"
-                                :icon="mdiStarPlus"
                                 @mousedown.prevent.stop="addToWatchlist(item)"
-                            />
+                            >
+                                <v-icon :icon="mdiStarPlus" />
+                                <v-tooltip activator="parent" location="top">{{ tt('Add to Watchlist') }}</v-tooltip>
+                            </v-btn>
                         </template>
                     </v-list-item>
                 </v-list>

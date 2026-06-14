@@ -73,8 +73,14 @@
                     </template>
                     <template #item.actions="{ item }">
                         <div class="d-flex ga-1">
-                            <v-btn size="x-small" variant="text" :icon="mdiPencil" @click.stop="onEditClick(item)" />
-                            <v-btn size="x-small" variant="text" :icon="mdiDelete" color="error" @click.stop="onDeleteClick(item)" />
+                            <v-btn size="x-small" variant="text" @click.stop="onEditClick(item)">
+                                <v-icon :icon="mdiPencil" />
+                                <v-tooltip activator="parent" location="top">{{ tt('Edit') }}</v-tooltip>
+                            </v-btn>
+                            <v-btn size="x-small" variant="text" color="error" @click.stop="onDeleteClick(item)">
+                                <v-icon :icon="mdiDelete" />
+                                <v-tooltip activator="parent" location="top">{{ tt('Delete') }}</v-tooltip>
+                            </v-btn>
                         </div>
                     </template>
                     <template #loading>
