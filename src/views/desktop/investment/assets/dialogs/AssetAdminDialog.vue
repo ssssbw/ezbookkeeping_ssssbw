@@ -104,20 +104,16 @@
             @saved="loadAssets"
         />
 
-        <AssetDeleteConfirmDialog
-            v-model="deleteDialogVisible"
-            :asset="assetToDelete"
-            @deleted="loadAssets"
-        />
+        <confirm-dialog ref="confirmDialog" />
     </v-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, useTemplateRef } from 'vue';
 
 import PaginationButtons from '@/components/desktop/PaginationButtons.vue';
+import ConfirmDialog from '@/components/desktop/ConfirmDialog.vue';
 import AssetFormDialog from './AssetFormDialog.vue';
-import AssetDeleteConfirmDialog from './AssetDeleteConfirmDialog.vue';
 
 import { useI18n } from '@/locales/helpers.ts';
 
@@ -150,8 +146,9 @@ const perPage = ref<number>(15);
 const formDialogVisible = ref<boolean>(false);
 const formMode = ref<'create' | 'edit'>('create');
 const formAsset = ref<AssetInfoResponse | null>(null);
-const deleteDialogVisible = ref<boolean>(false);
-const assetToDelete = ref<AssetInfoResponse | null>(null);
+
+type ConfirmDialogType = InstanceType<typeof ConfirmDialog>;
+const confirmDialog = useTemplateRef<ConfirmDialogType>('confirmDialog');
 
 const headers = [
     { key: 'code', title: tt('asset.AssetCode'), sortable: false },
@@ -225,8 +222,16 @@ function onEditClick(asset: AssetInfoResponse): void {
     formDialogVisible.value = true;
 }
 
-function onDeleteClick(asset: AssetInfoResponse): void {
-    assetToDelete.value = asset;
-    deleteDialogVisible.value = true;
+async function onDeleteClick(asset: AssetInfoResponse): Promise<void> {
+    try {
+        await confirmDialog.value?.open(
+            tt('Confirm'),
+            tt('asset.ConfirmDeleteAsset') + ' "' + asset.name + '" ?'
+        );
+        await services.deleteGlobalAsset({ id: asset.id });
+        await loadAssets();
+    } catch {
+        // user cancelled or delete failed (error shown by snackbar if needed)
+    }
 }
 </script>
