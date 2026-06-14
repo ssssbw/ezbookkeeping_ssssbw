@@ -30,33 +30,37 @@
                 <span class="text-body-2">{{ formatCurrencyValue(item.totalCost, item.currency) }}</span>
             </template>
             <template #item.unrealizedPnl="{ item }">
-                <span class="text-body-2" :class="getReturnColorClass(item.unrealizedPnl)">
+                <span class="text-body-2 font-weight-bold" :class="getReturnColorClass(item.unrealizedPnl)">
                     {{ formatCurrencyValue(item.unrealizedPnl, item.currency) }}
                 </span>
             </template>
             <template #item.weightedReturnRate="{ item }">
-                <span class="text-body-2" :class="getReturnColorClass(item.weightedReturnRate)">
+                <span class="text-body-2 font-weight-bold" :class="getReturnColorClass(item.weightedReturnRate)">
                     {{ formatReturnRate(item.weightedReturnRate) }}
                 </span>
             </template>
 
-            <!-- Expanded row: per-account breakdown -->
-            <template #expanded-row="{ item }">
-                <tr v-for="h in item.holdings" :key="h.accountId" class="expanded-row">
-                    <td :colspan="1" />
-                    <td class="text-body-2 text-medium-emphasis">{{ h.accountName || h.accountId }}</td>
-                    <td />
-                    <td />
-                    <td class="text-body-2 text-end">{{ formatQuantity(h.quantity) }}</td>
-                    <td class="text-body-2 text-end">{{ formatCurrencyValue(h.marketValue, h.currency) }}</td>
-                    <td class="text-body-2 text-end">{{ formatCurrencyValue(h.totalCost, h.currency) }}</td>
-                    <td class="text-body-2 text-end" :class="getReturnColorClass(h.unrealizedPnl)">
-                        {{ formatCurrencyValue(h.unrealizedPnl, h.currency) }}
+            <!-- Expanded row: per-account breakdown (single td colspan, grid layout, robust to column changes) -->
+            <template #expanded-row="{ item, columns }">
+                <tr>
+                    <td :colspan="columns.length" class="pa-0">
+                        <div class="expanded-detail">
+                            <div v-for="h in item.holdings" :key="h.accountId" class="expanded-detail-row">
+                                <span class="text-body-2 text-medium-emphasis account-label">
+                                    {{ h.accountName || h.accountId }}
+                                </span>
+                                <span class="text-body-2 detail-value">{{ formatQuantity(h.quantity) }}</span>
+                                <span class="text-body-2 detail-value">{{ formatCurrencyValue(h.marketValue, h.currency) }}</span>
+                                <span class="text-body-2 detail-value">{{ formatCurrencyValue(h.totalCost, h.currency) }}</span>
+                                <span class="text-body-2 detail-value font-weight-medium" :class="getReturnColorClass(h.unrealizedPnl)">
+                                    {{ formatCurrencyValue(h.unrealizedPnl, h.currency) }}
+                                </span>
+                                <span class="text-body-2 detail-value" :class="getReturnColorClass(h.returnRate)">
+                                    {{ formatReturnRate(h.returnRate) }}
+                                </span>
+                            </div>
+                        </div>
                     </td>
-                    <td class="text-body-2 text-end" :class="getReturnColorClass(h.returnRate)">
-                        {{ formatReturnRate(h.returnRate) }}
-                    </td>
-                    <td />
                 </tr>
             </template>
 
@@ -124,7 +128,25 @@ const headers = computed(() => [
     padding-bottom: 8px;
 }
 
-.expanded-row td {
-    background: rgba(var(--v-theme-on-surface), 0.02);
+.expanded-detail {
+    background: rgba(var(--v-theme-on-surface), 0.04);
+    border-inline-start: 3px solid rgb(var(--v-theme-primary));
+}
+
+.expanded-detail-row {
+    display: grid;
+    grid-template-columns: 1fr repeat(5, minmax(80px, 1fr));
+    align-items: center;
+    column-gap: 16px;
+    padding: 6px 16px 6px 20px;
+}
+
+.account-label {
+    display: block;
+}
+
+.detail-value {
+    font-variant-numeric: tabular-nums;
+    text-align: end;
 }
 </style>
