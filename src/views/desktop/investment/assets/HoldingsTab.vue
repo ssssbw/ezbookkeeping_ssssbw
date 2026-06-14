@@ -10,6 +10,7 @@
             class="holdings-table"
             v-model:items-per-page="perPage"
             v-model:page="page"
+            @click:row="onRowClick"
         >
             <template #item.assetCode="{ item }">
                 <span class="text-body-2 font-weight-medium">{{ item.assetCode }}</span>
@@ -120,6 +121,10 @@ const headers = computed(() => [
     { key: 'unrealizedPnl', title: tt('Unrealized P&L'), sortable: false, align: 'end' as const },
     { key: 'weightedReturnRate', title: tt('Return Rate'), sortable: false, align: 'end' as const },
 ]);
+
+function onRowClick(_event: Event, { internalItem, toggleExpand }: { internalItem: unknown; toggleExpand: (item: unknown) => void }): void {
+    toggleExpand(internalItem);
+}
 </script>
 
 <style scoped>
@@ -143,6 +148,7 @@ const headers = computed(() => [
 
 .account-label {
     display: block;
+    padding-left: 64px;
 }
 
 .detail-value {
