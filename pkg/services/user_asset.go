@@ -90,11 +90,14 @@ func (s *UserAssetService) AddUserAsset(c core.Context, uid int64, assetId int64
 		return errs.ErrInvestmentAssetNotFound
 	}
 
+	now := time.Now().Unix()
 	userAsset := &models.UserAsset{
 		Uid:             uid,
 		AssetId:         assetId,
 		IsActive:        true,
-		CreatedUnixTime: time.Now().Unix(),
+		IsWatchlist:     true,
+		CreatedUnixTime: now,
+		UpdatedUnixTime: now,
 	}
 
 	userAsset.Id = s.GenerateUuid(uuid.UUID_TYPE_USER_ASSET)
