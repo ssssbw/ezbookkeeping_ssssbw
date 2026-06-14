@@ -50,6 +50,7 @@ export interface AssetCreateRequest {
     readonly category: string;
     readonly currency: string;
     readonly industry?: string;
+    readonly subCategory?: string;
     readonly tags?: string;
     readonly extraInfo?: string;
 }
@@ -62,6 +63,7 @@ export interface AssetModifyRequest {
     readonly category: string;
     readonly currency: string;
     readonly industry?: string;
+    readonly subCategory?: string;
     readonly tags?: string;
     readonly extraInfo?: string;
 }

@@ -475,14 +475,15 @@ func (a *InvestmentApi) GlobalAssetCreateHandler(c *core.WebContext) (any, *errs
 	}
 
 	asset := &models.Asset{
-		Code:     req.Code,
-		Market:   req.Market,
-		Name:     req.Name,
-		Category: req.Category,
-		Currency: req.Currency,
-		Industry: req.Industry,
-		Tags:     req.Tags,
-		ExtraInfo: req.ExtraInfo,
+		Code:        req.Code,
+		Market:      req.Market,
+		Name:        req.Name,
+		Category:    req.Category,
+		Currency:    req.Currency,
+		Industry:    req.Industry,
+		SubCategory: req.SubCategory,
+		Tags:        req.Tags,
+		ExtraInfo:   req.ExtraInfo,
 	}
 
 	err = a.globalAssets.CreateAsset(c, asset)
@@ -545,15 +546,16 @@ func (a *InvestmentApi) GlobalAssetModifyHandler(c *core.WebContext) (any, *errs
 	}
 
 	asset := &models.Asset{
-		AssetId:  req.Id,
-		Code:     req.Code,
-		Market:   req.Market,
-		Name:     req.Name,
-		Category: req.Category,
-		Currency: req.Currency,
-		Industry: req.Industry,
-		Tags:     req.Tags,
-		ExtraInfo: req.ExtraInfo,
+		AssetId:     req.Id,
+		Code:        req.Code,
+		Market:      req.Market,
+		Name:        req.Name,
+		Category:    req.Category,
+		Currency:    req.Currency,
+		Industry:    req.Industry,
+		SubCategory: req.SubCategory,
+		Tags:        req.Tags,
+		ExtraInfo:   req.ExtraInfo,
 	}
 
 	err = a.globalAssets.ModifyAsset(c, asset)

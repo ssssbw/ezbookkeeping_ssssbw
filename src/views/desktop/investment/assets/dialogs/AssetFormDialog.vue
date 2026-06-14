@@ -1,12 +1,10 @@
 <template>
     <v-dialog :model-value="modelValue" max-width="500" @update:model-value="$emit('update:modelValue', $event)">
+        <snack-bar ref="snackbar" />
         <v-card>
-            <v-card-title class="d-flex align-center">
-                <span class="text-h6">{{ mode === 'create' ? tt('Add') : tt('Edit') }}</span>
-                <v-spacer />
-                <v-btn variant="text" :icon="mdiClose" density="compact" @click="$emit('update:modelValue', false)" />
-            </v-card-title>
-            <v-divider />
+            <v-toolbar color="primary">
+                <v-toolbar-title>{{ mode === 'create' ? tt('Add') : tt('Edit') }}</v-toolbar-title>
+            </v-toolbar>
             <v-card-text class="pa-4">
                 <v-text-field v-model="form.code" :label="tt('asset.AssetCode')" density="compact" variant="outlined" :rules="[v => !!v || 'Required']" />
                 <v-text-field v-model="form.name" :label="tt('asset.AssetName')" density="compact" variant="outlined" :rules="[v => !!v || 'Required']" class="mt-3" />
@@ -18,6 +16,7 @@
                     <v-text-field v-model="form.currency" :label="tt('Currency')" density="compact" variant="outlined" style="flex: 1" />
                     <v-select v-model="form.industry" :label="tt('Industry')" density="compact" variant="outlined" :items="industryFormOptions" clearable style="flex: 1" />
                 </div>
+                <v-text-field v-model="form.subCategory" :label="tt('asset.SubCategory')" density="compact" variant="outlined" clearable class="mt-3" />
             </v-card-text>
             <v-divider />
             <v-card-actions>
@@ -30,15 +29,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, useTemplateRef } from 'vue';
 
 import { useI18n } from '@/locales/helpers.ts';
+import SnackBar from '@/components/desktop/SnackBar.vue';
 
 import { AssetCategory, InvestmentMarket, type AssetInfoResponse, type AssetModifyRequest } from '@/models/investment.ts';
 
 import services from '@/lib/services.ts';
 import logger from '@/lib/logger.ts';
-import { mdiClose } from '@mdi/js';
+
 
 import { formatIndustry } from '../assetUtils.ts';
 
@@ -56,6 +56,8 @@ const emit = defineEmits<{
 const { tt } = useI18n();
 
 const saving = ref<boolean>(false);
+type SnackBarType = InstanceType<typeof SnackBar>;
+const snackbar = useTemplateRef<SnackBarType>('snackbar');
 const form = ref({
     id: '',
     code: '',
@@ -63,7 +65,8 @@ const form = ref({
     market: InvestmentMarket.CN as number,
     category: AssetCategory.Equity as string,
     currency: 'CNY',
-    industry: ''
+    industry: '',
+    subCategory: ''
 });
 
 const marketOptions = [
@@ -95,7 +98,8 @@ watch(() => props.modelValue, (val) => {
             market: props.asset.market,
             category: props.asset.category,
             currency: props.asset.currency,
-            industry: props.asset.industry || ''
+            industry: props.asset.industry || '',
+            subCategory: props.asset.subCategory || ''
         };
     } else if (val && props.mode === 'create') {
         form.value = {
@@ -105,7 +109,8 @@ watch(() => props.modelValue, (val) => {
             market: InvestmentMarket.CN,
             category: AssetCategory.Equity,
             currency: 'CNY',
-            industry: ''
+            industry: '',
+            subCategory: ''
         };
     }
 });
@@ -121,7 +126,8 @@ async function onSubmit(): Promise<void> {
                 name: form.value.name,
                 category: form.value.category,
                 currency: form.value.currency,
-                industry: form.value.industry || undefined
+                industry: form.value.industry || undefined,
+                subCategory: form.value.subCategory || undefined
             });
         } else {
             const req: AssetModifyRequest = {
@@ -131,14 +137,18 @@ async function onSubmit(): Promise<void> {
                 name: form.value.name,
                 category: form.value.category,
                 currency: form.value.currency,
-                industry: form.value.industry || undefined
+                industry: form.value.industry || undefined,
+                subCategory: form.value.subCategory || undefined
             };
             await services.modifyGlobalAsset(req);
         }
         emit('update:modelValue', false);
         emit('saved');
-    } catch (e) {
+    } catch (e: unknown) {
         logger.error('Failed to save asset', e);
+        const axiosErr = e as { response?: { data?: { errorMessage?: string } } };
+        const msg = axiosErr.response?.data?.errorMessage;
+        snackbar.value?.showError(msg || 'Failed to save asset');
     } finally {
         saving.value = false;
     }
