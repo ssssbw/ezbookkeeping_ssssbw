@@ -1,5 +1,5 @@
 <template>
-    <v-dialog :model-value="modelValue" max-width="520" @update:model-value="$emit('update:modelValue', $event)">
+    <v-dialog :model-value="modelValue" max-width="600" @update:model-value="$emit('update:modelValue', $event)">
         <v-card v-if="item">
             <v-card-title class="d-flex align-center">
                 <span class="text-h6">{{ item.assetName }}</span>
@@ -7,6 +7,7 @@
                 <v-chip size="small" variant="tonal" :color="getCategoryColor(item.category)">
                     {{ formatCategory(item.category, tt) }}
                 </v-chip>
+                <v-btn variant="text" :icon="mdiClose" density="compact" @click="$emit('update:modelValue', false)" />
             </v-card-title>
             <v-card-text>
                 <v-row dense>
@@ -87,6 +88,8 @@ import { computed } from 'vue';
 
 import { useI18n } from '@/locales/helpers.ts';
 import { useInvestmentStore } from '@/stores/investment.ts';
+
+import { mdiClose } from '@mdi/js';
 
 import type { DisplayAsset } from './types.ts';
 

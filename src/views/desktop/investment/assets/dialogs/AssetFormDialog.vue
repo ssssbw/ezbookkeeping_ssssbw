@@ -2,9 +2,12 @@
     <v-dialog :model-value="modelValue" max-width="500" @update:model-value="$emit('update:modelValue', $event)">
         <snack-bar ref="snackbar" />
         <v-card>
-            <v-toolbar color="primary">
-                <v-toolbar-title>{{ mode === 'create' ? tt('Add') : tt('Edit') }}</v-toolbar-title>
-            </v-toolbar>
+            <v-card-title class="d-flex align-center">
+                <span class="text-h6">{{ mode === 'create' ? tt('Add') : tt('Edit') }}</span>
+                <v-spacer />
+                <v-btn variant="text" :icon="mdiClose" density="compact" @click="$emit('update:modelValue', false)" />
+            </v-card-title>
+            <v-divider />
             <v-card-text class="pa-4">
                 <v-text-field v-model="form.code" :label="tt('asset.AssetCode')" density="compact" variant="outlined" :rules="[v => !!v || 'Required']" />
                 <v-text-field v-model="form.name" :label="tt('asset.AssetName')" density="compact" variant="outlined" :rules="[v => !!v || 'Required']" class="mt-3" />
@@ -33,6 +36,8 @@ import { ref, computed, watch, useTemplateRef } from 'vue';
 
 import { useI18n } from '@/locales/helpers.ts';
 import SnackBar from '@/components/desktop/SnackBar.vue';
+
+import { mdiClose } from '@mdi/js';
 
 import { AssetCategory, InvestmentMarket, type AssetInfoResponse, type AssetModifyRequest } from '@/models/investment.ts';
 
