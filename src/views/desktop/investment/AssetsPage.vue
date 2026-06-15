@@ -9,7 +9,7 @@
                 @watchlist-updated="reloadWatchlist"
             />
 
-            <v-card>
+            <v-card class="flex-grow-1 d-flex flex-column">
                 <v-tabs v-model="activeTab" class="px-4">
                     <v-tab value="holdings">
                         {{ tt('Holdings') }}
@@ -215,11 +215,23 @@ onMounted(async () => {
 <style scoped>
 .page-content {
     padding: 24px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
 }
 
 .page-body {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    flex: 1;
+    min-height: 0;
+}
+</style>
+
+<style>
+.page-content-container {
+    height: 100%;
 }
 </style>

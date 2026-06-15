@@ -1,5 +1,5 @@
 <template>
-    <v-card-text class="pa-0">
+    <v-card-text class="pa-0 holdings-tab">
         <v-data-table
             :headers="headers"
             :items="aggregatedHoldings"
@@ -41,27 +41,22 @@
                 </span>
             </template>
 
-            <!-- Expanded row: per-account breakdown (single td colspan, grid layout, robust to column changes) -->
-            <template #expanded-row="{ item, columns }">
-                <tr>
-                    <td :colspan="columns.length" class="pa-0">
-                        <div class="expanded-detail">
-                            <div v-for="h in item.holdings" :key="h.accountId" class="expanded-detail-row">
-                                <span class="text-body-2 text-medium-emphasis account-label">
-                                    {{ h.accountName || h.accountId }}
-                                </span>
-                                <span class="text-body-2 detail-value">{{ formatQuantity(h.quantity) }}</span>
-                                <span class="text-body-2 detail-value">{{ formatCurrencyValue(h.marketValue, h.currency) }}</span>
-                                <span class="text-body-2 detail-value">{{ formatCurrencyValue(h.totalCost, h.currency) }}</span>
-                                <span class="text-body-2 detail-value font-weight-medium" :class="getReturnColorClass(h.unrealizedPnl)">
-                                    {{ formatCurrencyValue(h.unrealizedPnl, h.currency) }}
-                                </span>
-                                <span class="text-body-2 detail-value" :class="getReturnColorClass(h.returnRate)">
-                                    {{ formatReturnRate(h.returnRate) }}
-                                </span>
-                            </div>
-                        </div>
+            <!-- Expanded row: per-account breakdown -->
+            <template #expanded-row="{ item }">
+                <tr v-for="h in item.holdings" :key="h.accountId" class="expanded-row">
+                    <td />
+                    <td class="text-body-2 text-medium-emphasis">{{ h.accountName || h.accountId }}</td>
+                    <td />
+                    <td class="text-body-2 text-end">{{ formatQuantity(h.quantity) }}</td>
+                    <td class="text-body-2 text-end font-weight-medium">{{ formatCurrencyValue(h.marketValue, h.currency) }}</td>
+                    <td class="text-body-2 text-end">{{ formatCurrencyValue(h.totalCost, h.currency) }}</td>
+                    <td class="text-body-2 text-end font-weight-medium" :class="getReturnColorClass(h.unrealizedPnl)">
+                        {{ formatCurrencyValue(h.unrealizedPnl, h.currency) }}
                     </td>
+                    <td class="text-body-2 text-end" :class="getReturnColorClass(h.returnRate)">
+                        {{ formatReturnRate(h.returnRate) }}
+                    </td>
+                    <td />
                 </tr>
             </template>
 
@@ -128,31 +123,31 @@ function onRowClick(_event: Event, { internalItem, toggleExpand }: { internalIte
 </script>
 
 <style scoped>
+.holdings-tab {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.holdings-table {
+    flex: 1;
+}
+
+.holdings-table :deep(.v-data-table) {
+    height: 100%;
+}
+
 .holdings-table :deep(.v-data-table__td) {
     padding-top: 8px;
     padding-bottom: 8px;
 }
 
-.expanded-detail {
-    background: rgba(var(--v-theme-on-surface), 0.04);
+.expanded-row td {
+    background: rgba(var(--v-theme-on-surface), 0.03);
+}
+
+.expanded-row td:first-child {
     border-inline-start: 3px solid rgb(var(--v-theme-primary));
-}
-
-.expanded-detail-row {
-    display: grid;
-    grid-template-columns: 1fr repeat(5, minmax(80px, 1fr));
-    align-items: center;
-    column-gap: 16px;
-    padding: 6px 16px 6px 20px;
-}
-
-.account-label {
-    display: block;
-    padding-left: 64px;
-}
-
-.detail-value {
-    font-variant-numeric: tabular-nums;
-    text-align: end;
 }
 </style>
