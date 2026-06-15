@@ -4,6 +4,15 @@
     --ebk-amount-color-yellow: 226, 182, 10;
 }
 
+/* Investment profit/loss colors (same as income/expense) */
+.text-profit {
+    color: rgb(var(--ebk-amount-color-red));
+}
+
+.text-loss {
+    color: rgb(var(--ebk-amount-color-green));
+}
+
 :root.expense-amount-color-green {
     .v-theme--light,
     .v-theme--dark {

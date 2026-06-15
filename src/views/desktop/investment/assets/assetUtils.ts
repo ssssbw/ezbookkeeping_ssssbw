@@ -15,19 +15,8 @@ export function formatPrice(value: number | undefined | null): string {
 export function formatCurrencyValue(value: number | undefined | null, currency: string): string {
     if (value === undefined || value === null) return '--';
     const num = value / DIVISOR;
-    const abs = Math.abs(num);
-    let formatted: string;
-    if (abs >= 1000000) {
-        formatted = (abs / 1000000).toFixed(2) + 'M';
-    } else if (abs >= 10000) {
-        formatted = (abs / 10000).toFixed(2) + 'W';
-    } else if (abs >= 1000) {
-        formatted = (abs / 1000).toFixed(2) + 'K';
-    } else {
-        formatted = abs.toFixed(2);
-    }
     const sign = num < 0 ? '-' : '';
-    return sign + getCurrencySymbol(currency) + formatted;
+    return sign + getCurrencySymbol(currency) + Math.abs(num).toFixed(2);
 }
 
 export function formatReturnRate(value: number | undefined | null): string {
@@ -40,9 +29,6 @@ export function formatReturnRate(value: number | undefined | null): string {
 export function formatQuantity(value: number | undefined | null): string {
     if (value === undefined || value === null) return '--';
     const num = value / DIVISOR;
-    if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
-    if (num >= 10000) return (num / 10000).toFixed(2) + 'W';
-    if (num >= 1000) return (num / 1000).toFixed(2) + 'K';
     return num.toFixed(2);
 }
 
@@ -93,8 +79,8 @@ export function getCurrencySymbol(currency: string): string {
 
 export function getReturnColorClass(value: number | undefined | null): string {
     if (value === undefined || value === null) return '';
-    if (value > 0) return 'text-success';
-    if (value < 0) return 'text-error';
+    if (value > 0) return 'text-profit';
+    if (value < 0) return 'text-loss';
     return '';
 }
 
