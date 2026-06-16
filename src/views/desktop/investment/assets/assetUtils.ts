@@ -16,7 +16,8 @@ export function formatCurrencyValue(value: number | undefined | null, currency: 
     if (value === undefined || value === null) return '--';
     const num = value / DIVISOR;
     const sign = num < 0 ? '-' : '';
-    return sign + getCurrencySymbol(currency) + Math.abs(num).toFixed(2);
+    const symbol = getCurrencySymbol(currency);
+    return sign + (symbol ? symbol + ' ' : '') + Math.abs(num).toFixed(2);
 }
 
 export function formatReturnRate(value: number | undefined | null): string {
