@@ -22,7 +22,7 @@
             </template>
             <template #item.currentPrice="{ item }">
                 <span v-if="item.currentPrice !== undefined && item.currentPrice !== null" class="text-body-2">
-                    {{ formatPrice(item.currentPrice) }}
+                    {{ formatPriceWithDate(item.currentPrice, item.currentPriceDate) }}
                 </span>
                 <span v-else class="text-medium-emphasis">--</span>
             </template>
@@ -70,7 +70,7 @@ import { useInvestmentStore } from '@/stores/investment.ts';
 
 import type { DisplayAsset } from './types.ts';
 
-import { formatMarket, formatPrice, formatReturnRate, getReturnColorClass } from './assetUtils.ts';
+import { formatMarket, formatPriceWithDate, formatReturnRate, getReturnColorClass } from './assetUtils.ts';
 
 import { mdiStarRemove } from '@mdi/js';
 
@@ -105,10 +105,10 @@ const headers = computed(() => [
     { key: 'assetCode', title: tt('Code'), sortable: false, width: '100' },
     { key: 'assetName', title: tt('asset.AssetName'), sortable: false },
     { key: 'market', title: tt('Market'), sortable: false, width: '80' },
-    { key: 'currentPrice', title: tt('Current Price'), sortable: false, align: 'end' as const },
-    { key: 'changePercent', title: tt('Change Percent'), sortable: false, align: 'end' as const },
-    { key: 'date', title: tt('Date'), sortable: false, align: 'center' as const, width: '110' },
-    { key: 'actions', title: '', sortable: false, align: 'center' as const, width: '60' },
+    { key: 'currentPrice', title: tt('Current Price'), sortable: false },
+    { key: 'changePercent', title: tt('Change Percent'), sortable: false },
+    { key: 'date', title: tt('Date'), sortable: false, width: '110' },
+    { key: 'actions', title: '', sortable: false, width: '60' },
 ]);
 
 function calcChangePercent(item: DisplayAsset): number {

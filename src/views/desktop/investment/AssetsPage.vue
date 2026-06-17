@@ -170,6 +170,7 @@ async function loadWatchlist(): Promise<void> {
                 const result = await investmentStore.loadLatestMarketData({ assetId: item.assetId });
                 if (result) {
                     item.currentPrice = result.price;
+                    item.currentPriceDate = result.date;
                 }
             } catch {
                 // Ignore individual failures
