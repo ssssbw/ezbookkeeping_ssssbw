@@ -8,8 +8,7 @@ export function formatPrice(value: number | undefined | null): string {
     if (value === undefined || value === null) return '--';
     const num = value / DIVISOR;
     if (num >= 1000) return num.toFixed(2);
-    if (num >= 1) return num.toFixed(4);
-    return num.toFixed(6);
+    return num.toFixed(4);
 }
 
 export function formatCurrencyValue(value: number | undefined | null, currency: string): string {

@@ -163,6 +163,7 @@
                     </li>
                 </template>
             </perfect-scrollbar>
+            <MarketOverviewSidebar v-if="isInvestmentMode" />
         </div>
 
         <div class="layout-content-wrapper">
@@ -272,6 +273,8 @@ import { useRootStore } from '@/stores/index.ts';
 import { useSettingsStore } from '@/stores/setting.ts';
 import { useUserStore } from '@/stores/user.ts';
 import { useDesktopPageStore } from '@/stores/desktopPage.ts';
+
+import MarketOverviewSidebar from '@/views/desktop/investment/MarketOverviewSidebar.vue';
 
 import { APPLICATION_LOGO_PATH, INVESTMENT_LOGO_PATH } from '@/consts/asset.ts';
 import { ThemeType } from '@/core/theme.ts';
@@ -432,5 +435,11 @@ function toggleMode(): void {
 
 .nav-link.home-link > a:not(.router-link-exact-active):hover::before {
     opacity: calc(var(--v-hover-opacity)* var(--v-theme-overlay-multiplier));
+}
+
+.layout-vertical-nav .nav-items {
+    flex: 1;
+    min-height: 0;
+    block-size: auto;
 }
 </style>
