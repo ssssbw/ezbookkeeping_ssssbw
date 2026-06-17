@@ -11,6 +11,16 @@ export function formatPrice(value: number | undefined | null): string {
     return num.toFixed(4);
 }
 
+export function formatPriceWithDate(value: number | undefined | null, date: number | undefined | null): string {
+    const price = formatPrice(value);
+    // console.log("date", date);
+    if (price === '--' || !date) return price;
+    const d = new Date(date * 1000);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${price}(${mm}/${dd})`;
+}
+
 export function formatCurrencyValue(value: number | undefined | null, currency: string): string {
     if (value === undefined || value === null) return '--';
     const num = value / DIVISOR;

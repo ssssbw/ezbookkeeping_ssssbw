@@ -35,7 +35,7 @@
                         <v-col cols="6">
                             <div class="text-caption text-medium-emphasis">{{ tt('Current Price') }}</div>
                             <div class="text-body-1 font-weight-medium">
-                                {{ formatPrice(aggregated.holdings[0]?.currentPrice) }}
+                                {{ formatPriceWithDate(aggregated.holdings[0]?.currentPrice, aggregated.holdings[0]?.currentPriceDate) }}
                             </div>
                         </v-col>
                         <v-col cols="6">
@@ -70,7 +70,7 @@
                     <v-row dense>
                         <v-col cols="12">
                             <div class="text-caption text-medium-emphasis">{{ tt('Current Price') }}</div>
-                            <div class="text-body-1">{{ formatPrice(item.currentPrice) }}</div>
+                            <div class="text-body-1">{{ formatPriceWithDate(item.currentPrice, item.currentPriceDate) }}</div>
                         </v-col>
                     </v-row>
                 </template>
@@ -94,7 +94,7 @@ import { mdiClose } from '@mdi/js';
 import type { DisplayAsset } from './types.ts';
 
 import {
-    formatMarket, formatCategory, formatPrice, formatQuantity,
+    formatMarket, formatCategory, formatPriceWithDate, formatQuantity,
     formatCurrencyValue, formatReturnRate, getReturnColorClass, getCategoryColor
 } from './assetUtils.ts';
 

@@ -412,6 +412,7 @@ export interface InvestmentHoldingResponse {
     readonly avgCostPrice: number;
     readonly totalCost: number;
     readonly currentPrice: number;
+    readonly currentPriceDate: number;
     readonly marketValue: number;
     readonly unrealizedPnl: number;
     readonly returnRate: number;
@@ -444,6 +445,7 @@ export class InvestmentHolding {
     public avgCostPrice: number;
     public totalCost: number;
     public currentPrice: number;
+    public currentPriceDate: number;
     public marketValue: number;
     public unrealizedPnl: number;
     public returnRate: number;
@@ -461,6 +463,7 @@ export class InvestmentHolding {
         this.avgCostPrice = 0;
         this.totalCost = 0;
         this.currentPrice = 0;
+        this.currentPriceDate = 0;
         this.marketValue = 0;
         this.unrealizedPnl = 0;
         this.returnRate = 0;
@@ -474,6 +477,7 @@ export class InvestmentHolding {
         holding.avgCostPrice = response.avgCostPrice;
         holding.totalCost = response.totalCost;
         holding.currentPrice = response.currentPrice;
+        holding.currentPriceDate = response.currentPriceDate;
         holding.marketValue = response.marketValue;
         holding.unrealizedPnl = response.unrealizedPnl;
         holding.returnRate = response.returnRate;

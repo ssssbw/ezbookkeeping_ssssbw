@@ -29,7 +29,8 @@ type InvestmentHoldingInfo struct {
 	Quantity      int64            `json:"quantity"`
 	AvgCostPrice  int64            `json:"avgCostPrice"`
 	TotalCost     int64            `json:"totalCost"`
-	CurrentPrice  int64            `json:"currentPrice"`
+	CurrentPrice      int64            `json:"currentPrice"`
+	CurrentPriceDate  int64            `json:"currentPriceDate"`
 	MarketValue   int64            `json:"marketValue"`
 	UnrealizedPnl int64            `json:"unrealizedPnl"`
 	ReturnRate    int64            `json:"returnRate"`
