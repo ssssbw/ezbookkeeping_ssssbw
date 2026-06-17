@@ -7,5 +7,6 @@ export interface DisplayAsset {
     market: number;
     industry: string;
     currentPrice?: number;
+    addedPrice?: number;
     isHolding: boolean;
 }

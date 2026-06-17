@@ -12,7 +12,7 @@
             @click:row="onRowClick"
         >
             <template #item.assetCode="{ item }">
-                <span class="text-body-2 font-weight-medium">{{ item.assetCode }}</span>
+                <span class="text-body-2 asset-code">{{ item.assetCode }}</span>
             </template>
             <template #item.assetName="{ item }">
                 <span class="text-body-2">{{ item.assetName }}</span>
@@ -20,15 +20,20 @@
             <template #item.market="{ item }">
                 <span class="text-body-2">{{ formatMarket(item.market, tt) }}</span>
             </template>
-            <template #item.industry="{ item }">
-                <span v-if="item.industry" class="text-body-2">{{ formatIndustry(item.industry, tt) }}</span>
-                <span v-else class="text-medium-emphasis">--</span>
-            </template>
             <template #item.currentPrice="{ item }">
                 <span v-if="item.currentPrice !== undefined && item.currentPrice !== null" class="text-body-2">
                     {{ formatPrice(item.currentPrice) }}
                 </span>
                 <span v-else class="text-medium-emphasis">--</span>
+            </template>
+            <template #item.changePercent="{ item }">
+                <span v-if="item.currentPrice && item.addedPrice" class="text-body-2" :class="getReturnColorClass(calcChangePercent(item))">
+                    {{ formatReturnRate(calcChangePercent(item)) }}
+                </span>
+                <span v-else class="text-medium-emphasis">--</span>
+            </template>
+            <template #item.date>
+                <span class="text-body-2">{{ todayDate }}</span>
             </template>
             <template #item.actions="{ item }">
                 <div class="d-flex ga-1 justify-end">
@@ -65,7 +70,7 @@ import { useInvestmentStore } from '@/stores/investment.ts';
 
 import type { DisplayAsset } from './types.ts';
 
-import { formatMarket, formatIndustry, formatPrice } from './assetUtils.ts';
+import { formatMarket, formatPrice, formatReturnRate, getReturnColorClass } from './assetUtils.ts';
 
 import { mdiStarRemove } from '@mdi/js';
 
@@ -87,18 +92,29 @@ const investmentStore = useInvestmentStore();
 const perPage = ref<number>(10);
 const page = ref<number>(1);
 
+const todayDate = computed(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+});
+
 const totalPageCount = computed<number>(() => {
     return Math.max(1, Math.ceil(props.watchlist.length / (perPage.value > 0 ? perPage.value : 10)));
 });
 
 const headers = computed(() => [
-    { key: 'assetCode', title: tt('Code'), sortable: false },
+    { key: 'assetCode', title: tt('Code'), sortable: false, width: '100' },
     { key: 'assetName', title: tt('asset.AssetName'), sortable: false },
-    { key: 'market', title: tt('Market'), sortable: false },
-    { key: 'industry', title: tt('Industry'), sortable: false },
+    { key: 'market', title: tt('Market'), sortable: false, width: '80' },
     { key: 'currentPrice', title: tt('Current Price'), sortable: false, align: 'end' as const },
-    { key: 'actions', title: tt('Action'), sortable: false, align: 'center' as const, width: '100' },
+    { key: 'changePercent', title: tt('Change Percent'), sortable: false, align: 'end' as const },
+    { key: 'date', title: tt('Date'), sortable: false, align: 'center' as const, width: '110' },
+    { key: 'actions', title: '', sortable: false, align: 'center' as const, width: '60' },
 ]);
+
+function calcChangePercent(item: DisplayAsset): number {
+    if (!item.currentPrice || !item.addedPrice || item.addedPrice === 0) return 0;
+    return Math.round(((item.currentPrice - item.addedPrice) / item.addedPrice) * 10000);
+}
 
 function onRowClick(_event: Event, row: { item: DisplayAsset }): void {
     emit('select', row.item);
@@ -118,5 +134,10 @@ async function removeFromWatchlist(item: DisplayAsset): Promise<void> {
 .watchlist-table :deep(.v-data-table__td) {
     padding-top: 8px;
     padding-bottom: 8px;
+}
+
+.asset-code {
+    color: rgb(var(--v-theme-primary));
+    font-weight: 500;
 }
 </style>

@@ -161,18 +161,6 @@
                             <span class="nav-item-title">{{ tt('Strategy Configuration') }}</span>
                         </router-link>
                     </li>
-                    <li class="nav-link">
-                        <a href="javascript:void(0);" @click="showMobileQrCode = true">
-                            <v-icon class="nav-item-icon" :icon="mdiCellphone"/>
-                            <span class="nav-item-title">{{ tt('Use on Mobile Device') }}</span>
-                        </a>
-                    </li>
-                    <li class="nav-link">
-                        <router-link to="/about">
-                            <v-icon class="nav-item-icon" :icon="mdiInformationOutline"/>
-                            <span class="nav-item-title">{{ tt('About') }}</span>
-                        </router-link>
-                    </li>
                 </template>
             </perfect-scrollbar>
         </div>

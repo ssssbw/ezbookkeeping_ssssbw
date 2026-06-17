@@ -72,6 +72,7 @@ export const useInvestmentStore = defineStore('investment', () => {
         totalCost: number;
         unrealizedPnl: number;
         weightedReturnRate: number;
+        currentPrice: number;
         holdings: InvestmentHolding[];
     }
 
@@ -93,6 +94,7 @@ export const useInvestmentStore = defineStore('investment', () => {
                     totalCost: 0,
                     unrealizedPnl: 0,
                     weightedReturnRate: 0,
+                    currentPrice: h.currentPrice,
                     holdings: [],
                 };
                 map.set(h.assetId, agg);
