@@ -27,7 +27,6 @@
                     v-if="activeTab === 'watchlist'"
                     :loading="loading"
                     :watchlist="watchlist"
-                    @select="onWatchlistSelect"
                     @removed="reloadWatchlist"
                 />
 
@@ -37,11 +36,6 @@
                 </template>
             </v-card>
 
-            <AssetDetailDialog
-                v-model="detailDialog"
-                :item="selectedItem"
-            />
-
             <AssetAdminDialog v-model="adminDialog" />
         </div>
     </div>
@@ -49,12 +43,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 
 import AssetSearchBar from './assets/AssetSearchBar.vue';
 import HoldingsTab from './assets/HoldingsTab.vue';
 import WatchlistTab from './assets/WatchlistTab.vue';
 import HoldingsSummaryBar from './assets/HoldingsSummaryBar.vue';
-import AssetDetailDialog from './assets/AssetDetailDialog.vue';
 import AssetAdminDialog from './assets/dialogs/AssetAdminDialog.vue';
 
 import { useI18n } from '@/locales/helpers.ts';
@@ -69,12 +63,11 @@ import logger from '@/lib/logger.ts';
 import type { DisplayAsset } from './assets/types.ts';
 
 const { tt } = useI18n();
+const router = useRouter();
 const investmentStore = useInvestmentStore();
 
 const activeTab = ref<string>('holdings');
 const loading = ref<boolean>(true);
-const detailDialog = ref<boolean>(false);
-const selectedItem = ref<DisplayAsset | null>(null);
 const showManageButton = ref<boolean>(false);
 const adminDialog = ref<boolean>(false);
 
@@ -86,45 +79,7 @@ const watchlist = computed(() => watchlistAssets.value);
 
 // --- Search result handling ---
 function onSearchResultSelect(item: AssetInfoResponse): void {
-    const existingHolding = investmentStore.aggregatedHoldings.find(a => a.assetId === item.id);
-    if (existingHolding) {
-        selectedItem.value = {
-            assetId: existingHolding.assetId,
-            assetCode: existingHolding.assetCode,
-            assetName: existingHolding.assetName,
-            category: existingHolding.category,
-            currency: existingHolding.currency,
-            market: existingHolding.market,
-            industry: '',
-            isHolding: true,
-        };
-        detailDialog.value = true;
-        return;
-    }
-
-    const existingWatchlist = watchlistAssets.value.find(w => w.assetId === item.id);
-    if (existingWatchlist) {
-        selectedItem.value = existingWatchlist;
-        detailDialog.value = true;
-        return;
-    }
-
-    selectedItem.value = {
-        assetId: item.id,
-        assetCode: item.code,
-        assetName: item.name,
-        category: item.category,
-        currency: item.currency,
-        market: item.market,
-        industry: item.industry || '',
-        isHolding: false,
-    };
-    detailDialog.value = true;
-}
-
-function onWatchlistSelect(item: DisplayAsset): void {
-    selectedItem.value = item;
-    detailDialog.value = true;
+    router.push(`/investment/assets/${item.id}`);
 }
 
 // --- Watchlist ---

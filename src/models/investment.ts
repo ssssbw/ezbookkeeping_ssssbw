@@ -178,6 +178,7 @@ export interface MarketDataInfoResponse {
     readonly date: number;
     readonly price: number;
     readonly volume?: number;
+    readonly isManual?: boolean;
 }
 
 export interface MarketDataListRequest {
@@ -379,6 +380,7 @@ export class InvestmentMarketDataItem {
     public date: number;
     public price: number;
     public volume?: number;
+    public isManual?: boolean;
 
     constructor(assetId: string, date: number, price: number) {
         this.assetId = assetId;
@@ -389,6 +391,7 @@ export class InvestmentMarketDataItem {
     public static of(response: MarketDataInfoResponse): InvestmentMarketDataItem {
         const item = new InvestmentMarketDataItem(response.assetId, response.date, response.price);
         item.volume = response.volume;
+        item.isManual = response.isManual;
         return item;
     }
 

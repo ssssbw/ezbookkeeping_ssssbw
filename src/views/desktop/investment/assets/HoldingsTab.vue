@@ -6,7 +6,6 @@
             :loading="loading"
             :hover="true"
             item-value="assetId"
-            show-expand
             class="holdings-table"
             v-model:items-per-page="perPage"
             v-model:page="page"
@@ -44,26 +43,6 @@
                 </span>
             </template>
 
-            <!-- Expanded row: per-account breakdown -->
-            <template #expanded-row="{ item }">
-                <tr v-for="h in item.holdings" :key="h.accountId" class="expanded-row">
-                    <td />
-                    <td class="text-body-2 text-medium-emphasis">{{ h.accountName || h.accountId }}</td>
-                    <td />
-                    <td class="text-body-2">{{ formatPriceWithDate(h.currentPrice, h.currentPriceDate) }}</td>
-                    <td class="text-body-2">{{ formatQuantity(h.quantity) }}</td>
-                    <td class="text-body-2">{{ formatCurrencyValue(h.marketValue, h.currency) }}</td>
-                    <td class="text-body-2">{{ formatCurrencyValue(h.totalCost, h.currency) }}</td>
-                    <td class="text-body-2" :class="getReturnColorClass(h.unrealizedPnl)">
-                        {{ formatCurrencyValue(h.unrealizedPnl, h.currency) }}
-                    </td>
-                    <td class="text-body-2" :class="getReturnColorClass(h.returnRate)">
-                        {{ formatReturnRate(h.returnRate) }}
-                    </td>
-                    <td />
-                </tr>
-            </template>
-
             <template #loading>
                 <v-skeleton-loader type="table-row@10" :loading="true" />
             </template>
@@ -83,6 +62,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
 
 import PaginationButtons from '@/components/desktop/PaginationButtons.vue';
 
@@ -95,6 +75,7 @@ import {
 } from './assetUtils.ts';
 
 const { tt } = useI18n();
+const router = useRouter();
 const investmentStore = useInvestmentStore();
 
 defineProps<{
@@ -122,8 +103,8 @@ const headers = computed(() => [
     { key: 'weightedReturnRate', title: tt('Return Rate'), sortable: false },
 ]);
 
-function onRowClick(_event: Event, { internalItem, toggleExpand }: { internalItem: unknown; toggleExpand: (item: unknown) => void }): void {
-    toggleExpand(internalItem);
+function onRowClick(_event: Event, { item }: { item: { assetId: string } }): void {
+    router.push(`/investment/assets/${item.assetId}`);
 }
 </script>
 
@@ -151,14 +132,6 @@ function onRowClick(_event: Event, { internalItem, toggleExpand }: { internalIte
 .asset-code {
     color: rgb(var(--v-theme-primary));
     font-weight: 500;
-}
-
-.expanded-row td {
-    background: rgba(var(--v-theme-on-surface), 0.03);
-}
-
-.expanded-row td:first-child {
-    border-inline-start: 3px solid rgb(var(--v-theme-primary));
 }
 
 </style>

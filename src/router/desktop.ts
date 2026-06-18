@@ -224,6 +224,12 @@ const router = createRouter({
                     beforeEnter: checkLogin
                 },
                 {
+                    path: '/investment/assets/:id',
+                    component: () => import('@/views/desktop/investment/AssetDetailPage.vue'),
+                    beforeEnter: checkLogin,
+                    props: true
+                },
+                {
                     path: '/investment/assets',
                     component: () => import('@/views/desktop/investment/AssetsPage.vue'),
                     beforeEnter: checkLogin

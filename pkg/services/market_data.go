@@ -95,6 +95,10 @@ func (s *MarketDataService) CreateMarketData(c core.Context, uid int64, data *mo
 		}
 
 		if has {
+			if existing.IsManual {
+				return nil
+			}
+
 			existing.Price = data.Price
 			existing.Volume = data.Volume
 			existing.UpdatedUnixTime = now
@@ -116,7 +120,7 @@ func (s *MarketDataService) ModifyMarketData(c core.Context, uid int64, data *mo
 	data.UpdatedUnixTime = time.Now().Unix()
 
 	return s.UserDataDB(uid).DoTransaction(c, func(sess *xorm.Session) error {
-		updatedRows, err := sess.ID(data.DataId).Cols("price", "volume", "updated_unix_time").Where("asset_id=?", data.AssetId).Update(data)
+		updatedRows, err := sess.ID(data.DataId).Cols("price", "volume", "is_manual", "updated_unix_time").Where("asset_id=?", data.AssetId).Update(data)
 
 		if err != nil {
 			return err

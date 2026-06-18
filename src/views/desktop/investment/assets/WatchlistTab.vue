@@ -62,6 +62,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
 
 import PaginationButtons from '@/components/desktop/PaginationButtons.vue';
 
@@ -82,11 +83,11 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    (e: 'select', item: DisplayAsset): void;
     (e: 'removed'): void;
 }>();
 
 const { tt } = useI18n();
+const router = useRouter();
 const investmentStore = useInvestmentStore();
 
 const perPage = ref<number>(10);
@@ -117,7 +118,7 @@ function calcChangePercent(item: DisplayAsset): number {
 }
 
 function onRowClick(_event: Event, row: { item: DisplayAsset }): void {
-    emit('select', row.item);
+    router.push(`/investment/assets/${row.item.assetId}`);
 }
 
 async function removeFromWatchlist(item: DisplayAsset): Promise<void> {

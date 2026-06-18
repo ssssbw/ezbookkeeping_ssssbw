@@ -7,6 +7,7 @@ type MarketData struct {
 	Date            int64 `xorm:"UNIQUE(UQE_market_data_asset_id_date) NOT NULL comment('日期, Unix时间戳取0点')"`
 	Price           int64 `xorm:"NOT NULL comment('当日净值/收盘价, 精度 x10000')"`
 	Volume          int64 `comment('成交量, ETF/股票有效')"`
+	IsManual        bool  `xorm:"bool notnull default false comment('是否手动录入')"`
 	CreatedUnixTime int64 `comment('创建时间')"`
 	UpdatedUnixTime int64 `comment('更新时间')"`
 }
@@ -66,18 +67,20 @@ type MarketDataEstimateRequest struct {
 
 // MarketDataInfoResponse represents a view-object of market data
 type MarketDataInfoResponse struct {
-	AssetId int64 `json:"assetId,string"`
-	Date    int64 `json:"date"`
-	Price   int64 `json:"price"`
-	Volume  int64 `json:"volume,omitempty"`
+	AssetId  int64 `json:"assetId,string"`
+	Date     int64 `json:"date"`
+	Price    int64 `json:"price"`
+	Volume   int64 `json:"volume,omitempty"`
+	IsManual bool  `json:"isManual"`
 }
 
 // ToMarketDataInfoResponse returns a view-object according to database model
 func (m *MarketData) ToMarketDataInfoResponse() *MarketDataInfoResponse {
 	return &MarketDataInfoResponse{
-		AssetId: m.AssetId,
-		Date:    m.Date,
-		Price:   m.Price,
-		Volume:  m.Volume,
+		AssetId:  m.AssetId,
+		Date:     m.Date,
+		Price:    m.Price,
+		Volume:   m.Volume,
+		IsManual: m.IsManual,
 	}
 }

@@ -320,10 +320,11 @@ func (a *InvestmentApi) MarketDataModifyHandler(c *core.WebContext) (any, *errs.
 	uid := c.GetCurrentUid()
 
 	data := &models.MarketData{
-		AssetId: req.AssetId,
-		Date:    req.Date,
-		Price:   req.Price,
-		Volume:  req.Volume,
+		AssetId:  req.AssetId,
+		Date:     req.Date,
+		Price:    req.Price,
+		Volume:   req.Volume,
+		IsManual: true,
 	}
 
 	err = a.marketData.ModifyMarketData(c, uid, data)
