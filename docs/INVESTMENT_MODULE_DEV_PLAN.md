@@ -1,7 +1,7 @@
 # ezBookkeeping 理财模块开发计划与设计建议
 
 > 生成日期：2026-05-06
-> 最后更新：2026-05-08
+> 最后更新：2026-06-26
 > 基于：核心需求.txt、FINANCIAL_PLANNING_MODULE_REQUIREMENTS.md、现有代码库上下文
 
 ---
@@ -15,22 +15,23 @@
 | **前端路由** | 6 条 investment 路由已配置（desktop.ts，lazy loaded） | ✅ |
 | **前端导航** | MainLayout.vue 中理财模式侧边栏已完整设计 | ✅ |
 | **模式切换** | `isInvestmentMode` ref + `toggleMode()` 已实现，点击 logo 切换 | ✅ |
-| **前端占位页面** | OverviewPage / PortfolioPage / AnalysisPage / AssetsPage / TransactionsPage / StrategyPage 6 个 .vue 文件 | ✅ 仅有骨架 |
-| **前端组件** | InvestmentReturnOverviewCard.vue | ✅ 仅有架子 |
+| **前端页面** | OverviewPage / PortfolioPage / AnalysisPage / AssetsPage / TransactionsPage / StrategyPage / AssetDetailPage 7 个页面 | ✅ 已实现（基底模板） |
+| **前端组件** | InvestmentReturnOverviewCard / TransactionFormDialog / MarketDataEditDialog / HoldingsTab / WatchlistTab | ✅ 已实现 |
 | **Logo 资源** | ezinvestment-192.png 已引用 | ✅ |
 | **国际化 Key** | `global.app.investmentTitle` 及部分投资相关 key 已定义 | ⚠️ 需补全 |
 
-### 1.2 尚未实现的缺失项
+### 1.2 当前实现状态
 
-| 层面 | 缺失项 |
-|------|--------|
-| **数据模型（Go）** | 无任何 InvestmentAsset / InvestmentTransaction / InvestmentPortfolio 等 Go struct |
-| **数据库表** | 无对应 MySQL/SQLite 表 |
-| **后端 API** | 无任何 `/api/v1/investment-*` 端点 |
-| **前端 Store** | 无 investment 相关的 Pinia store |
-| **前端 API 调用** | `src/lib/services.ts` 无投资相关 API 方法 |
-| **数据兼容** | 现有 Transaction 模型与投资资产无关联机制 |
-| **移动端 App** | 后期独立开发移动端 App（React Native/Flutter），本项目不再维护移动端网页 |
+| 层面 | 状态 | 说明 |
+|------|------|------|
+| **数据模型（Go）** | ✅ 已完成 | Asset / UserAsset / InvestmentTransaction / MarketData 4 个模型 |
+| **数据库表** | ✅ 已完成 | 4 张新表 + SyncStructs 自动迁移 |
+| **后端 API** | ✅ 已完成 | 26 个端点（全局资产/用户资产/交易/行情/分析/管理） |
+| **前端 Store** | ✅ 已完成 | useInvestmentStore（持仓/交易/行情/总览） |
+| **前端 API 调用** | ✅ 已完成 | 24 个投资 API 方法 |
+| **前端页面** | ✅ 基底模板 | 7 个页面 + 5 个子组件已实现基本功能 |
+| **行情数据源** | ✅ 已完成 | 东方财富 + AKShare 双数据源 + fallback |
+| **移动端 App** | ⬜ 待开发 | 后期独立开发移动端 App（React Native/Flutter） |
 
 ### 1.3 项目技术栈速览
 

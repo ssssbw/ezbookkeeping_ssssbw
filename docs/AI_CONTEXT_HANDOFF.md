@@ -1,7 +1,7 @@
 # AI 会话上下文交接文档
 
 > 每次会话结束后更新此文件，确保下一个 AI 会话能无缝接续。
-> 最后更新：2026-06-04
+> 最后更新：2026-06-26
 
 ---
 
@@ -87,6 +87,15 @@
 | src/lib/services.ts | ✅ 已增强 | 新增 checkInvestmentAdmin API 方法（共 21 个投资方法） |
 | src/views/desktop/investment/AssetsPage.vue | ✅ 已重构 | 搜索下拉、分类/市场 chips 筛选、买卖弹窗、管理按钮 |
 | src/views/desktop/investment/AssetsPage.vue | ✅ 已增强 | Tab+表格合并单卡片、行业列（▾筛选icon）、分页兜底、mdiMagnify SVG 图标 |
+| src/views/desktop/investment/AssetDetailPage.vue | ✅ 已完成 | 资产详情页（基本信息+持仓明细+价格走势+交易记录+行情编辑） |
+| src/views/desktop/investment/OverviewPage.vue | ✅ 已完成 | 投资组合总览（资产配置饼图+组合摘要+月度表现） |
+| src/views/desktop/investment/PortfolioPage.vue | ✅ 已完成 | 投资组合详情（汇总卡片+资产配置+持仓明细） |
+| src/views/desktop/investment/TransactionsPage.vue | ✅ 已完成 | 交易记录（列表+新增交易弹窗） |
+| src/views/desktop/investment/AnalysisPage.vue | ✅ 已完成 | 收益分析（收益率+资产类别表现+持仓收益率柱状图） |
+| src/views/desktop/investment/StrategyPage.vue | ✅ 已完成 | 策略配置（目标配置+偏离分析+再平衡建议） |
+| src/views/desktop/investment/components/MarketDataEditDialog.vue | ✅ 已完成 | 行情编辑弹窗（添加/修改价格） |
+| src/views/desktop/investment/components/TransactionFormDialog.vue | ✅ 已完成 | 交易表单弹窗 |
+| src/views/desktop/investment/assets/HoldingsTab.vue | ✅ 已完成 | 持仓列表（展开行+操作列+跳转详情） |
 | src/views/desktop/MainLayout.vue | ✅ 已增强 | watch currentRoutePath 自动同步 isInvestmentMode（/investment/* → 理财模式标题） |
 | pkg/models/asset.go | ✅ 已增强 | 新增 AssetDeleteRequest、AssetListResponse、AssetListRequest 加 keyword/page/pageSize |
 | pkg/services/asset.go | ✅ 已增强 | 新增 DeleteAsset、GetAllAssetsCount、GetAllAssets 加 keyword 参数 |
@@ -289,12 +298,14 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 
 | # | 任务 | 状态 |
 |---|------|------|
-| 3.1 | OverviewPage | ⬜ |
-| 3.2 | AssetsPage | 🔧 进行中（搜索+持仓/自选+行业列+管理CRUD，细节待完善） |
-| 3.3 | TransactionsPage | ⬜ |
-| 3.4 | PortfolioPage | ⬜ |
-| 3.5 | AnalysisPage | ⬜ |
-| 3.6 | StrategyPage | ⬜ |
+| 3.1 | OverviewPage | ✅ 已完成（基底模板） |
+| 3.2 | AssetsPage | ✅ 已完成（搜索+持仓/自选+行业列+管理CRUD+展开行+详情页） |
+| 3.3 | TransactionsPage | ✅ 已完成（基底模板） |
+| 3.4 | PortfolioPage | ✅ 已完成（基底模板） |
+| 3.5 | AnalysisPage | ✅ 已完成（基底模板） |
+| 3.6 | StrategyPage | ✅ 已完成（基底模板） |
+| 3.7 | AssetDetailPage | ✅ 已完成（基本信息+持仓明细+价格走势+交易记录+行情编辑） |
+| 3.8 | MarketDataEditDialog | ✅ 已完成（添加/修改行情弹窗） |
 
 ### 阶段 4：导入增强 & 高级数据 — 预估 1-2 周
 
@@ -337,9 +348,9 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 
 ## 七、当前状态
 
-- 无阻塞问题
-- 下一步：阶段 3 继续（OverviewPage → TransactionsPage → PortfolioPage → AnalysisPage）
-- AssetsPage 基本功能已实现，细节待完善
+- **资产管理模块已完成**，包含：AssetsPage（持仓/自选）、AssetDetailPage（详情+行情编辑+价格走势）、HoldingsTab（展开行）、WatchlistTab、TransactionFormDialog、MarketDataEditDialog
+- **基底模板页面已实现**：OverviewPage、PortfolioPage、TransactionsPage、AnalysisPage、StrategyPage（使用真实 store/API 数据，后续需完善功能）
+- 下一步：**投资组合功能实现**
 - 36 个投资模块专属 i18n key 待迁移到 `asset.` 嵌套对象（用户说后面再改）
 - 构建验证方式：`.\build.bat backend --no-lint --no-test`（Windows）/ `bash build.sh backend --no-lint --no-test`（macOS/Linux）（不要用 `go build ./...`）
 - 前端验证：`npm run lint`（vue-tsc + eslint）
@@ -590,7 +601,7 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
 下一个 AI 应该做什么：
 - 读取此文档了解完整上下文
 - 读取 docs/ 下三个文档了解详细设计
-- 继续阶段 3：其他页面开发（OverviewPage → TransactionsPage → PortfolioPage → AnalysisPage）
+- **资产管理已完成**，下一步是**投资组合功能实现**
 - 参考文件：`src/stores/investment.ts`、`src/lib/services.ts`、`src/models/investment.ts`
 - 构建验证方式：`.\build.bat backend --no-lint --no-test`（Windows）/ `bash build.sh backend --no-lint --no-test`（macOS/Linux）
 - 前端构建验证：`npm run lint`
@@ -640,3 +651,37 @@ Layer 3：MarketData 表 → 每日行情，计算浮动盈亏
    - admin: check（1 个）
    - overview: 策略页（2 个，非本次）
 3. 验证：后端 `go build` + `go test` 通过，前端 `npm run lint` 零错误
+
+### 会话 11（2026-06-25 ~ 2026-06-26）
+
+完成内容：
+1. 资产详情页（AssetDetailPage）
+   - 新建完整详情页：基本信息、持仓明细、价格走势（ECharts）、交易记录
+   - 路由 `/investment/assets/:id`，从持仓/自选列表点击进入
+   - 价格走势支持时间范围切换（1M/3M/6M/1Y/All）
+   - 手动价格点在图表中用橙色标记
+2. 手动价格覆盖（IsManual）
+   - 后端：MarketData 模型加 `IsManual` 字段
+   - 后端：`CreateMarketData` 跳过 `is_manual=true` 的记录，保护手动值不被覆盖
+   - 后端：`ModifyMarketData` 设置 `IsManual=true`
+   - 前端：MarketDataInfoResponse/InvestmentMarketDataItem 加 `isManual` 字段
+3. 基底模板页面实现（5 个页面使用真实 store/API 数据）
+   - OverviewPage：资产配置饼图、组合摘要、月度表现柱状图
+   - PortfolioPage：汇总卡片、资产配置、持仓明细表格
+   - TransactionsPage：交易列表、添加交易弹窗
+   - AnalysisPage：收益率指标、资产类别表现饼图、持仓收益率柱状图
+   - StrategyPage：目标配置输入、偏离分析、当前/目标配置双饼图
+4. TransactionFormDialog
+   - 新建交易弹窗：资产搜索、交易类型、日期、数量、价格、金额、手续费
+5. 持仓列表展开行（HoldingsTab）
+   - 恢复 `show-expand` + `#expanded-row` 模板
+   - 添加操作列（展开/折叠按钮）
+   - 行点击跳转详情页
+6. Bug 修复（会话 12）
+   - 自选资产详情页为空：添加 fallback 逻辑（getGlobalAsset + getMarketDataList）
+   - 缺少行情编辑功能：新建 MarketDataEditDialog 组件
+   - 布局优化：基本信息卡片改为紧凑 4 列布局
+7. i18n 新增 key：Add Price、Edit Price、Volume、Manual Price、Price History、Trade History 等
+8. CLAUDE.md 更新：新增投资模块完整结构文档和技术要点
+
+下一步：投资组合功能实现
