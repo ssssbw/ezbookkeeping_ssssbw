@@ -2,56 +2,64 @@
     <div class="asset-detail-page">
         <div class="page-header">
             <v-btn variant="text" :icon="mdiArrowLeft" @click="goBack" />
-            <span class="text-h6">{{ asset?.assetName || asset?.assetCode || '--' }}</span>
+            <span class="text-h6">{{ displayName }}</span>
         </div>
 
-        <div class="page-content" v-if="asset">
+        <div class="page-content">
             <!-- Basic Info -->
             <v-card class="mb-4">
-                <v-card-title class="text-subtitle-1">{{ tt('Basic Info') }}</v-card-title>
                 <v-card-text>
-                    <v-row>
-                        <v-col cols="6">
+                    <v-row dense>
+                        <v-col cols="6" md="3">
                             <div class="info-label">{{ tt('asset.AssetCode') }}</div>
-                            <div class="info-value asset-code">{{ asset.assetCode }}</div>
+                            <div class="info-value asset-code">{{ assetCode }}</div>
                         </v-col>
-                        <v-col cols="6">
+                        <v-col cols="6" md="3">
+                            <div class="info-label">{{ tt('asset.AssetName') }}</div>
+                            <div class="info-value">{{ assetName }}</div>
+                        </v-col>
+                        <v-col cols="6" md="3">
                             <div class="info-label">{{ tt('Market') }}</div>
-                            <div class="info-value">{{ formatMarket(asset.market, tt) }}</div>
+                            <div class="info-value">{{ formatMarket(displayMarket, tt) }}</div>
                         </v-col>
-                        <v-col cols="6">
+                        <v-col cols="6" md="3">
+                            <div class="info-label">{{ tt('Category') }}</div>
+                            <div class="info-value">{{ formatCategory(displayCategory, tt) }}</div>
+                        </v-col>
+                        <v-col cols="6" md="3">
                             <div class="info-label">{{ tt('Current Price') }}</div>
-                            <div class="info-value">{{ formatPriceWithDate(asset.currentPrice, asset.currentPriceDate) }}</div>
+                            <div class="info-value">{{ formatPriceWithDate(displayCurrentPrice, displayCurrentPriceDate) }}</div>
                         </v-col>
-                        <v-col cols="6">
-                            <div class="info-label">{{ tt('Weighted Return') }}</div>
-                            <div class="info-value" :class="getReturnColorClass(asset.weightedReturnRate)">
-                                {{ formatReturnRate(asset.weightedReturnRate) }}
+                        <v-col cols="6" md="3">
+                            <div class="info-label">{{ tt('Total Quantity') }}</div>
+                            <div class="info-value">{{ formatQuantity(displayTotalQuantity) }}</div>
+                        </v-col>
+                        <v-col cols="6" md="3">
+                            <div class="info-label">{{ tt('Total Value') }}</div>
+                            <div class="info-value">{{ formatCurrencyValue(displayTotalMarketValue, displayCurrency) }}</div>
+                        </v-col>
+                        <v-col cols="6" md="3">
+                            <div class="info-label">{{ tt('Total Cost') }}</div>
+                            <div class="info-value">{{ formatCurrencyValue(displayTotalCost, displayCurrency) }}</div>
+                        </v-col>
+                        <v-col cols="6" md="3">
+                            <div class="info-label">{{ tt('Unrealized P&L') }}</div>
+                            <div class="info-value" :class="getReturnColorClass(displayUnrealizedPnl)">
+                                {{ formatCurrencyValue(displayUnrealizedPnl, displayCurrency) }}
                             </div>
                         </v-col>
-                        <v-col cols="6">
-                            <div class="info-label">{{ tt('Total Quantity') }}</div>
-                            <div class="info-value">{{ formatQuantity(asset.totalQuantity) }}</div>
-                        </v-col>
-                        <v-col cols="6">
-                            <div class="info-label">{{ tt('Total Value') }}</div>
-                            <div class="info-value">{{ formatCurrencyValue(asset.totalMarketValue, asset.currency) }}</div>
-                        </v-col>
-                        <v-col cols="6">
-                            <div class="info-label">{{ tt('Total Cost') }}</div>
-                            <div class="info-value">{{ formatCurrencyValue(asset.totalCost, asset.currency) }}</div>
-                        </v-col>
-                        <v-col cols="6">
-                            <div class="info-label">{{ tt('Unrealized P&L') }}</div>
-                            <div class="info-value" :class="getReturnColorClass(asset.unrealizedPnl)">
-                                {{ formatCurrencyValue(asset.unrealizedPnl, asset.currency) }}
+                        <v-col cols="6" md="3">
+                            <div class="info-label">{{ tt('Weighted Return') }}</div>
+                            <div class="info-value" :class="getReturnColorClass(displayReturnRate)">
+                                {{ formatReturnRate(displayReturnRate) }}
                             </div>
                         </v-col>
                     </v-row>
                 </v-card-text>
             </v-card>
 
-            <v-card class="mt-4">
+            <!-- Holding Detail -->
+            <v-card class="mb-4" v-if="asset">
                 <v-card-title class="text-subtitle-1">{{ tt('Holding Detail') }}</v-card-title>
                 <v-card-text class="pa-0">
                     <v-data-table
@@ -95,24 +103,29 @@
                 </v-card-text>
             </v-card>
 
-            <v-card class="mt-4">
+            <!-- Price History -->
+            <v-card class="mb-4">
                 <v-card-title class="d-flex align-center justify-space-between">
                     <span class="text-subtitle-1">{{ tt('Price History') }}</span>
-                    <v-btn-toggle v-model="selectedTimeRange" density="compact" variant="outlined" divided>
-                        <v-btn v-for="range in timeRanges" :key="range.value" :value="range.value" size="small">
-                            {{ range.label }}
-                        </v-btn>
-                    </v-btn-toggle>
+                    <div class="d-flex align-center ga-2">
+                        <v-btn-toggle v-model="selectedTimeRange" density="compact" variant="outlined" divided>
+                            <v-btn v-for="range in timeRanges" :key="range.value" :value="range.value" size="small">
+                                {{ range.label }}
+                            </v-btn>
+                        </v-btn-toggle>
+                        <v-btn size="small" color="primary" variant="tonal" :icon="mdiPlus" @click="openAddPrice" />
+                    </div>
                 </v-card-title>
                 <v-card-text>
-                    <v-chart v-if="priceChartData.length > 0" autoresize class="price-chart" :option="priceChartOptions" />
+                    <v-chart v-if="priceChartData.length > 0" autoresize class="price-chart" :option="priceChartOptions" @click="onChartClick" />
                     <div v-else class="text-center py-6 text-medium-emphasis">
                         {{ tt('No price history data') }}
                     </div>
                 </v-card-text>
             </v-card>
 
-            <v-card class="mt-4">
+            <!-- Trade History -->
+            <v-card>
                 <v-card-title class="text-subtitle-1">{{ tt('Trade History') }}</v-card-title>
                 <v-card-text class="pa-0">
                     <v-data-table
@@ -138,7 +151,7 @@
                             <span class="text-body-2">{{ formatPrice(item.price) }}</span>
                         </template>
                         <template #item.amount="{ item }">
-                            <span class="text-body-2">{{ formatCurrencyValue(item.amount, asset.currency) }}</span>
+                            <span class="text-body-2">{{ formatCurrencyValue(item.amount, displayCurrency) }}</span>
                         </template>
                         <template #loading>
                             <v-skeleton-loader type="table-row@5" :loading="true" />
@@ -152,28 +165,40 @@
                 </v-card-text>
             </v-card>
         </div>
+
+        <market-data-edit-dialog
+            v-model="showPriceDialog"
+            :asset-id="assetId"
+            :currency="displayCurrency"
+            :edit-date="editPriceDate"
+            :edit-price="editPriceValue"
+            :edit-volume="editPriceVolume"
+            @saved="onPriceSaved"
+        />
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { mdiArrowLeft } from '@mdi/js';
+import { mdiArrowLeft, mdiPlus } from '@mdi/js';
 
 import { useI18n } from '@/locales/helpers.ts';
 import { useInvestmentStore } from '@/stores/investment.ts';
 import services from '@/lib/services.ts';
 
 import { InvestmentTransactionType } from '@/models/investment.ts';
+import MarketDataEditDialog from './components/MarketDataEditDialog.vue';
 
 import {
-    formatMarket, formatPrice, formatPriceWithDate, formatQuantity,
+    formatMarket, formatCategory, formatPrice, formatPriceWithDate, formatQuantity,
     formatCurrencyValue, formatReturnRate, getReturnColorClass
 } from './assets/assetUtils.ts';
 
-const PRIMARY_COLOR = '#c67e48';
+import type { AssetInfoResponse, InvestmentTransactionInfoResponse } from '@/models/investment.ts';
 
-import type { InvestmentTransactionInfoResponse } from '@/models/investment.ts';
+const PRIMARY_COLOR = '#c67e48';
+const DIVISOR = 10000;
 
 const route = useRoute();
 const router = useRouter();
@@ -182,15 +207,42 @@ const investmentStore = useInvestmentStore();
 
 const assetId = computed(() => route.params['id'] as string);
 
+// Fallback data for watchlist-only assets
+const fallbackAsset = ref<AssetInfoResponse | null>(null);
+const fallbackPrice = ref<number | undefined>(undefined);
+const fallbackPriceDate = ref<number | undefined>(undefined);
+
 const asset = computed(() => {
     return investmentStore.aggregatedHoldings.find(h => h.assetId === assetId.value);
 });
+
+// Display values - from holdings if available, otherwise fallback
+const assetCode = computed(() => asset.value?.assetCode || fallbackAsset.value?.code || '--');
+const assetName = computed(() => asset.value?.assetName || fallbackAsset.value?.name || '--');
+const displayMarket = computed(() => asset.value?.market ?? fallbackAsset.value?.market ?? 0);
+const displayCategory = computed(() => asset.value?.category || fallbackAsset.value?.category || '');
+const displayCurrency = computed(() => asset.value?.currency || fallbackAsset.value?.currency || 'CNY');
+const displayName = computed(() => assetName.value !== '--' ? assetName.value : assetCode.value);
+
+const displayCurrentPrice = computed(() => asset.value?.currentPrice ?? fallbackPrice.value);
+const displayCurrentPriceDate = computed(() => asset.value?.currentPriceDate ?? fallbackPriceDate.value);
+const displayTotalQuantity = computed(() => asset.value?.totalQuantity);
+const displayTotalMarketValue = computed(() => asset.value?.totalMarketValue);
+const displayTotalCost = computed(() => asset.value?.totalCost);
+const displayUnrealizedPnl = computed(() => asset.value?.unrealizedPnl);
+const displayReturnRate = computed(() => asset.value?.weightedReturnRate);
 
 const transactions = ref<InvestmentTransactionInfoResponse[]>([]);
 const transactionsLoading = ref(false);
 
 const selectedTimeRange = ref('all');
 const priceChartData = ref<{ date: string; price: number; isManual: boolean }[]>([]);
+
+// Price edit dialog
+const showPriceDialog = ref(false);
+const editPriceDate = ref<string | undefined>(undefined);
+const editPriceValue = ref<number | undefined>(undefined);
+const editPriceVolume = ref<number | undefined>(undefined);
 
 const timeRanges = computed(() => [
     { value: '1m', label: tt('1 Month') },
@@ -220,7 +272,7 @@ const transactionHeaders = computed(() => [
 
 const priceChartOptions = computed(() => {
     const dates = priceChartData.value.map(d => d.date);
-    const prices = priceChartData.value.map(d => d.price / 10000);
+    const prices = priceChartData.value.map(d => d.price / DIVISOR);
     const manualIndices = priceChartData.value.map((d, i) => d.isManual ? i : -1).filter(i => i >= 0);
 
     return {
@@ -248,9 +300,7 @@ const priceChartOptions = computed(() => {
         xAxis: {
             type: 'category',
             data: dates,
-            axisLabel: {
-                fontSize: 11,
-            },
+            axisLabel: { fontSize: 11 },
         },
         yAxis: {
             type: 'value',
@@ -269,12 +319,8 @@ const priceChartOptions = computed(() => {
                 symbolSize: (val: number, params: any) => {
                     return manualIndices.includes(params.dataIndex) ? 8 : 0;
                 },
-                itemStyle: {
-                    color: PRIMARY_COLOR,
-                },
-                lineStyle: {
-                    width: 2,
-                },
+                itemStyle: { color: PRIMARY_COLOR },
+                lineStyle: { width: 2 },
                 areaStyle: {
                     color: {
                         type: 'linear',
@@ -377,6 +423,58 @@ async function loadTransactions(): Promise<void> {
     }
 }
 
+async function loadFallbackAsset(): Promise<void> {
+    try {
+        const [assetResp, priceResp] = await Promise.all([
+            services.getGlobalAsset({ id: assetId.value }),
+            services.getMarketDataList({ asset_id: assetId.value }),
+        ]);
+        const assetData = assetResp.data;
+        if (assetData.success && assetData.result) {
+            fallbackAsset.value = assetData.result;
+        }
+        const priceData = priceResp.data;
+        if (priceData.success && priceData.result && priceData.result.length > 0) {
+            const latest = priceData.result[priceData.result.length - 1];
+            if (latest) {
+                fallbackPrice.value = latest.price;
+                fallbackPriceDate.value = latest.date;
+            }
+        }
+    } catch {
+        // ignore
+    }
+}
+
+function openAddPrice(): void {
+    editPriceDate.value = undefined;
+    editPriceValue.value = undefined;
+    editPriceVolume.value = undefined;
+    showPriceDialog.value = true;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function onChartClick(params: any): void {
+    if (params.componentType !== 'series') return;
+    const idx = params.dataIndex;
+    const item = priceChartData.value[idx];
+    if (!item) return;
+
+    const parts = item.date.split('/');
+    const month = parts[0];
+    const day = parts[1];
+    if (!month || !day) return;
+    const year = new Date().getFullYear();
+    editPriceDate.value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    editPriceValue.value = item.price;
+    editPriceVolume.value = undefined;
+    showPriceDialog.value = true;
+}
+
+function onPriceSaved(): void {
+    loadPriceHistory();
+}
+
 function goBack(): void {
     router.push('/investment/assets');
 }
@@ -385,7 +483,10 @@ watch(selectedTimeRange, () => {
     loadPriceHistory();
 });
 
-onMounted(() => {
+onMounted(async () => {
+    if (!asset.value) {
+        await loadFallbackAsset();
+    }
     loadPriceHistory();
     loadTransactions();
 });
@@ -401,6 +502,10 @@ onMounted(() => {
 
 .page-header {
     padding: 16px 24px;
+}
+
+.page-content {
+    padding: 0 24px 24px;
 }
 
 .info-label {
