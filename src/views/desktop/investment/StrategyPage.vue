@@ -4,137 +4,247 @@
             <h1 class="page-title">{{ tt('Strategy Configuration') }}</h1>
         </div>
         <div class="page-body">
-            <v-card class="mb-4">
-                <v-card-title>{{ tt('Investment Strategy') }}</v-card-title>
+            <v-card>
+                <v-card-title class="text-subtitle-1">{{ tt('Target Allocation') }}</v-card-title>
                 <v-card-text>
-                    <v-form>
-                        <v-container>
-                            <v-row>
-                                <v-col cols="12" md="6">
-                                    <v-select
-                                        label="Strategy Type"
-                                        v-model="strategyType"
-                                        :items="strategyTypes"
-                                        variant="outlined"
-                                        class="mb-4"
-                                    />
-                                </v-col>
-                                <v-col cols="12" md="6">
-                                    <v-select
-                                        label="Risk Level"
-                                        v-model="riskLevel"
-                                        :items="riskLevels"
-                                        variant="outlined"
-                                        class="mb-4"
-                                    />
-                                </v-col>
-                            </v-row>
-                            <v-row>
-                                <v-col cols="12">
-                                    <v-textarea
-                                        label="Strategy Description"
-                                        v-model="strategyDescription"
-                                        variant="outlined"
-                                        rows="3"
-                                        class="mb-4"
-                                    />
-                                </v-col>
-                            </v-row>
-                            <v-row>
-                                <v-col cols="12" md="4">
-                                    <v-text-field
-                                        label="Stock Allocation (%)"
-                                        v-model="stockAllocation"
-                                        type="number"
-                                        variant="outlined"
-                                        class="mb-4"
-                                    />
-                                </v-col>
-                                <v-col cols="12" md="4">
-                                    <v-text-field
-                                        label="Bond Allocation (%)"
-                                        v-model="bondAllocation"
-                                        type="number"
-                                        variant="outlined"
-                                        class="mb-4"
-                                    />
-                                </v-col>
-                                <v-col cols="12" md="4">
-                                    <v-text-field
-                                        label="Cash Allocation (%)"
-                                        v-model="cashAllocation"
-                                        type="number"
-                                        variant="outlined"
-                                        class="mb-4"
-                                    />
-                                </v-col>
-                            </v-row>
-                        </v-container>
-                    </v-form>
-                </v-card-text>
-                <v-card-actions>
-                    <v-btn color="primary">{{ tt('Save Strategy') }}</v-btn>
-                    <v-btn color="secondary">{{ tt('Load Default') }}</v-btn>
-                </v-card-actions>
-            </v-card>
-            <v-card class="mb-4">
-                <v-card-title>{{ tt('Strategy Backtesting') }}</v-card-title>
-                <v-card-text>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <v-select
-                            label="Time Period"
-                            v-model="backtestPeriod"
-                            :items="backtestPeriods"
-                            variant="outlined"
-                        />
-                        <v-select
-                            label="Benchmark"
-                            v-model="benchmark"
-                            :items="benchmarks"
-                            variant="outlined"
-                        />
-                        <v-btn color="primary" class="self-end">{{ tt('Run Backtest') }}</v-btn>
-                    </div>
-                    <div class="h-80">
-                        <!-- 回测结果图表 -->
-                        <div class="flex items-center justify-center h-full">
-                            <div class="text-gray-500">{{ tt('Backtest results chart will be displayed here') }}</div>
-                        </div>
+                    <v-row>
+                        <v-col cols="12" md="3" v-for="cat in categoryTargets" :key="cat.key">
+                            <v-text-field
+                                v-model.number="cat.target"
+                                :label="cat.label"
+                                type="number"
+                                min="0"
+                                max="100"
+                                suffix="%"
+                                variant="outlined"
+                                density="compact"
+                            />
+                        </v-col>
+                    </v-row>
+                    <div class="d-flex align-center mt-2">
+                        <span class="text-body-2 me-2">{{ tt('Total') }}:</span>
+                        <span class="text-body-2 font-weight-bold" :class="totalTarget === 100 ? 'text-success' : 'text-error'">
+                            {{ totalTarget }}%
+                        </span>
+                        <span v-if="totalTarget !== 100" class="text-caption text-error ms-2">
+                            ({{ totalTarget > 100 ? '+' : '' }}{{ totalTarget - 100 }}%)
+                        </span>
                     </div>
                 </v-card-text>
             </v-card>
+
+            <v-card>
+                <v-card-title class="text-subtitle-1">{{ tt('Strategy Analysis') }}</v-card-title>
+                <v-card-text class="pa-0">
+                    <v-data-table
+                        :headers="headers"
+                        :items="analysisData"
+                        :hover="true"
+                        :items-per-page="-1"
+                        class="strategy-table"
+                    >
+                        <template #item.currentPct="{ item }">
+                            <span class="text-body-2">{{ item.currentPct.toFixed(1) }}%</span>
+                        </template>
+                        <template #item.targetPct="{ item }">
+                            <span class="text-body-2">{{ item.targetPct.toFixed(1) }}%</span>
+                        </template>
+                        <template #item.deviation="{ item }">
+                            <span class="text-body-2" :class="getDeviationClass(item.deviation)">
+                                {{ item.deviation >= 0 ? '+' : '' }}{{ item.deviation.toFixed(1) }}%
+                            </span>
+                        </template>
+                        <template #item.action="{ item }">
+                            <v-chip size="small" :color="getActionColor(item.deviation)" variant="tonal">
+                                {{ item.deviation > 0 ? tt('Reduce') : item.deviation < 0 ? tt('Increase') : '--' }}
+                            </v-chip>
+                        </template>
+                        <template #no-data>
+                            <div class="text-center py-6 text-medium-emphasis">
+                                {{ tt('No holdings data') }}
+                            </div>
+                        </template>
+                    </v-data-table>
+                </v-card-text>
+            </v-card>
+
+            <v-row>
+                <v-col cols="12" md="6">
+                    <v-card>
+                        <v-card-title class="text-subtitle-1">{{ tt('Current Allocation') }}</v-card-title>
+                        <v-card-text>
+                            <v-chart v-if="currentAllocationData.length > 0" autoresize class="allocation-chart" :option="currentChartOptions" />
+                            <div v-else class="text-center py-6 text-medium-emphasis">
+                                {{ tt('No holdings data') }}
+                            </div>
+                        </v-card-text>
+                    </v-card>
+                </v-col>
+                <v-col cols="12" md="6">
+                    <v-card>
+                        <v-card-title class="text-subtitle-1">{{ tt('Target Allocation') }}</v-card-title>
+                        <v-card-text>
+                            <v-chart v-if="targetAllocationData.length > 0" autoresize class="allocation-chart" :option="targetChartOptions" />
+                            <div v-else class="text-center py-6 text-medium-emphasis">
+                                {{ tt('No holdings data') }}
+                            </div>
+                        </v-card-text>
+                    </v-card>
+                </v-col>
+            </v-row>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+
 import { useI18n } from '@/locales/helpers.ts';
+import { useInvestmentStore } from '@/stores/investment.ts';
 
 const { tt } = useI18n();
+const investmentStore = useInvestmentStore();
 
-const strategyType = ref('Balanced');
-const strategyTypes = ['Conservative', 'Balanced', 'Aggressive', 'Growth', 'Value'];
+const aggregatedHoldings = computed(() => investmentStore.aggregatedHoldings);
 
-const riskLevel = ref('Medium');
-const riskLevels = ['Low', 'Medium', 'High', 'Very High'];
+interface CategoryTarget {
+    key: string;
+    label: string;
+    target: number;
+}
 
-const strategyDescription = ref('A balanced investment strategy with equal allocation to stocks and bonds.');
+const categoryTargets = ref<CategoryTarget[]>([
+    { key: 'equity', label: tt('Equity'), target: 60 },
+    { key: 'fixed_income', label: tt('Fixed Income'), target: 30 },
+    { key: 'commodity', label: tt('Commodity'), target: 10 },
+    { key: 'digital', label: tt('Digital'), target: 0 },
+]);
 
-const stockAllocation = ref('50');
-const bondAllocation = ref('40');
-const cashAllocation = ref('10');
+const totalTarget = computed(() => categoryTargets.value.reduce((sum, c) => sum + c.target, 0));
 
-const backtestPeriod = ref('1 Year');
-const backtestPeriods = ['3 Months', '6 Months', '1 Year', '3 Years', '5 Years'];
+const totalMarketValue = computed(() => aggregatedHoldings.value.reduce((sum, h) => sum + h.totalMarketValue, 0));
 
-const benchmark = ref('S&P 500');
-const benchmarks = ['S&P 500', 'NASDAQ', 'Dow Jones', 'Russell 2000'];
+interface AnalysisRow {
+    category: string;
+    label: string;
+    currentValue: number;
+    currentPct: number;
+    targetPct: number;
+    deviation: number;
+}
+
+const analysisData = computed<AnalysisRow[]>(() => {
+    if (totalMarketValue.value === 0) return [];
+
+    const categoryValues = new Map<string, number>();
+    for (const h of aggregatedHoldings.value) {
+        const cat = h.category || 'other';
+        categoryValues.set(cat, (categoryValues.get(cat) || 0) + h.totalMarketValue);
+    }
+
+    return categoryTargets.value.map(t => {
+        const current = categoryValues.get(t.key) || 0;
+        const currentPct = (current / totalMarketValue.value) * 100;
+        return {
+            category: t.key,
+            label: t.label,
+            currentValue: current,
+            currentPct,
+            targetPct: t.target,
+            deviation: currentPct - t.target,
+        };
+    });
+});
+
+const headers = computed(() => [
+    { key: 'label', title: tt('Category'), sortable: false },
+    { key: 'currentPct', title: tt('Current Allocation'), sortable: false },
+    { key: 'targetPct', title: tt('Target Allocation'), sortable: false },
+    { key: 'deviation', title: tt('Deviation'), sortable: false },
+    { key: 'action', title: tt('Rebalance'), sortable: false },
+]);
+
+function getDeviationClass(deviation: number): string {
+    if (Math.abs(deviation) < 1) return '';
+    return deviation > 0 ? 'text-error' : 'text-success';
+}
+
+function getActionColor(deviation: number): string {
+    if (Math.abs(deviation) < 1) return 'default';
+    return deviation > 0 ? 'error' : 'success';
+}
+
+const currentAllocationData = computed(() => {
+    if (totalMarketValue.value === 0) return [];
+    const categoryValues = new Map<string, number>();
+    for (const h of aggregatedHoldings.value) {
+        const cat = h.category || 'other';
+        categoryValues.set(cat, (categoryValues.get(cat) || 0) + h.totalMarketValue);
+    }
+
+    return Array.from(categoryValues.entries()).map(([cat, value]) => ({
+        name: formatCategoryName(cat),
+        value,
+    }));
+});
+
+const targetAllocationData = computed(() => {
+    return categoryTargets.value
+        .filter(t => t.target > 0)
+        .map(t => ({
+            name: t.label,
+            value: t.target,
+        }));
+});
+
+function formatCategoryName(category: string): string {
+    switch (category) {
+        case 'equity': return tt('Equity');
+        case 'fixed_income': return tt('Fixed Income');
+        case 'commodity': return tt('Commodity');
+        case 'digital': return tt('Digital');
+        default: return category;
+    }
+}
+
+const PIE_COLORS = ['#c67e48', '#4caf50', '#ff9800', '#9c27b0', '#607d8b'];
+
+function makePieOption(data: { name: string; value: number }[]) {
+    return {
+        tooltip: { trigger: 'item', formatter: '{b}: {d}%' },
+        series: [
+            {
+                type: 'pie',
+                radius: ['40%', '70%'],
+                avoidLabelOverlap: true,
+                itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
+                label: { show: false },
+                emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } },
+                data: data.map((item, i) => ({
+                    value: item.value,
+                    name: item.name,
+                    itemStyle: { color: PIE_COLORS[i % PIE_COLORS.length] },
+                })),
+            },
+        ],
+    };
+}
+
+const currentChartOptions = computed(() => makePieOption(currentAllocationData.value));
+const targetChartOptions = computed(() => makePieOption(targetAllocationData.value));
+
+onMounted(async () => {
+    await investmentStore.loadHoldings({ force: false });
+});
 </script>
 
 <style scoped>
 .page-content {
     padding: 24px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
 }
 
 .page-header {
@@ -151,5 +261,15 @@ const benchmarks = ['S&P 500', 'NASDAQ', 'Dow Jones', 'Russell 2000'];
     display: flex;
     flex-direction: column;
     gap: 24px;
+}
+
+.allocation-chart {
+    width: 100%;
+    height: 240px;
+}
+
+.strategy-table :deep(.v-data-table__td) {
+    padding-top: 8px;
+    padding-bottom: 8px;
 }
 </style>

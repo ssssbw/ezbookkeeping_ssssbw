@@ -1,92 +1,233 @@
 <template>
     <div class="page-content">
         <div class="page-header">
-            <h1 class="page-title">{{ tt('Investment Transactions') }}</h1>
+            <div class="d-flex align-center">
+                <h1 class="page-title">{{ tt('Investment Transactions') }}</h1>
+                <v-btn color="primary" variant="tonal" class="ms-4" @click="showCreateDialog = true">
+                    <v-icon :icon="mdiPlus" class="me-1" />
+                    {{ tt('Add Transaction') }}
+                </v-btn>
+            </div>
         </div>
         <div class="page-body">
-            <v-card class="mb-4">
-                <v-card-title>{{ tt('Transaction History') }}</v-card-title>
-                <v-card-text>
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead>
-                                <tr>
-                                    <th class="text-left">Date</th>
-                                    <th class="text-left">Type</th>
-                                    <th class="text-left">Asset</th>
-                                    <th class="text-right">Quantity</th>
-                                    <th class="text-right">Price</th>
-                                    <th class="text-right">Total</th>
-                                    <th class="text-right">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="(transaction, index) in transactions" :key="index">
-                                    <td>{{ transaction.date }}</td>
-                                    <td>{{ transaction.type }}</td>
-                                    <td>{{ transaction.asset }}</td>
-                                    <td class="text-right">{{ transaction.quantity }}</td>
-                                    <td class="text-right">{{ transaction.price }}</td>
-                                    <td class="text-right">{{ transaction.total }}</td>
-                                    <td class="text-right">
-                                        <span :class="transaction.status === 'Completed' ? 'text-green-600' : 'text-yellow-600'">{{ transaction.status }}</span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </v-card-text>
-                <v-card-actions>
-                    <v-btn color="primary">{{ tt('Add Transaction') }}</v-btn>
-                </v-card-actions>
-            </v-card>
-            <v-card class="mb-4">
-                <v-card-title>{{ tt('Transaction Summary') }}</v-card-title>
-                <v-card-text>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <v-card variant="outlined" class="p-4">
-                            <div class="text-center">
-                                <div class="text-2xl font-bold">$15,000</div>
-                                <div class="text-gray-500">Total Buys</div>
+            <v-row>
+                <v-col cols="12" md="4">
+                    <v-card>
+                        <v-card-text class="summary-card">
+                            <div class="summary-label">{{ tt('Buy') }}</div>
+                            <div class="summary-value text-primary">{{ formatCurrencyValue(summaryData.totalBuy, 'CNY') }}</div>
+                            <div class="summary-count">{{ summaryData.buyCount }} {{ tt('transactions') }}</div>
+                        </v-card-text>
+                    </v-card>
+                </v-col>
+                <v-col cols="12" md="4">
+                    <v-card>
+                        <v-card-text class="summary-card">
+                            <div class="summary-label">{{ tt('Sell') }}</div>
+                            <div class="summary-value text-error">{{ formatCurrencyValue(summaryData.totalSell, 'CNY') }}</div>
+                            <div class="summary-count">{{ summaryData.sellCount }} {{ tt('transactions') }}</div>
+                        </v-card-text>
+                    </v-card>
+                </v-col>
+                <v-col cols="12" md="4">
+                    <v-card>
+                        <v-card-text class="summary-card">
+                            <div class="summary-label">{{ tt('Dividend') }}</div>
+                            <div class="summary-value text-success">{{ formatCurrencyValue(summaryData.totalDividend, 'CNY') }}</div>
+                            <div class="summary-count">{{ summaryData.dividendCount }} {{ tt('transactions') }}</div>
+                        </v-card-text>
+                    </v-card>
+                </v-col>
+            </v-row>
+
+            <v-card>
+                <v-card-text class="pa-0">
+                    <v-data-table
+                        :headers="headers"
+                        :items="transactions"
+                        :loading="loading"
+                        :hover="true"
+                        :items-per-page="15"
+                        v-model:page="page"
+                        class="transactions-table"
+                    >
+                        <template #item.tradeTime="{ item }">
+                            <span class="text-body-2">{{ formatTradeTime(item.tradeTime) }}</span>
+                        </template>
+                        <template #item.type="{ item }">
+                            <v-chip size="small" :color="getTypeColor(item.type)" variant="tonal">
+                                {{ formatTransactionType(item.type, tt) }}
+                            </v-chip>
+                        </template>
+                        <template #item.assetCode="{ item }">
+                            <span class="text-body-2 asset-code">{{ item.assetCode }}</span>
+                        </template>
+                        <template #item.assetName="{ item }">
+                            <span class="text-body-2">{{ item.assetName }}</span>
+                        </template>
+                        <template #item.quantity="{ item }">
+                            <span class="text-body-2">{{ formatQuantity(item.quantity) }}</span>
+                        </template>
+                        <template #item.price="{ item }">
+                            <span class="text-body-2">{{ formatPrice(item.price) }}</span>
+                        </template>
+                        <template #item.amount="{ item }">
+                            <span class="text-body-2">{{ formatCurrencyValue(item.amount, 'CNY') }}</span>
+                        </template>
+                        <template #item.fee="{ item }">
+                            <span class="text-body-2">{{ formatCurrencyValue(item.fee, 'CNY') }}</span>
+                        </template>
+                        <template #item.comment="{ item }">
+                            <span class="text-body-2 text-medium-emphasis">{{ item.comment || '--' }}</span>
+                        </template>
+                        <template #loading>
+                            <v-skeleton-loader type="table-row@10" :loading="true" />
+                        </template>
+                        <template #no-data>
+                            <div class="text-center py-6 text-medium-emphasis">
+                                {{ tt('No transaction data') }}
                             </div>
-                        </v-card>
-                        <v-card variant="outlined" class="p-4">
-                            <div class="text-center">
-                                <div class="text-2xl font-bold">$5,000</div>
-                                <div class="text-gray-500">Total Sells</div>
+                        </template>
+                        <template #bottom>
+                            <div class="mt-2 mb-4">
+                                <pagination-buttons :totalPageCount="totalPageCount" v-model="page" />
                             </div>
-                        </v-card>
-                        <v-card variant="outlined" class="p-4">
-                            <div class="text-center">
-                                <div class="text-2xl font-bold">$100</div>
-                                <div class="text-gray-500">Total Dividends</div>
-                            </div>
-                        </v-card>
-                    </div>
+                        </template>
+                    </v-data-table>
                 </v-card-text>
             </v-card>
         </div>
+
+        <TransactionFormDialog
+            v-model="showCreateDialog"
+            @save="onTransactionSaved"
+        />
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { mdiPlus } from '@mdi/js';
+
+import PaginationButtons from '@/components/desktop/PaginationButtons.vue';
+import TransactionFormDialog from './components/TransactionFormDialog.vue';
+
 import { useI18n } from '@/locales/helpers.ts';
+import { useInvestmentStore } from '@/stores/investment.ts';
+
+import { InvestmentTransactionType } from '@/models/investment.ts';
+import { formatPrice, formatQuantity, formatCurrencyValue } from './assets/assetUtils.ts';
 
 const { tt } = useI18n();
+const investmentStore = useInvestmentStore();
 
-const transactions = ref([
-    { date: '2026-03-15', type: 'Buy', asset: 'AAPL', quantity: '10', price: '$180.00', total: '$1,800', status: 'Completed' },
-    { date: '2026-03-14', type: 'Sell', asset: 'MSFT', quantity: '5', price: '$400.00', total: '$2,000', status: 'Completed' },
-    { date: '2026-03-13', type: 'Buy', asset: 'GOOGL', quantity: '10', price: '$130.00', total: '$1,300', status: 'Pending' },
-    { date: '2026-03-12', type: 'Dividend', asset: 'AAPL', quantity: '', price: '$0.50', total: '$50', status: 'Completed' },
-    { date: '2026-03-10', type: 'Buy', asset: 'SPY', quantity: '20', price: '$500.00', total: '$10,000', status: 'Completed' },
+const loading = ref(true);
+const page = ref(1);
+const showCreateDialog = ref(false);
+
+const transactions = computed(() => investmentStore.transactions);
+
+const totalPageCount = computed(() => {
+    return Math.max(1, Math.ceil(transactions.value.length / 15));
+});
+
+const headers = computed(() => [
+    { key: 'tradeTime', title: tt('Date'), sortable: false, width: '110' },
+    { key: 'type', title: tt('Type'), sortable: false, width: '100' },
+    { key: 'assetCode', title: tt('Code'), sortable: false, width: '100' },
+    { key: 'assetName', title: tt('asset.AssetName'), sortable: false },
+    { key: 'quantity', title: tt('Quantity'), sortable: false },
+    { key: 'price', title: tt('Price'), sortable: false },
+    { key: 'amount', title: tt('Amount'), sortable: false },
+    { key: 'fee', title: tt('Fee'), sortable: false },
+    { key: 'comment', title: tt('Comment'), sortable: false },
 ]);
+
+interface SummaryData {
+    totalBuy: number;
+    totalSell: number;
+    totalDividend: number;
+    buyCount: number;
+    sellCount: number;
+    dividendCount: number;
+}
+
+const summaryData = computed<SummaryData>(() => {
+    const result: SummaryData = {
+        totalBuy: 0, totalSell: 0, totalDividend: 0,
+        buyCount: 0, sellCount: 0, dividendCount: 0,
+    };
+    for (const t of transactions.value) {
+        switch (t.type) {
+            case InvestmentTransactionType.Buy:
+                result.totalBuy += t.amount;
+                result.buyCount++;
+                break;
+            case InvestmentTransactionType.Sell:
+                result.totalSell += t.amount;
+                result.sellCount++;
+                break;
+            case InvestmentTransactionType.DividendCash:
+            case InvestmentTransactionType.DividendReinvest:
+                result.totalDividend += t.amount;
+                result.dividendCount++;
+                break;
+        }
+    }
+    return result;
+});
+
+function formatTradeTime(timestamp: number): string {
+    if (!timestamp) return '--';
+    const d = new Date(timestamp * 1000);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function formatTransactionType(type: number, tt: (key: string) => string): string {
+    switch (type) {
+        case InvestmentTransactionType.Buy: return tt('Buy');
+        case InvestmentTransactionType.Sell: return tt('Sell');
+        case InvestmentTransactionType.DividendCash: return tt('Dividend');
+        case InvestmentTransactionType.DividendReinvest: return tt('Dividend Reinvest');
+        default: return type.toString();
+    }
+}
+
+function getTypeColor(type: number): string {
+    switch (type) {
+        case InvestmentTransactionType.Buy: return 'primary';
+        case InvestmentTransactionType.Sell: return 'error';
+        case InvestmentTransactionType.DividendCash:
+        case InvestmentTransactionType.DividendReinvest: return 'success';
+        default: return 'default';
+    }
+}
+
+async function loadTransactions(): Promise<void> {
+    loading.value = true;
+    try {
+        await investmentStore.loadTransactions({ force: true });
+    } finally {
+        loading.value = false;
+    }
+}
+
+function onTransactionSaved(): void {
+    loadTransactions();
+}
+
+onMounted(() => {
+    loadTransactions();
+});
 </script>
 
 <style scoped>
 .page-content {
     padding: 24px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
 }
 
 .page-header {
@@ -103,5 +244,36 @@ const transactions = ref([
     display: flex;
     flex-direction: column;
     gap: 24px;
+}
+
+.summary-card {
+    text-align: center;
+}
+
+.summary-label {
+    font-size: 12px;
+    color: rgba(var(--v-theme-on-surface), 0.6);
+    margin-bottom: 4px;
+}
+
+.summary-value {
+    font-size: 20px;
+    font-weight: 500;
+}
+
+.summary-count {
+    font-size: 12px;
+    color: rgba(var(--v-theme-on-surface), 0.5);
+    margin-top: 2px;
+}
+
+.asset-code {
+    color: rgb(var(--v-theme-primary));
+    font-weight: 500;
+}
+
+.transactions-table :deep(.v-data-table__td) {
+    padding-top: 8px;
+    padding-bottom: 8px;
 }
 </style>
