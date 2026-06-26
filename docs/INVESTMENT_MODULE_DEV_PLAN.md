@@ -197,6 +197,232 @@ type MarketData struct {
 
 > **解决核心需求第 4 条**：每日 cron 任务拉取第三方 API 数据写入此表。即使 API 失效，历史数据仍在本地，不影响查询。
 
+### 3.3 投资组合数据模型（2026-06-27 新增）
+
+#### 3.3.1 设计理念：复用Account表实现资金池
+
+**核心设计决策**：投资组合复用现有Account表，不新建InvestmentPortfolio表。
+
+```
+Account表结构：
+├── AccountId: 100  Name: "投资账户"  Type=MULTI_SUB_ACCOUNTS  Category=7(INVESTMENT)
+│   ├── AccountId: 101  Name: "雪球三分法"  ParentAccountId=100  Balance=50000
+│   ├── AccountId: 102  Name: "量化策略"    ParentAccountId=100  Balance=30000
+│   └── AccountId: 103  Name: "全球配置"    ParentAccountId=100  Balance=20000
+```
+
+**优势**：
+1. 完全复用现有Account表，无需新建组合表
+2. 资金调拨 = 子账户间转账（复用Transaction表）
+3. Account.Balance实时反映每个组合的可用现金
+4. 与记账系统完全融合
+
+#### 3.3.2 PortfolioAllocation（资产配置树表）
+
+支持多层级树形结构，分类节点只有名称和权重，叶子节点关联具体资产。
+
+```go
+// PortfolioAllocation represents the asset allocation tree within a portfolio
+type PortfolioAllocation struct {
+    AllocationId    int64   `xorm:"PK comment('配置节点ID')"`
+    AccountId       int64   `xorm:"INDEX(IDX_allocation_account_parent) NOT NULL comment('关联子账户ID（组合ID）')"`
+    ParentId        int64   `xorm:"INDEX(IDX_allocation_account_parent) NOT NULL comment('父节点ID，0=根节点')"`
+    Uid             int64   `xorm:"INDEX NOT NULL comment('用户ID')"`
+    
+    // 节点信息
+    Name            string  `xorm:"VARCHAR(64) NOT NULL comment('节点名称：股基/核心/红利低波')"`
+    NodeType        byte    `xorm:"NOT NULL comment('节点类型: 1=分类节点, 2=资产节点')"`
+    TargetWeight    int64   `xorm:"NOT NULL comment('目标权重（×10000，如30%=3000）')"`
+    CurrentWeight   int64   `xorm:"NOT NULL comment('当前权重（×10000）')"`
+    
+    // 资产节点特有字段（NodeType=2时有效）
+    AssetId         int64   `xorm:"comment('关联资产ID（Asset表）')"`
+    StrategyId      int64   `xorm:"comment('覆盖策略ID，0=使用组合默认策略')"`
+    
+    // 持仓统计（资产节点有效，冗余存储减少计算）
+    Quantity        int64   `xorm:"comment('持仓数量（×10000）')"`
+    AvgCostPrice    int64   `xorm:"comment('平均成本价（×10000）')"`
+    TotalCost       int64   `xorm:"comment('总成本（×10000）')"`
+    CurrentPrice    int64   `xorm:"comment('当前价格（×10000）')"`
+    MarketValue     int64   `xorm:"comment('市值（×10000）')"`
+    UnrealizedPnl   int64   `xorm:"comment('未实现盈亏（×10000）')"`
+    ReturnRate      int64   `xorm:"comment('收益率（×10000）')"`
+    
+    // 显示配置
+    DisplayOrder    int32   `xorm:"NOT NULL comment('显示排序')"`
+    Comment         string  `xorm:"VARCHAR(255) NOT NULL comment('备注')"`
+    CreatedUnixTime int64   `comment('创建时间')"`
+    UpdatedUnixTime int64   `comment('更新时间')"`
+}
+```
+
+**关键设计点**：
+- 不限制层级深度，通过ParentId实现无限层级
+- 分类节点权重 = 子节点权重之和（自动计算）
+- 资产节点通过AssetId关联Asset表
+- 持仓统计信息冗余存储，减少实时计算
+
+#### 3.3.3 InvestmentStrategy（投资策略表）
+
+```go
+// InvestmentStrategy represents an investment strategy
+type InvestmentStrategy struct {
+    StrategyId      int64   `xorm:"PK comment('策略ID')"`
+    Uid             int64   `xorm:"INDEX NOT NULL comment('用户ID')"`
+    Deleted         bool    `xorm:"INDEX NOT NULL comment('是否删除')"`
+    
+    // 基本信息
+    Name            string  `xorm:"VARCHAR(64) NOT NULL comment('策略名称：月定投/日定投')"`
+    Description     string  `xorm:"VARCHAR(255) NOT NULL comment('策略描述')"`
+    Type            byte    `xorm:"NOT NULL comment('策略类型: 1=定投, 2=网格, 3=趋势, 4=手动')"`
+    IsActive        bool    `xorm:"NOT NULL comment('是否激活')"`
+    
+    // 策略参数（JSON格式，灵活扩展）
+    Parameters      string  `xorm:"TEXT NOT NULL comment('策略参数JSON')"`
+    // 定投参数示例：
+    // {
+    //   "frequency": "monthly",      // daily/weekly/monthly
+    //   "amount": 100000,            // 每期金额（×10000）
+    //   "day_of_month": 1,           // 每月几号（月定投）
+    //   "day_of_week": 1,            // 每周几（周定投）
+    //   "auto_execute": true,        // 是否自动执行
+    //   "max_amount_per_day": 10000  // 每日最大金额（限购场景）
+    // }
+    
+    Comment         string  `xorm:"VARCHAR(255) NOT NULL comment('备注')"`
+    CreatedUnixTime int64   `comment('创建时间')"`
+    UpdatedUnixTime int64   `comment('更新时间')"`
+    DeletedUnixTime int64   `comment('删除时间')"`
+}
+```
+
+**策略执行机制**：策略执行直接产生InvestmentTransaction交易记录，不需要单独的执行记录表。
+
+#### 3.3.4 AccountExtend扩展（组合级配置）
+
+在现有AccountExtend中添加投资组合配置字段：
+
+```go
+type AccountExtend struct {
+    // 现有字段
+    LastReconciledTime      *int64 `json:"lastReconciledTime"`
+    CreditCardStatementDate *int   `json:"creditCardStatementDate"`
+    
+    // 投资组合配置（新增）
+    PortfolioConfig         *PortfolioConfig `json:"portfolioConfig,omitempty"`
+}
+
+// PortfolioConfig represents portfolio-level configuration
+type PortfolioConfig struct {
+    // 基本信息
+    RiskLevel           byte    `json:"riskLevel"`           // 1=保守, 2=稳健, 3=平衡, 4=积极, 5=激进
+    IsDefault           bool    `json:"isDefault"`           // 是否默认组合
+    
+    // 默认策略
+    DefaultStrategyId   int64   `json:"defaultStrategyId"`   // 默认策略ID
+    
+    // 目标配置
+    AnnualReturnTarget  int64   `json:"annualReturnTarget"`  // 年化目标收益率（×10000）
+    MaxDrawdown         int64   `json:"maxDrawdown"`         // 最大回撤阈值（×10000）
+    
+    // 再平衡配置
+    RebalanceTrigger    byte    `json:"rebalanceTrigger"`    // 1=定期, 2=阈值, 3=手动
+    RebalanceInterval   int     `json:"rebalanceInterval"`   // 再平衡间隔（天）
+    RebalanceThreshold  int64   `json:"rebalanceThreshold"`  // 再平衡阈值（×10000）
+    
+    // 统计信息（冗余存储）
+    TotalMarketValue    int64   `json:"totalMarketValue"`    // 总市值
+    TotalCost           int64   `json:"totalCost"`           // 总成本
+    TotalUnrealizedPnl  int64   `json:"totalUnrealizedPnl"`  // 未实现盈亏
+    TotalReturnRate     int64   `json:"totalReturnRate"`     // 总收益率
+    HoldingCount        int     `json:"holdingCount"`        // 持仓数量
+    
+    // 风险指标
+    AnnualizedReturn    int64   `json:"annualizedReturn"`    // 年化收益率
+    Volatility          int64   `json:"volatility"`          // 波动率
+    MaxDrawdownActual   int64   `json:"maxDrawdownActual"`   // 实际最大回撤
+    WinRate             int64   `json:"winRate"`             // 胜率
+}
+```
+
+#### 3.3.5 策略优先级机制
+
+```
+投资决策时的策略查找顺序：
+1. 检查 PortfolioAllocation.StrategyId（资产级策略）
+   ├── 如果 > 0 → 使用该策略
+   └── 如果 = 0 → 继续下一步
+2. 检查 Account.Extend.PortfolioConfig.DefaultStrategyId（组合级策略）
+   └── 使用该策略
+```
+
+**示例场景**：雪球三分法组合，默认月定投，但标普500限购需要日定投
+```
+组合配置：DefaultStrategyId = 1（月定投）
+资产配置：
+  - 标普500：StrategyId = 2（日定投）← 覆盖默认策略
+  - 广发全球精选：StrategyId = 0 ← 使用默认月定投
+```
+
+#### 3.3.6 再平衡计算逻辑
+
+当实际权重偏离目标权重超过阈值时，计算需要调整的金额：
+
+```go
+// 再平衡计算公式
+偏离度 = |当前权重 - 目标权重|
+需要调整金额 = 组合总市值 × (当前权重 - 目标权重)
+
+// 示例：组合总市值100000，目标权重30%，当前权重35%
+偏离度 = |35% - 30%| = 5%
+需要卖出金额 = 100000 × 5% = 5000
+```
+
+#### 3.3.7 数据关系图
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Account 表                              │
+├─────────────────────────────────────────────────────────────┤
+│ AccountID: 100  Name: "投资账户"  Category=7  Type=MultiSub │
+│   ├── AccountID: 101  Name: "雪球三分法"  ParentAccountId=100 │
+│   │   └── Extend: { PortfolioConfig: { RiskLevel: 3 } }     │
+│   ├── AccountID: 102  Name: "量化策略"  ParentAccountId=100  │
+│   └── AccountID: 103  Name: "全球配置"  ParentAccountId=100  │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  PortfolioAllocation 表                       │
+├─────────────────────────────────────────────────────────────┤
+│ AccountId: 101  ParentId: 0  Name: "现金"  Weight: 10%      │
+│ AccountId: 101  ParentId: 0  Name: "债基"  Weight: 20%      │
+│ AccountId: 101  ParentId: 0  Name: "股基"  Weight: 60%      │
+│   └── AccountId: 101  ParentId: 3  Name: "核心"  Weight: 40%│
+│       └── AccountId: 101  ParentId: 8  Name: "红利低波" ... │
+│           └── AssetId: xxx  Name: "南方标普红利低波50ETF"     │
+│               StrategyId: 2（日定投，覆盖默认）               │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  InvestmentStrategy 表                        │
+├─────────────────────────────────────────────────────────────┤
+│ StrategyId: 1  Name: "月定投"  Frequency: monthly  Amount: 1000│
+│ StrategyId: 2  Name: "日定投"  Frequency: daily    Amount: 10  │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  InvestmentTransaction 表                     │
+├─────────────────────────────────────────────────────────────┤
+│ 策略执行产生交易记录：                                         │
+│ AccountId: 101  AssetId: xxx  Type: BUY  Amount: 10         │
+│ AccountId: 101  AssetId: xxx  Type: BUY  Amount: 10         │
+│ ...                                                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
 ---
 
 ## 四、后端 API 设计
