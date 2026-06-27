@@ -20,4 +20,5 @@ const (
 	UUID_TYPE_INVESTMENT_TRANS   UuidType = 12
 	UUID_TYPE_ASSET              UuidType = 13
 	UUID_TYPE_USER_ASSET         UuidType = 14
+	UUID_TYPE_MARKET_DATA        UuidType = 15
 )
