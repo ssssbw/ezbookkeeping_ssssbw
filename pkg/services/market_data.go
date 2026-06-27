@@ -190,11 +190,11 @@ func (s *MarketDataService) InitAssetMarketData(c core.Context, uid int64, asset
 	}
 
 	now := time.Now().Unix()
-	thirtyDaysAgo := now - 30*24*3600
+	threeMonthsAgo := now - 90*24*3600
 
 	var startTime, endTime int64
-	if tradeTime > thirtyDaysAgo {
-		startTime = thirtyDaysAgo
+	if tradeTime > threeMonthsAgo {
+		startTime = threeMonthsAgo
 	} else {
 		startTime = tradeTime
 	}

@@ -36,7 +36,7 @@ var FetchMarketDataJob = &CronJob{
 	Name:        "FetchMarketData",
 	Description: "Daily fetch market data for active investment assets.",
 	Period: CronJobFixedHourPeriod{
-		Hour: 18,
+		Hour: 21,
 	},
 	Run: func(c *core.CronContext) error {
 		return services.MarketData.FetchAllActiveAssetsMarketData(c)

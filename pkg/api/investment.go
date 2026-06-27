@@ -165,6 +165,19 @@ func (a *InvestmentApi) TransactionCreateHandler(c *core.WebContext) (any, *errs
 
 	log.Infof(c, "[investment.TransactionCreateHandler] user \"uid:%d\" has created a new transaction \"id:%d\" successfully", uid, tx.TransactionId)
 
+	_, err = a.marketData.GetLatestPrice(c, uid, req.AssetId)
+	if err != nil {
+		asset, assetErr := a.globalAssets.GetAssetByAssetId(c, req.AssetId)
+		if assetErr != nil {
+			log.Warnf(c, "[investment.TransactionCreateHandler] failed to get asset for market data init, because %s", assetErr.Error())
+		} else {
+			_, initErr := a.marketData.InitAssetMarketData(c, uid, asset.AssetId, asset.Code, string(asset.Market), req.TradeTime)
+			if initErr != nil {
+				log.Warnf(c, "[investment.TransactionCreateHandler] failed to init market data for asset \"%s\", because %s", asset.Code, initErr.Error())
+			}
+		}
+	}
+
 	return tx.ToInvestmentTransactionInfoResponse(), nil
 }
 
@@ -650,6 +663,17 @@ func (a *InvestmentApi) UserAssetAddHandler(c *core.WebContext) (any, *errs.Erro
 	}
 
 	log.Infof(c, "[investment.UserAssetAddHandler] user \"uid:%d\" has added asset \"id:%d\" successfully", uid, req.AssetId)
+
+	asset, err := a.globalAssets.GetAssetByAssetId(c, req.AssetId)
+	if err != nil {
+		log.Warnf(c, "[investment.UserAssetAddHandler] failed to get asset for market data init, because %s", err.Error())
+	} else {
+		now := time.Now().Unix()
+		_, err = a.marketData.InitAssetMarketData(c, uid, asset.AssetId, asset.Code, string(asset.Market), now)
+		if err != nil {
+			log.Warnf(c, "[investment.UserAssetAddHandler] failed to init market data for asset \"%s\", because %s", asset.Code, err.Error())
+		}
+	}
 
 	return "ok", nil
 }
