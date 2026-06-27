@@ -10,16 +10,22 @@
             />
 
             <v-card class="flex-grow-1 d-flex flex-column">
-                <v-tabs v-model="activeTab" class="px-4">
-                    <v-tab value="holdings">
-                        {{ tt('Holdings') }}
-                        <v-chip size="small" variant="tonal" class="ml-2">{{ holdingsCount }}</v-chip>
-                    </v-tab>
-                    <v-tab value="watchlist">
-                        {{ tt('Watchlist') }}
-                        <v-chip size="small" variant="tonal" class="ml-2">{{ watchlist.length }}</v-chip>
-                    </v-tab>
-                </v-tabs>
+                <div class="d-flex align-center px-4">
+                    <v-tabs v-model="activeTab">
+                        <v-tab value="holdings">
+                            {{ tt('Holdings') }}
+                            <v-chip size="small" variant="tonal" class="ml-2">{{ holdingsCount }}</v-chip>
+                        </v-tab>
+                        <v-tab value="watchlist">
+                            {{ tt('Watchlist') }}
+                            <v-chip size="small" variant="tonal" class="ml-2">{{ watchlist.length }}</v-chip>
+                        </v-tab>
+                    </v-tabs>
+                    <v-spacer />
+                    <v-btn size="small" variant="tonal" :loading="refreshing" @click="refreshPrices">
+                        {{ tt('Refresh') }}
+                    </v-btn>
+                </div>
 
                 <HoldingsTab v-if="activeTab === 'holdings'" :loading="loading" />
 
@@ -68,6 +74,7 @@ const investmentStore = useInvestmentStore();
 
 const activeTab = ref<string>('holdings');
 const loading = ref<boolean>(true);
+const refreshing = ref<boolean>(false);
 const showManageButton = ref<boolean>(false);
 const adminDialog = ref<boolean>(false);
 
@@ -138,6 +145,20 @@ async function loadWatchlist(): Promise<void> {
 
 function reloadWatchlist(): void {
     loadWatchlist();
+}
+
+// --- Refresh prices ---
+async function refreshPrices(): Promise<void> {
+    refreshing.value = true;
+    try {
+        await investmentStore.refreshAllMarketData();
+        await investmentStore.loadHoldings({ force: true });
+        await loadWatchlist();
+    } catch (error) {
+        logger.error('Failed to refresh prices', error);
+    } finally {
+        refreshing.value = false;
+    }
 }
 
 // --- Admin check ---
