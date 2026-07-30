@@ -95,7 +95,14 @@ async function loadWatchlist(): Promise<void> {
         const response = await services.getUserAssets({ is_active: true, is_watchlist: true });
         const data = response.data;
 
-        if (!data || !data.success || !data.result) {
+        if (!data || !data.success) {
+            return;
+        }
+
+        // Handle empty list (backend returns null instead of empty array)
+        if (!data.result) {
+            watchlistAssets.value = [];
+            watchlistAssetIds.value = new Set();
             return;
         }
 
@@ -123,11 +130,12 @@ async function loadWatchlist(): Promise<void> {
             });
         }
 
+        // Update list first to refresh UI immediately
         watchlistAssets.value = items;
         watchlistAssetIds.value = ids;
 
-        // Load prices for watchlist items
-        for (const item of items) {
+        // Load prices in parallel (don't block UI update)
+        const pricePromises = items.map(async (item) => {
             try {
                 const result = await investmentStore.loadLatestMarketData({ assetId: item.assetId });
                 if (result) {
@@ -137,7 +145,8 @@ async function loadWatchlist(): Promise<void> {
             } catch {
                 // Ignore individual failures
             }
-        }
+        });
+        await Promise.allSettled(pricePromises);
     } catch (error) {
         logger.error('Failed to load watchlist', error);
     }

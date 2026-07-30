@@ -11,15 +11,20 @@ import (
 	"github.com/mayswind/ezbookkeeping/pkg/log"
 	"github.com/mayswind/ezbookkeeping/pkg/marketdata"
 	"github.com/mayswind/ezbookkeeping/pkg/models"
+	"github.com/mayswind/ezbookkeeping/pkg/uuid"
 )
 
 type MarketDataService struct {
 	ServiceUsingDB
+	ServiceUsingUuid
 }
 
 var MarketData = &MarketDataService{
 	ServiceUsingDB: ServiceUsingDB{
 		container: datastore.Container,
+	},
+	ServiceUsingUuid: ServiceUsingUuid{
+		container: uuid.Container,
 	},
 }
 
@@ -80,6 +85,12 @@ func (s *MarketDataService) CreateMarketData(c core.Context, uid int64, data *mo
 
 	if data.AssetId <= 0 {
 		return errs.ErrMarketDataAssetIdInvalid
+	}
+
+	data.DataId = s.GenerateUuid(uuid.UUID_TYPE_MARKET_DATA)
+
+	if data.DataId < 1 {
+		return errs.ErrSystemIsBusy
 	}
 
 	now := time.Now().Unix()
@@ -189,8 +200,10 @@ func (s *MarketDataService) InitAssetMarketData(c core.Context, uid int64, asset
 		return 0, errs.ErrMarketDataAssetIdInvalid
 	}
 
-	now := time.Now().Unix()
-	threeMonthsAgo := now - 90*24*3600
+	now := time.Now()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	todayUnix := today.Unix()
+	threeMonthsAgo := today.AddDate(0, -3, 0).Unix()
 
 	var startTime, endTime int64
 	if tradeTime > threeMonthsAgo {
@@ -198,19 +211,28 @@ func (s *MarketDataService) InitAssetMarketData(c core.Context, uid int64, asset
 	} else {
 		startTime = tradeTime
 	}
-	endTime = now
+	endTime = todayUnix
+
+	log.Debugf(c, "[marketdata.InitAssetMarketData] fetching historical prices for asset %s (market=%s, startTime=%d, endTime=%d, tradeTime=%d, threeMonthsAgo=%d)",
+		assetCode, market, startTime, endTime, tradeTime, threeMonthsAgo)
 
 	results, err := marketdata.Container.GetHistoricalPrices(assetCode, market, startTime, endTime)
 	if err != nil {
+		log.Errorf(c, "[marketdata.InitAssetMarketData] failed to get historical prices for asset %s: %s", assetCode, err.Error())
 		return 0, err
 	}
 
+	log.Debugf(c, "[marketdata.InitAssetMarketData] got %d results for asset %s", len(results), assetCode)
+
 	count := 0
-	for _, result := range results {
+	for i, result := range results {
 		marketData, ok := result.Data.(*models.MarketData)
 		if !ok {
+			log.Debugf(c, "[marketdata.InitAssetMarketData] result[%d] is not MarketData type for asset %s", i, assetCode)
 			continue
 		}
+
+		log.Debugf(c, "[marketdata.InitAssetMarketData] result[%d] for asset %s: date=%d, price=%d", i, assetCode, marketData.Date, marketData.Price)
 
 		marketData.AssetId = assetId
 

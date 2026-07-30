@@ -141,53 +141,79 @@ func (p *EastMoneyMarketDataProvider) GetLatestPrice(c core.Context, assetCode s
 }
 
 func (p *EastMoneyMarketDataProvider) GetHistoricalPrices(c core.Context, assetCode string, market string, startTime int64, endTime int64) ([]*models.MarketData, error) {
-	url := fmt.Sprintf("http://fund.eastmoney.com/f10/F10DataApi.aspx?type=lsjz&code=%s&page=1&sdate=&edate=&per=49", assetCode)
+	startDate := time.Unix(startTime, 0).Format("2006-01-02")
+	endDate := time.Unix(endTime, 0).Format("2006-01-02")
 
-	resp, err := p.httpClient.Get(url)
-	if err != nil {
-		log.Errorf(c, "[eastmoney.GetHistoricalPrices] failed to request %s: %s", url, err.Error())
-		return nil, err
-	}
-	defer resp.Body.Close()
+	log.Debugf(c, "[eastmoney.GetHistoricalPrices] fetching prices for asset %s from %s to %s", assetCode, startDate, endDate)
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
+	var allResults []*models.MarketData
+	page := 1
 
-	html := string(body)
+	for {
+		url := fmt.Sprintf("http://fund.eastmoney.com/f10/F10DataApi.aspx?type=lsjz&code=%s&page=%d&sdate=%s&edate=%s&per=49", assetCode, page, startDate, endDate)
 
-	re := regexp.MustCompile(`<td[^>]*>([^<]+)</td>`)
-	matches := re.FindAllStringSubmatch(html, -1)
+		log.Debugf(c, "[eastmoney.GetHistoricalPrices] requesting URL: %s", url)
 
-	var result []*models.MarketData
-	for i := 0; i < len(matches)-6; i += 7 {
-		dateStr := strings.TrimSpace(matches[i][1])
-		priceStr := strings.TrimSpace(matches[i+1][1])
-
-		date, err := time.Parse("2006-01-02", dateStr)
+		resp, err := p.httpClient.Get(url)
 		if err != nil {
-			continue
+			log.Errorf(c, "[eastmoney.GetHistoricalPrices] failed to request %s: %s", url, err.Error())
+			return nil, err
 		}
+		defer resp.Body.Close()
 
-		dateUnix := date.Unix()
-		if dateUnix < startTime || dateUnix > endTime {
-			continue
-		}
-
-		price, err := strconv.ParseFloat(priceStr, 64)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			continue
+			return nil, err
 		}
 
-		result = append(result, &models.MarketData{
-			AssetId: 0,
-			Date:    dateUnix,
-			Price:   int64(price * 10000),
-		})
+		html := string(body)
+
+		re := regexp.MustCompile(`<td[^>]*>([^<]*)</td>`)
+		matches := re.FindAllStringSubmatch(html, -1)
+
+		if len(matches) < 7 {
+			break
+		}
+
+		pageCount := 0
+		for i := 0; i < len(matches)-6; i += 7 {
+			dateStr := strings.TrimSpace(matches[i][1])
+			priceStr := strings.TrimSpace(matches[i+1][1])
+
+			// Parse date as UTC to avoid timezone issues
+			date, err := time.Parse("2006-01-02", dateStr)
+			if err != nil {
+				continue
+			}
+
+			dateUnix := date.Unix()
+			if dateUnix < startTime || dateUnix > endTime {
+				continue
+			}
+
+			price, err := strconv.ParseFloat(priceStr, 64)
+			if err != nil {
+				continue
+			}
+
+			allResults = append(allResults, &models.MarketData{
+				AssetId: 0,
+				Date:    dateUnix,
+				Price:   int64(price * 10000),
+			})
+			pageCount++
+		}
+
+		log.Debugf(c, "[eastmoney.GetHistoricalPrices] page %d: got %d records for asset %s", page, pageCount, assetCode)
+
+		if pageCount == 0 {
+			break
+		}
+		page++
 	}
 
-	return result, nil
+	log.Debugf(c, "[eastmoney.GetHistoricalPrices] total %d records for asset %s", len(allResults), assetCode)
+	return allResults, nil
 }
 
 func (p *EastMoneyMarketDataProvider) GetAllFundNames(c core.Context) (map[string]string, error) {
