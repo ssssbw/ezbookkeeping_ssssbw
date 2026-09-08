@@ -1,6 +1,11 @@
 package models
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"github.com/mayswind/ezbookkeeping/pkg/core"
+	"github.com/mayswind/ezbookkeeping/pkg/utils"
+)
 
 // LevelOneAccountParentId represents the parent id of level-one account
 const LevelOneAccountParentId = 0
@@ -65,33 +70,36 @@ const (
 )
 
 var defaultCreditCardAccountStatementDate = 0
+var defaultCreditCardAccountLimit = "0"
 
 // Account represents account data stored in database
 type Account struct {
-	AccountId       int64           `xorm:"PK comment('账户ID')"`
-	Uid             int64           `xorm:"INDEX(IDX_account_uid_deleted_parent_account_id_order) NOT NULL comment('用户ID')"`
-	Deleted         bool            `xorm:"INDEX(IDX_account_uid_deleted_parent_account_id_order) NOT NULL comment('是否删除')"`
-	Type            AccountType     `xorm:"NOT NULL comment('账户类型: 1=单账户, 2=多子账户')"`
-	Category        AccountCategory `xorm:"NOT NULL comment('账户类别: 1=现金, 2=支票, 3=信用卡, 4=虚拟, 5=负债, 6=应收, 7=投资, 8=储蓄, 9=定期')"`
-	Name            string          `xorm:"VARCHAR(64) NOT NULL comment('账户名称')"`
-	ParentAccountId int64           `xorm:"NOT NULL comment('父账户ID, 0=顶级账户')"`
-	Icon            int64           `xorm:"NOT NULL comment('图标ID')"`
-	Color           string          `xorm:"VARCHAR(6) NOT NULL comment('颜色, HEX格式')"`
-	Currency        string          `xorm:"VARCHAR(3) NOT NULL comment('货币代码, 如 CNY')"`
-	Balance         int64           `xorm:"NOT NULL comment('余额, 精度 x10000')"`
-	Comment         string          `xorm:"VARCHAR(255) NOT NULL comment('备注')"`
-	Extend          *AccountExtend  `xorm:"BLOB comment('扩展信息JSON')"`
-	DisplayOrder    int32           `xorm:"NOT NULL comment('显示排序')"`
-	Hidden          bool            `xorm:"NOT NULL comment('是否隐藏')"`
-	CreatedUnixTime int64           `comment('创建时间')"`
-	UpdatedUnixTime int64           `comment('更新时间')"`
-	DeletedUnixTime int64           `comment('删除时间')"`
+	AccountId       int64           `xorm:"PK"`
+	Uid             int64           `xorm:"INDEX(IDX_account_uid_deleted_parent_account_id_order) NOT NULL"`
+	Deleted         bool            `xorm:"INDEX(IDX_account_uid_deleted_parent_account_id_order) NOT NULL"`
+	Category        AccountCategory `xorm:"NOT NULL"`
+	Type            AccountType     `xorm:"NOT NULL"`
+	ParentAccountId int64           `xorm:"INDEX(IDX_account_uid_deleted_parent_account_id_order) NOT NULL"`
+	Name            string          `xorm:"VARCHAR(64) NOT NULL"`
+	DisplayOrder    int32           `xorm:"INDEX(IDX_account_uid_deleted_parent_account_id_order) NOT NULL"`
+	Icon            int64           `xorm:"NOT NULL"`
+	IconType        core.IconType
+	Color           string         `xorm:"VARCHAR(6) NOT NULL"`
+	Currency        string         `xorm:"VARCHAR(3) NOT NULL"`
+	Balance         int64          `xorm:"NOT NULL"`
+	Comment         string         `xorm:"VARCHAR(255) NOT NULL"`
+	Extend          *AccountExtend `xorm:"BLOB"`
+	Hidden          bool           `xorm:"NOT NULL"`
+	CreatedUnixTime int64
+	UpdatedUnixTime int64
+	DeletedUnixTime int64
 }
 
 // AccountExtend represents account extend data stored in database
 type AccountExtend struct {
-	LastReconciledTime      *int64 `json:"lastReconciledTime"`
-	CreditCardStatementDate *int   `json:"creditCardStatementDate"`
+	LastReconciledTime      *int64 `json:"lastReconciledTime,omitempty"`
+	CreditCardStatementDate *int   `json:"creditCardStatementDate,omitempty"`
+	CreditCardLimit         *int64 `json:"creditCardLimit,string,omitempty"`
 }
 
 // AccountCreateRequest represents all parameters of account creation request
@@ -100,12 +108,14 @@ type AccountCreateRequest struct {
 	Category                AccountCategory         `json:"category" binding:"required"`
 	Type                    AccountType             `json:"type" binding:"required"`
 	Icon                    int64                   `json:"icon,string" binding:"required,min=1"`
+	IconType                core.IconType           `json:"iconType" binding:"min=0,max=1"`
 	Color                   string                  `json:"color" binding:"required,len=6,validHexRGBColor"`
 	Currency                string                  `json:"currency" binding:"required,len=3,validCurrency"`
-	Balance                 int64                   `json:"balance"`
+	Balance                 string                  `json:"balance" binding:"validTransactionAmount"`
 	BalanceTime             int64                   `json:"balanceTime"`
 	Comment                 string                  `json:"comment" binding:"max=255"`
 	CreditCardStatementDate int                     `json:"creditCardStatementDate" binding:"min=0,max=28"`
+	CreditCardLimit         string                  `json:"creditCardLimit" binding:"omitempty,validTransactionAmount"`
 	SubAccounts             []*AccountCreateRequest `json:"subAccounts" binding:"omitempty"`
 	ClientSessionId         string                  `json:"clientSessionId"`
 }
@@ -116,13 +126,15 @@ type AccountModifyRequest struct {
 	Name                    string                  `json:"name" binding:"required,notBlank,max=64"`
 	Category                AccountCategory         `json:"category" binding:"required"`
 	Icon                    int64                   `json:"icon,string" binding:"min=1"`
+	IconType                core.IconType           `json:"iconType" binding:"min=0,max=1"`
 	Color                   string                  `json:"color" binding:"required,len=6,validHexRGBColor"`
 	Currency                *string                 `json:"currency" binding:"omitempty,len=3,validCurrency"`
-	Balance                 *int64                  `json:"balance" binding:"omitempty"`
+	Balance                 *string                 `json:"balance" binding:"omitempty,validTransactionAmount"`
 	BalanceTime             *int64                  `json:"balanceTime" binding:"omitempty"`
 	LastReconciledTime      *int64                  `json:"lastReconciledTime" binding:"omitempty"`
 	Comment                 string                  `json:"comment" binding:"max=255"`
 	CreditCardStatementDate int                     `json:"creditCardStatementDate" binding:"min=0,max=28"`
+	CreditCardLimit         string                  `json:"creditCardLimit" binding:"omitempty,validTransactionAmount"`
 	Hidden                  bool                    `json:"hidden"`
 	SubAccounts             []*AccountModifyRequest `json:"subAccounts" binding:"omitempty"`
 	ClientSessionId         string                  `json:"clientSessionId"`
@@ -174,12 +186,14 @@ type AccountInfoResponse struct {
 	Category                AccountCategory          `json:"category"`
 	Type                    AccountType              `json:"type"`
 	Icon                    int64                    `json:"icon,string"`
+	IconType                core.IconType            `json:"iconType"`
 	Color                   string                   `json:"color"`
 	Currency                string                   `json:"currency"`
-	Balance                 int64                    `json:"balance"`
+	Balance                 string                   `json:"balance"`
 	LastReconciledTime      *int64                   `json:"lastReconciledTime,omitempty"`
 	Comment                 string                   `json:"comment"`
 	CreditCardStatementDate *int                     `json:"creditCardStatementDate,omitempty"`
+	CreditCardLimit         *string                  `json:"creditCardLimit,omitempty"`
 	DisplayOrder            int32                    `json:"displayOrder"`
 	IsAsset                 bool                     `json:"isAsset,omitempty"`
 	IsLiability             bool                     `json:"isLiability,omitempty"`
@@ -200,16 +214,24 @@ func (a *Account) GetLastReconciledTime() int64 {
 func (a *Account) ToAccountInfoResponse() *AccountInfoResponse {
 	var lastReconciledTime *int64
 	var creditCardStatementDate *int
+	var creditCardLimit *string
 
 	if a.Extend != nil {
 		lastReconciledTime = a.Extend.LastReconciledTime
 	}
 
 	if a.ParentAccountId == LevelOneAccountParentId && a.Category == ACCOUNT_CATEGORY_CREDIT_CARD {
-		if a.Extend != nil {
+		if a.Extend != nil && a.Extend.CreditCardStatementDate != nil {
 			creditCardStatementDate = a.Extend.CreditCardStatementDate
 		} else {
 			creditCardStatementDate = &defaultCreditCardAccountStatementDate
+		}
+
+		if a.Extend != nil && a.Extend.CreditCardLimit != nil {
+			textualLimit := utils.Int64ToString(*a.Extend.CreditCardLimit)
+			creditCardLimit = &textualLimit
+		} else {
+			creditCardLimit = &defaultCreditCardAccountLimit
 		}
 	}
 
@@ -220,12 +242,14 @@ func (a *Account) ToAccountInfoResponse() *AccountInfoResponse {
 		Category:                a.Category,
 		Type:                    a.Type,
 		Icon:                    a.Icon,
+		IconType:                a.IconType,
 		Color:                   a.Color,
 		Currency:                a.Currency,
-		Balance:                 a.Balance,
+		Balance:                 utils.Int64ToString(a.Balance),
 		Comment:                 a.Comment,
 		LastReconciledTime:      lastReconciledTime,
 		CreditCardStatementDate: creditCardStatementDate,
+		CreditCardLimit:         creditCardLimit,
 		DisplayOrder:            a.DisplayOrder,
 		IsAsset:                 assetAccountCategory[a.Category],
 		IsLiability:             liabilityAccountCategory[a.Category],

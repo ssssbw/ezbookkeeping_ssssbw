@@ -22,7 +22,7 @@
                                 <template #item="{ props, item }">
                                     <v-list-item v-bind="props">
                                         <template #prepend>
-                                            <span class="asset-code">{{ item.raw.code }}</span>
+                                            <span class="asset-code">{{ item.code }}</span>
                                         </template>
                                     </v-list-item>
                                 </template>

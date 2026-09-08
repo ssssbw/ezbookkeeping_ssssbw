@@ -155,6 +155,10 @@ dist/
 # Roo Code
 .roo/
 
+# Codex
+.codex
+.planning
+
 # Binary and build files
 ezbookkeeping
 !**/ezbookkeeping/

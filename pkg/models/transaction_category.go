@@ -1,5 +1,7 @@
 package models
 
+import "github.com/mayswind/ezbookkeeping/pkg/core"
+
 // LevelOneTransactionCategoryParentId represents the parent id of level-one transaction category
 const LevelOneTransactionCategoryParentId = 0
 
@@ -15,20 +17,21 @@ const (
 
 // TransactionCategory represents transaction category data stored in database
 type TransactionCategory struct {
-	CategoryId       int64                   `xorm:"PK comment('分类ID')"`
-	Uid              int64                   `xorm:"INDEX(IDX_category_uid_deleted_type_parent_category_id_order) NOT NULL comment('用户ID')"`
-	Deleted          bool                    `xorm:"INDEX(IDX_category_uid_deleted_type_parent_category_id_order) NOT NULL comment('是否删除')"`
-	Type             TransactionCategoryType `xorm:"INDEX(IDX_category_uid_deleted_type_parent_category_id_order) NOT NULL comment('分类类型: 1=收入, 2=支出, 3=转账')"`
-	ParentCategoryId int64                   `xorm:"INDEX(IDX_category_uid_deleted_type_parent_category_id_order) NOT NULL comment('父分类ID, 0=顶级分类')"`
-	Name             string                  `xorm:"VARCHAR(64) NOT NULL comment('分类名称')"`
-	DisplayOrder     int32                   `xorm:"INDEX(IDX_category_uid_deleted_type_parent_category_id_order) NOT NULL comment('显示排序')"`
-	Icon             int64                   `xorm:"NOT NULL comment('图标ID')"`
-	Color            string                  `xorm:"VARCHAR(6) NOT NULL comment('颜色, HEX格式')"`
-	Hidden           bool                    `xorm:"NOT NULL comment('是否隐藏')"`
-	Comment          string                  `xorm:"VARCHAR(255) NOT NULL comment('备注')"`
-	CreatedUnixTime  int64                   `comment('创建时间')"`
-	UpdatedUnixTime  int64                   `comment('更新时间')"`
-	DeletedUnixTime  int64                   `comment('删除时间')"`
+	CategoryId       int64                   `xorm:"PK"`
+	Uid              int64                   `xorm:"INDEX(IDX_category_uid_deleted_type_parent_category_id_order) NOT NULL"`
+	Deleted          bool                    `xorm:"INDEX(IDX_category_uid_deleted_type_parent_category_id_order) NOT NULL"`
+	Type             TransactionCategoryType `xorm:"INDEX(IDX_category_uid_deleted_type_parent_category_id_order) NOT NULL"`
+	ParentCategoryId int64                   `xorm:"INDEX(IDX_category_uid_deleted_type_parent_category_id_order) NOT NULL"`
+	Name             string                  `xorm:"VARCHAR(64) NOT NULL"`
+	DisplayOrder     int32                   `xorm:"INDEX(IDX_category_uid_deleted_type_parent_category_id_order) NOT NULL"`
+	Icon             int64                   `xorm:"NOT NULL"`
+	IconType         core.IconType
+	Color            string `xorm:"VARCHAR(6) NOT NULL"`
+	Hidden           bool   `xorm:"NOT NULL"`
+	Comment          string `xorm:"VARCHAR(255) NOT NULL"`
+	CreatedUnixTime  int64
+	UpdatedUnixTime  int64
+	DeletedUnixTime  int64
 }
 
 // TransactionCategoryListRequest represents all parameters of transaction category listing request
@@ -48,6 +51,7 @@ type TransactionCategoryCreateRequest struct {
 	Type            TransactionCategoryType `json:"type" binding:"required"`
 	ParentId        int64                   `json:"parentId,string" binding:"min=0"`
 	Icon            int64                   `json:"icon,string" binding:"min=1"`
+	IconType        core.IconType           `json:"iconType" binding:"min=0,max=1"`
 	Color           string                  `json:"color" binding:"required,len=6,validHexRGBColor"`
 	Comment         string                  `json:"comment" binding:"max=255"`
 	ClientSessionId string                  `json:"clientSessionId"`
@@ -63,6 +67,7 @@ type TransactionCategoryCreateWithSubCategories struct {
 	Name          string                              `json:"name" binding:"required,notBlank,max=64"`
 	Type          TransactionCategoryType             `json:"type" binding:"required"`
 	Icon          int64                               `json:"icon,string" binding:"min=1"`
+	IconType      core.IconType                       `json:"iconType" binding:"min=0,max=1"`
 	Color         string                              `json:"color" binding:"required,len=6,validHexRGBColor"`
 	Comment       string                              `json:"comment" binding:"max=255"`
 	SubCategories []*TransactionCategoryCreateRequest `json:"subCategories" binding:"required"`
@@ -70,13 +75,14 @@ type TransactionCategoryCreateWithSubCategories struct {
 
 // TransactionCategoryModifyRequest represents all parameters of transaction category modification request
 type TransactionCategoryModifyRequest struct {
-	Id       int64  `json:"id,string" binding:"required,min=1"`
-	Name     string `json:"name" binding:"required,notBlank,max=64"`
-	ParentId int64  `json:"parentId,string" binding:"min=0"`
-	Icon     int64  `json:"icon,string" binding:"min=1"`
-	Color    string `json:"color" binding:"required,len=6,validHexRGBColor"`
-	Comment  string `json:"comment" binding:"max=255"`
-	Hidden   bool   `json:"hidden"`
+	Id       int64         `json:"id,string" binding:"required,min=1"`
+	Name     string        `json:"name" binding:"required,notBlank,max=64"`
+	ParentId int64         `json:"parentId,string" binding:"min=0"`
+	Icon     int64         `json:"icon,string" binding:"min=1"`
+	IconType core.IconType `json:"iconType" binding:"min=0,max=1"`
+	Color    string        `json:"color" binding:"required,len=6,validHexRGBColor"`
+	Comment  string        `json:"comment" binding:"max=255"`
+	Hidden   bool          `json:"hidden"`
 }
 
 // TransactionCategoryHideRequest represents all parameters of transaction category hiding request
@@ -108,6 +114,7 @@ type TransactionCategoryInfoResponse struct {
 	ParentId      int64                                `json:"parentId,string"`
 	Type          TransactionCategoryType              `json:"type"`
 	Icon          int64                                `json:"icon,string"`
+	IconType      core.IconType                        `json:"iconType"`
 	Color         string                               `json:"color"`
 	Comment       string                               `json:"comment"`
 	DisplayOrder  int32                                `json:"displayOrder"`
@@ -123,6 +130,7 @@ func (c *TransactionCategory) ToTransactionCategoryInfoResponse() *TransactionCa
 		ParentId:     c.ParentCategoryId,
 		Type:         c.Type,
 		Icon:         c.Icon,
+		IconType:     c.IconType,
 		Color:        c.Color,
 		Comment:      c.Comment,
 		DisplayOrder: c.DisplayOrder,
