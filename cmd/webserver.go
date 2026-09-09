@@ -514,41 +514,41 @@ func startWebServer(c *core.CliContext) error {
 			apiV1Route.POST("/exchange_rates/user_custom/delete.json", bindApi(api.ExchangeRates.UserCustomExchangeRateDeleteHandler, config))
 
 			// Global Assets
-			apiV1Route.GET("/investment/global_assets/search.json", bindApi(api.Investment.AssetSearchHandler))
-			apiV1Route.GET("/investment/global_assets/get.json", bindApi(api.Investment.GlobalAssetGetHandler))
-			apiV1Route.GET("/investment/global_assets/list.json", bindApi(api.Investment.GlobalAssetListHandler))
-			apiV1Route.POST("/investment/global_assets/add.json", bindApi(api.Investment.GlobalAssetCreateHandler))
-			apiV1Route.POST("/investment/global_assets/modify.json", bindApi(api.Investment.GlobalAssetModifyHandler))
-			apiV1Route.POST("/investment/global_assets/delete.json", bindApi(api.Investment.GlobalAssetDeleteHandler))
-			apiV1Route.POST("/investment/global_assets/sync.json", bindApi(api.Investment.AssetSyncHandler))
+			apiV1Route.GET("/investment/global_assets/search.json", bindApi(api.Investment.AssetSearchHandler, config))
+			apiV1Route.GET("/investment/global_assets/get.json", bindApi(api.Investment.GlobalAssetGetHandler, config))
+			apiV1Route.GET("/investment/global_assets/list.json", bindApi(api.Investment.GlobalAssetListHandler, config))
+			apiV1Route.POST("/investment/global_assets/add.json", bindApi(api.Investment.GlobalAssetCreateHandler, config))
+			apiV1Route.POST("/investment/global_assets/modify.json", bindApi(api.Investment.GlobalAssetModifyHandler, config))
+			apiV1Route.POST("/investment/global_assets/delete.json", bindApi(api.Investment.GlobalAssetDeleteHandler, config))
+			apiV1Route.POST("/investment/global_assets/sync.json", bindApi(api.Investment.AssetSyncHandler, config))
 
 			// User Assets
-			apiV1Route.GET("/investment/user_assets/list.json", bindApi(api.Investment.UserAssetListHandler))
-			apiV1Route.POST("/investment/user_assets/add.json", bindApi(api.Investment.UserAssetAddHandler))
-			apiV1Route.POST("/investment/user_assets/remove.json", bindApi(api.Investment.UserAssetRemoveHandler))
+			apiV1Route.GET("/investment/user_assets/list.json", bindApi(api.Investment.UserAssetListHandler, config))
+			apiV1Route.POST("/investment/user_assets/add.json", bindApi(api.Investment.UserAssetAddHandler, config))
+			apiV1Route.POST("/investment/user_assets/remove.json", bindApi(api.Investment.UserAssetRemoveHandler, config))
 
 			// Investment Transactions
-			apiV1Route.GET("/investment/transactions/list.json", bindApi(api.Investment.TransactionListHandler))
-			apiV1Route.GET("/investment/transactions/get.json", bindApi(api.Investment.TransactionGetHandler))
-			apiV1Route.POST("/investment/transactions/add.json", bindApi(api.Investment.TransactionCreateHandler))
-			apiV1Route.POST("/investment/transactions/modify.json", bindApi(api.Investment.TransactionModifyHandler))
-			apiV1Route.POST("/investment/transactions/delete.json", bindApi(api.Investment.TransactionDeleteHandler))
+			apiV1Route.GET("/investment/transactions/list.json", bindApi(api.Investment.TransactionListHandler, config))
+			apiV1Route.GET("/investment/transactions/get.json", bindApi(api.Investment.TransactionGetHandler, config))
+			apiV1Route.POST("/investment/transactions/add.json", bindApi(api.Investment.TransactionCreateHandler, config))
+			apiV1Route.POST("/investment/transactions/modify.json", bindApi(api.Investment.TransactionModifyHandler, config))
+			apiV1Route.POST("/investment/transactions/delete.json", bindApi(api.Investment.TransactionDeleteHandler, config))
 
 			// Investment Market Data
-			apiV1Route.GET("/investment/market_data/latest.json", bindApi(api.Investment.MarketDataLatestHandler))
-			apiV1Route.GET("/investment/market_data/list.json", bindApi(api.Investment.MarketDataListHandler))
-			apiV1Route.POST("/investment/market_data/add.json", bindApi(api.Investment.MarketDataCreateHandler))
-			apiV1Route.POST("/investment/market_data/modify.json", bindApi(api.Investment.MarketDataModifyHandler))
-			apiV1Route.POST("/investment/market_data/refresh.json", bindApi(api.Investment.MarketDataRefreshHandler))
-			apiV1Route.POST("/investment/market_data/init.json", bindApi(api.Investment.MarketDataInitHandler))
-			apiV1Route.GET("/investment/market_data/estimate.json", bindApi(api.Investment.MarketDataEstimateHandler))
+			apiV1Route.GET("/investment/market_data/latest.json", bindApi(api.Investment.MarketDataLatestHandler, config))
+			apiV1Route.GET("/investment/market_data/list.json", bindApi(api.Investment.MarketDataListHandler, config))
+			apiV1Route.POST("/investment/market_data/add.json", bindApi(api.Investment.MarketDataCreateHandler, config))
+			apiV1Route.POST("/investment/market_data/modify.json", bindApi(api.Investment.MarketDataModifyHandler, config))
+			apiV1Route.POST("/investment/market_data/refresh.json", bindApi(api.Investment.MarketDataRefreshHandler, config))
+			apiV1Route.POST("/investment/market_data/init.json", bindApi(api.Investment.MarketDataInitHandler, config))
+			apiV1Route.GET("/investment/market_data/estimate.json", bindApi(api.Investment.MarketDataEstimateHandler, config))
 
 			// Investment Analysis
-			apiV1Route.GET("/investment/analysis/holdings.json", bindApi(api.Investment.HoldingsHandler))
-			apiV1Route.GET("/investment/analysis/overview.json", bindApi(api.Investment.OverviewHandler))
+			apiV1Route.GET("/investment/analysis/holdings.json", bindApi(api.Investment.HoldingsHandler, config))
+			apiV1Route.GET("/investment/analysis/overview.json", bindApi(api.Investment.OverviewHandler, config))
 
 			// Investment Admin
-			apiV1Route.GET("/investment/admin/check.json", bindApi(api.Investment.AdminCheckHandler))
+			apiV1Route.GET("/investment/admin/check.json", bindApi(api.Investment.AdminCheckHandler, config))
 
 			// System
 			apiV1Route.GET("/systems/version.json", bindApi(api.Systems.VersionHandler, config))
