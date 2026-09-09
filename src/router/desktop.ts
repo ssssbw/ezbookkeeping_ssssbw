@@ -13,6 +13,8 @@ import UnlockPage from '@/views/desktop/UnlockPage.vue';
 
 import HomePage from '@/views/desktop/HomePage.vue';
 
+import InvestmentPageLayout from '@/views/desktop/investment/InvestmentPageLayout.vue';
+
 import TransactionListPage from '@/views/desktop/transactions/ListPage.vue';
 
 import StatisticsTransactionPage from '@/views/desktop/statistics/TransactionPage.vue';
@@ -247,43 +249,42 @@ const router = createRouter({
                     path: '/exchange_rate',
                     component: ExchangeRatesListPage,
                     beforeEnter: checkLogin
-                },
-                // 理财模式路由
+                }
+            ]
+        },
+        {
+            path: '/investment',
+            component: InvestmentPageLayout,
+            beforeEnter: checkLogin,
+            children: [
                 {
-                    path: '/investment/overview',
-                    component: () => import('@/views/desktop/investment/OverviewPage.vue'),
-                    beforeEnter: checkLogin
-                },
-                {
-                    path: '/investment/portfolio',
-                    component: () => import('@/views/desktop/investment/PortfolioPage.vue'),
-                    beforeEnter: checkLogin
-                },
-                {
-                    path: '/investment/analysis',
-                    component: () => import('@/views/desktop/investment/AnalysisPage.vue'),
-                    beforeEnter: checkLogin
+                    path: 'overview',
+                    component: () => import('@/views/desktop/investment/OverviewPage.vue')
                 },
                 {
-                    path: '/investment/assets/:id',
+                    path: 'portfolio',
+                    component: () => import('@/views/desktop/investment/PortfolioPage.vue')
+                },
+                {
+                    path: 'analysis',
+                    component: () => import('@/views/desktop/investment/AnalysisPage.vue')
+                },
+                {
+                    path: 'assets/:id',
                     component: () => import('@/views/desktop/investment/AssetDetailPage.vue'),
-                    beforeEnter: checkLogin,
                     props: true
                 },
                 {
-                    path: '/investment/assets',
-                    component: () => import('@/views/desktop/investment/AssetsPage.vue'),
-                    beforeEnter: checkLogin
+                    path: 'assets',
+                    component: () => import('@/views/desktop/investment/AssetsPage.vue')
                 },
                 {
-                    path: '/investment/transactions',
-                    component: () => import('@/views/desktop/investment/TransactionsPage.vue'),
-                    beforeEnter: checkLogin
+                    path: 'transactions',
+                    component: () => import('@/views/desktop/investment/TransactionsPage.vue')
                 },
                 {
-                    path: '/investment/strategy',
-                    component: () => import('@/views/desktop/investment/StrategyPage.vue'),
-                    beforeEnter: checkLogin
+                    path: 'strategy',
+                    component: () => import('@/views/desktop/investment/StrategyPage.vue')
                 }
             ]
         },

@@ -4,11 +4,13 @@
         <div class="layout-vertical-nav" :class="{'visible': showVerticalOverlayMenu, 'overlay-nav': lgAndDown}"
              v-if="!noNavbar">
             <div class="nav-header">
-                <router-link to="/" class="app-logo d-flex align-center gap-x-3">
+                <router-link :to="investmentMode ? '/investment/overview' : '/'" class="app-logo d-flex align-center gap-x-3"
+                             @click.prevent="toggleMode">
                     <div class="d-flex">
-                        <img alt="logo" class="main-logo" :src="APPLICATION_LOGO_PATH" />
+                        <img alt="logo" class="main-logo" :src="investmentMode ? INVESTMENT_LOGO_PATH : APPLICATION_LOGO_PATH" />
                     </div>
-                    <h1 class="app-title">{{ tt('global.app.title') }}</h1>
+                    <h1 class="app-title">{{ investmentMode ? tt('global.app.investmentTitle') : tt('global.app.title') }}</h1>
+                    <v-tooltip activator="parent">{{ investmentMode ? tt('Switch to Bookkeeping Mode') : tt('Switch to Investment Mode') }}</v-tooltip>
                 </router-link>
             </div>
             <ul class="nav-items" :class="navItemsClass">
@@ -25,74 +27,127 @@
                                :icon="true" @click="showVerticalOverlayMenu = true" v-if="!noNavbar">
                             <v-icon :icon="mdiMenu" size="24" />
                         </v-btn>
-                        <div class="app-logo d-flex align-center gap-x-3 me-3" v-if="noNavbar">
+                        <div class="app-logo d-flex align-center gap-x-3 me-3" v-if="noNavbar" @click.prevent="toggleMode">
                             <div class="d-flex">
-                                <img alt="logo" class="main-logo" :src="APPLICATION_LOGO_PATH" />
+                                <img alt="logo" class="main-logo cursor-pointer" :src="investmentMode ? INVESTMENT_LOGO_PATH : APPLICATION_LOGO_PATH" />
                             </div>
-                            <h1 class="app-title d-none d-md-inline-flex">{{ tt('global.app.title') }}</h1>
+                            <h1 class="app-title d-none d-md-inline-flex cursor-pointer">{{ investmentMode ? tt('global.app.investmentTitle') : tt('global.app.title') }}</h1>
+                            <v-tooltip activator="parent">{{ investmentMode ? tt('Switch to Bookkeeping Mode') : tt('Switch to Investment Mode') }}</v-tooltip>
                         </div>
                         <div class="app-top-toolbar d-inline-flex"
                              :class="{ 'app-top-toolbar-without-navbar': noNavbar }">
                             <slot name="top-toolbar">
-                                <router-link to="/">
+                                <template v-if="!investmentMode">
                                     <v-btn class="top-navigation-button" density="comfortable" variant="text"
-                                           :aria-label="tt('Overview')" :icon="true"
-                                           :active="isTopNavigationActive('/')"
-                                           :color="isTopNavigationActive('/') ? 'primary' : 'default'">
+                                               :aria-label="tt('Overview')" :icon="true"
+                                               :active="isTopNavigationActive('/')"
+                                               :color="isTopNavigationActive('/') ? 'primary' : 'default'"
+                                           to="/">
                                         <v-icon :icon="isTopNavigationActive('/') ? mdiHome : mdiHomeOutline" size="24" />
                                         <v-tooltip activator="parent">{{ tt('Overview') }}</v-tooltip>
                                     </v-btn>
-                                </router-link>
 
-                                <router-link to="/transaction/list?pageType=0&dateType=7">
-                                    <v-btn class="top-navigation-button ms-1" density="comfortable" variant="text"
+                                <v-btn class="top-navigation-button ms-1" density="comfortable" variant="text"
                                            :aria-label="tt('Transaction Details')" :icon="true"
                                            :active="isTopNavigationActive('/transaction/list')"
-                                           :color="isTopNavigationActive('/transaction/list') ? 'primary' : 'default'">
-                                        <v-icon :icon="isTopNavigationActive('/transaction/list') ? mdiListBox : mdiListBoxOutline" size="24" />
-                                        <v-tooltip activator="parent">{{ tt('Transaction Details') }}</v-tooltip>
-                                    </v-btn>
-                                </router-link>
+                                           :color="isTopNavigationActive('/transaction/list') ? 'primary' : 'default'"
+                                       to="/transaction/list?pageType=0&dateType=7">
+                                    <v-icon :icon="isTopNavigationActive('/transaction/list') ? mdiListBox : mdiListBoxOutline" size="24" />
+                                    <v-tooltip activator="parent">{{ tt('Transaction Details') }}</v-tooltip>
+                                </v-btn>
 
-                                <router-link to="/statistics/transaction">
-                                    <v-btn class="top-navigation-button ms-1" density="comfortable" variant="text"
+                                <v-btn class="top-navigation-button ms-1" density="comfortable" variant="text"
                                            :aria-label="tt('Statistics & Analysis')" :icon="true"
                                            :active="isTopNavigationActive('/statistics/transaction')"
-                                           :color="isTopNavigationActive('/statistics/transaction') ? 'primary' : 'default'">
-                                        <v-icon :icon="isTopNavigationActive('/statistics/transaction') ? mdiChartPie : mdiChartPieOutline" size="24" />
-                                        <v-tooltip activator="parent">{{ tt('Statistics & Analysis') }}</v-tooltip>
-                                    </v-btn>
-                                </router-link>
+                                           :color="isTopNavigationActive('/statistics/transaction') ? 'primary' : 'default'"
+                                       to="/statistics/transaction">
+                                    <v-icon :icon="isTopNavigationActive('/statistics/transaction') ? mdiChartPie : mdiChartPieOutline" size="24" />
+                                    <v-tooltip activator="parent">{{ tt('Statistics & Analysis') }}</v-tooltip>
+                                </v-btn>
 
-                                <router-link to="/insights/explorer">
-                                    <v-btn class="top-navigation-button ms-1" density="comfortable" variant="text"
+                                <v-btn class="top-navigation-button ms-1" density="comfortable" variant="text"
                                            :aria-label="tt('Insights Explorer')" :icon="true"
                                            :active="isTopNavigationActive('/insights/explorer')"
-                                           :color="isTopNavigationActive('/insights/explorer') ? 'primary' : 'default'">
-                                        <v-icon :icon="isTopNavigationActive('/insights/explorer') ? mdiCompass : mdiCompassOutline" size="24" />
-                                        <v-tooltip activator="parent">{{ tt('Insights Explorer') }}</v-tooltip>
-                                    </v-btn>
-                                </router-link>
+                                           :color="isTopNavigationActive('/insights/explorer') ? 'primary' : 'default'"
+                                       to="/insights/explorer">
+                                    <v-icon :icon="isTopNavigationActive('/insights/explorer') ? mdiCompass : mdiCompassOutline" size="24" />
+                                    <v-tooltip activator="parent">{{ tt('Insights Explorer') }}</v-tooltip>
+                                </v-btn>
 
-                                <router-link to="/account/list">
-                                    <v-btn class="top-navigation-button ms-1" density="comfortable" variant="text"
+                                <v-btn class="top-navigation-button ms-1" density="comfortable" variant="text"
                                            :aria-label="tt('Accounts')" :icon="true"
                                            :active="isTopNavigationActive('/account/list')"
-                                           :color="isTopNavigationActive('/account/list') ? 'primary' : 'default'">
-                                        <v-icon :icon="isTopNavigationActive('/account/list') ? mdiCreditCard : mdiCreditCardOutline" size="24" />
-                                        <v-tooltip activator="parent">{{ tt('Accounts') }}</v-tooltip>
-                                    </v-btn>
-                                </router-link>
+                                           :color="isTopNavigationActive('/account/list') ? 'primary' : 'default'"
+                                       to="/account/list">
+                                    <v-icon :icon="isTopNavigationActive('/account/list') ? mdiCreditCard : mdiCreditCardOutline" size="24" />
+                                    <v-tooltip activator="parent">{{ tt('Accounts') }}</v-tooltip>
+                                </v-btn>
 
-                                <router-link class="d-inline-flex align-center" to="/transaction/list?pageType=0&dateType=7"
-                                             v-if="showAddTransactionButtonInDesktopNavbar">
-                                    <v-btn class="add-transaction-button ms-2" color="primary" density="comfortable" variant="flat"
+                                <v-btn class="add-transaction-button ms-2" color="primary" density="comfortable" variant="flat"
                                            :aria-label="tt('Add Transaction')" :icon="true"
-                                           @click="showAddDialogInTransactionListPage">
-                                        <v-icon :icon="mdiPlus" size="22" />
-                                        <v-tooltip activator="parent">{{ tt('Add Transaction') }}</v-tooltip>
+                                           v-if="showAddTransactionButtonInDesktopNavbar"
+                                       to="/transaction/list?pageType=0&dateType=7"
+                                       @click="showAddDialogInTransactionListPage">
+                                    <v-icon :icon="mdiPlus" size="22" />
+                                    <v-tooltip activator="parent">{{ tt('Add Transaction') }}</v-tooltip>
+                                </v-btn>
+                                </template>
+
+                                <template v-else>
+                                    <v-btn class="top-navigation-button" density="comfortable" variant="text"
+                                               :aria-label="tt('Investment Overview')" :icon="true"
+                                               :active="isTopNavigationActive('/investment/overview')"
+                                               :color="isTopNavigationActive('/investment/overview') ? 'primary' : 'default'"
+                                           to="/investment/overview">
+                                        <v-icon :icon="isTopNavigationActive('/investment/overview') ? mdiHome : mdiHomeOutline" size="24" />
+                                        <v-tooltip activator="parent">{{ tt('Investment Overview') }}</v-tooltip>
                                     </v-btn>
-                                </router-link>
+
+                                    <v-btn class="top-navigation-button ms-1" density="comfortable" variant="text"
+                                               :aria-label="tt('Investment Portfolio')" :icon="true"
+                                               :active="isTopNavigationActive('/investment/portfolio')"
+                                               :color="isTopNavigationActive('/investment/portfolio') ? 'primary' : 'default'"
+                                           to="/investment/portfolio">
+                                        <v-icon :icon="mdiChartLine" size="24" />
+                                        <v-tooltip activator="parent">{{ tt('Investment Portfolio') }}</v-tooltip>
+                                    </v-btn>
+
+                                    <v-btn class="top-navigation-button ms-1" density="comfortable" variant="text"
+                                               :aria-label="tt('Performance Analysis')" :icon="true"
+                                               :active="isTopNavigationActive('/investment/analysis')"
+                                               :color="isTopNavigationActive('/investment/analysis') ? 'primary' : 'default'"
+                                           to="/investment/analysis">
+                                        <v-icon :icon="isTopNavigationActive('/investment/analysis') ? mdiChartPie : mdiChartPieOutline" size="24" />
+                                        <v-tooltip activator="parent">{{ tt('Performance Analysis') }}</v-tooltip>
+                                    </v-btn>
+
+                                    <v-btn class="top-navigation-button ms-1" density="comfortable" variant="text"
+                                               :aria-label="tt('Asset Management')" :icon="true"
+                                               :active="isTopNavigationActive('/investment/assets') || isTopNavigationActivePrefix('/investment/assets/')"
+                                               :color="(isTopNavigationActive('/investment/assets') || isTopNavigationActivePrefix('/investment/assets/')) ? 'primary' : 'default'"
+                                           to="/investment/assets">
+                                        <v-icon :icon="(isTopNavigationActive('/investment/assets') || isTopNavigationActivePrefix('/investment/assets/')) ? mdiDatabase : mdiDatabaseOutline" size="24" />
+                                        <v-tooltip activator="parent">{{ tt('Asset Management') }}</v-tooltip>
+                                    </v-btn>
+
+                                    <v-btn class="top-navigation-button ms-1" density="comfortable" variant="text"
+                                               :aria-label="tt('Investment Transactions')" :icon="true"
+                                               :active="isTopNavigationActive('/investment/transactions')"
+                                               :color="isTopNavigationActive('/investment/transactions') ? 'primary' : 'default'"
+                                           to="/investment/transactions">
+                                        <v-icon :icon="isTopNavigationActive('/investment/transactions') ? mdiListBox : mdiListBoxOutline" size="24" />
+                                        <v-tooltip activator="parent">{{ tt('Investment Transactions') }}</v-tooltip>
+                                    </v-btn>
+
+                                    <v-btn class="top-navigation-button ms-1" density="comfortable" variant="text"
+                                               :aria-label="tt('Strategy Configuration')" :icon="true"
+                                               :active="isTopNavigationActive('/investment/strategy')"
+                                               :color="isTopNavigationActive('/investment/strategy') ? 'primary' : 'default'"
+                                           to="/investment/strategy">
+                                        <v-icon :icon="mdiCogOutline" size="24" />
+                                        <v-tooltip activator="parent">{{ tt('Strategy Configuration') }}</v-tooltip>
+                                    </v-btn>
+                                </template>
                             </slot>
                         </div>
                         <v-spacer />
@@ -191,7 +246,7 @@ import { useSettingsStore } from '@/stores/setting.ts';
 import { useUserStore } from '@/stores/user.ts';
 import { useDesktopPageStore } from '@/stores/desktopPage.ts';
 
-import { APPLICATION_LOGO_PATH } from '@/consts/asset.ts';
+import { APPLICATION_LOGO_PATH, INVESTMENT_LOGO_PATH } from '@/consts/asset.ts';
 import { ThemeType } from '@/core/theme.ts';
 
 import { getSystemTheme, setExpenseAndIncomeAmountColor } from '@/lib/ui/common.ts';
@@ -206,6 +261,9 @@ import {
     mdiCreditCardOutline,
     mdiChartPie,
     mdiChartPieOutline,
+    mdiChartLine,
+    mdiDatabase,
+    mdiDatabaseOutline,
     mdiCompass,
     mdiCompassOutline,
     mdiPlus,
@@ -223,6 +281,7 @@ import {
 defineProps<{
     navItemsClass?: string;
     noNavbar?: boolean;
+    investmentMode?: boolean;
 }>();
 
 type SnackBarType = InstanceType<typeof SnackBar>;
@@ -275,6 +334,18 @@ const isEnableApplicationLock = computed<boolean>(() => settingsStore.appSetting
 
 function isTopNavigationActive(path: string): boolean {
     return route.path === path;
+}
+
+function isTopNavigationActivePrefix(prefix: string): boolean {
+    return route.path.startsWith(prefix);
+}
+
+function toggleMode(): void {
+    if (route.path.startsWith('/investment')) {
+        router.push('/');
+    } else {
+        router.push('/investment/overview');
+    }
 }
 
 function lock(): void {
